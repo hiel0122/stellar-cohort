@@ -47,6 +47,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        kpi: {
+          positive: "hsl(var(--kpi-positive))",
+          "positive-bg": "hsl(var(--kpi-positive-bg))",
+          negative: "hsl(var(--kpi-negative))",
+          "negative-bg": "hsl(var(--kpi-negative-bg))",
+          neutral: "hsl(var(--kpi-neutral))",
+          "neutral-bg": "hsl(var(--kpi-neutral-bg))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
