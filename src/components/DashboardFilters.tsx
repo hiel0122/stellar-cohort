@@ -24,7 +24,7 @@ interface Props {
 
 export function DashboardFilters({
   instructorId, courseId, cohortId,
-  instructors, courses, cohorts,
+  instructors = [], courses = [], cohorts = [],
   onInstructorChange, onCourseChange, onCohortChange, onReset,
 }: Props) {
   return (

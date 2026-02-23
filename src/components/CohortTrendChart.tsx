@@ -41,7 +41,7 @@ export function CohortTrendChart({ kpis, loading }: Props) {
     );
   }
 
-  const data = kpis.map((k) => ({
+  const data = (kpis ?? []).map((k) => ({
     name: `${k.cohort_no}기`,
     revenue: k.revenue,
     students: k.students,
