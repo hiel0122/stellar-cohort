@@ -123,7 +123,7 @@ export function useDashboardData() {
     revenue: kpis.map((k) => k.revenue),
     students: kpis.map((k) => k.students),
     leads: kpis.map((k) => k.leads),
-    conversion: kpis.map((k) => (k.leads > 0 ? (k.students / k.leads) * 100 : 0)),
+    conversion: kpis.map((k) => k.conversion),
   }), [kpis]);
 
   // Handlers

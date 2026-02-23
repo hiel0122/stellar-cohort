@@ -15,6 +15,7 @@ import {
   Tooltip,
 } from "recharts";
 import type { CohortKpi } from "@/lib/types";
+import { formatWonCompact, formatWonFull, formatInt } from "@/lib/format";
 
 interface Props {
   open: boolean;
@@ -35,34 +36,38 @@ const tooltipStyle: React.CSSProperties = {
 const metricConfig = {
   revenue: {
     title: "매출 상세",
-    desc: "기수별 매출 추이 (환불 차감 후)",
+    desc: "기수별 매출 추이",
     getValue: (k: CohortKpi) => k.revenue,
-    format: (v: number) => `₩${(v / 10000).toLocaleString()}만`,
+    formatCompact: (v: number) => formatWonCompact(v),
+    formatFull: (v: number) => formatWonFull(v),
   },
   students: {
     title: "수강생 상세",
     desc: "기수별 유료 수강생 수",
     getValue: (k: CohortKpi) => k.students,
-    format: (v: number) => `${v}명`,
+    formatCompact: (v: number) => `${formatInt(v)}명`,
+    formatFull: (v: number) => `${formatInt(v)}명`,
   },
   leads: {
     title: "리드 상세",
     desc: "기수별 리드(문의) 수",
     getValue: (k: CohortKpi) => k.leads,
-    format: (v: number) => `${v}명`,
+    formatCompact: (v: number) => `${formatInt(v)}명`,
+    formatFull: (v: number) => `${formatInt(v)}명`,
   },
   conversion: {
     title: "전환율 상세",
-    desc: "기수별 전환율 추이",
-    getValue: (k: CohortKpi) => k.leads > 0 ? (k.students / k.leads) * 100 : 0,
-    format: (v: number) => `${v.toFixed(1)}%`,
+    desc: "기수별 전환율 추이 (수강생/지원자)",
+    getValue: (k: CohortKpi) => k.conversion,
+    formatCompact: (v: number) => `${v.toFixed(1)}%`,
+    formatFull: (v: number) => `${v.toFixed(1)}%`,
   },
 };
 
 export function KPIDetailSheet({ open, onOpenChange, metric, kpis }: Props) {
   if (!metric) return null;
   const config = metricConfig[metric];
-  const data = kpis.map((k) => ({
+  const data = (kpis ?? []).map((k) => ({
     name: `${k.cohort_no}기`,
     value: config.getValue(k),
   }));
@@ -87,7 +92,7 @@ export function KPIDetailSheet({ open, onOpenChange, metric, kpis }: Props) {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(value: number) => [config.format(value), config.title]} contentStyle={tooltipStyle} />
+              <Tooltip formatter={(value: number) => [config.formatFull(value), config.title]} contentStyle={tooltipStyle} />
               <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#detailGrad)" dot={{ fill: 'hsl(var(--primary))', r: 3, strokeWidth: 0 }} />
             </AreaChart>
           </ResponsiveContainer>
@@ -101,7 +106,7 @@ export function KPIDetailSheet({ open, onOpenChange, metric, kpis }: Props) {
           {data.map((d) => (
             <div key={d.name} className="grid grid-cols-2 border-b border-border/50 py-2.5 text-sm hover:bg-muted/30 transition-colors">
               <span className="text-muted-foreground">{d.name}</span>
-              <span className="text-right font-medium tabular-nums text-foreground">{config.format(d.value)}</span>
+              <span className="text-right font-medium tabular-nums text-foreground">{config.formatCompact(d.value)}</span>
             </div>
           ))}
         </div>

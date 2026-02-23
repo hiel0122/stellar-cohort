@@ -11,6 +11,13 @@ import { RecentEnrollmentsTable } from "@/components/RecentEnrollmentsTable";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { formatWonCompact, formatWonFull, formatInt, formatPct } from "@/lib/format";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type MetricKey = "revenue" | "students" | "leads" | "conversion";
 
@@ -27,7 +34,6 @@ const Index = () => {
     loadState, detailLoadState, error,
   } = useDashboardData();
 
-  const formatKRW = (v: number) => `₩${(v / 10000).toLocaleString()}만`;
   const statusLabel = currentCohort?.status === "active" ? "운영중" : currentCohort?.status === "closed" ? "종료" : "계획";
 
   const isLoading = loadState === "loading";
@@ -81,54 +87,66 @@ const Index = () => {
               ))}
             </div>
           ) : currentKpi ? (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <KPICard
-                  title="매출"
-                  value={formatKRW(currentKpi.revenue)}
-                  deltaPct={currentKpi.revenue_delta_pct}
-                  icon={<DollarSign className="h-4 w-4" />}
-                  sparklineData={sparklines.revenue}
-                  onClick={() => setSheetMetric("revenue")}
-                />
-                <KPICard
-                  title="수강생"
-                  value={`${currentKpi.students}명`}
-                  deltaPct={currentKpi.students_delta_pct}
-                  icon={<Users className="h-4 w-4" />}
-                  sparklineData={sparklines.students}
-                  onClick={() => setSheetMetric("students")}
-                />
-                <KPICard
-                  title="리드"
-                  value={`${currentKpi.leads}명`}
-                  deltaPct={currentKpi.leads_delta_pct}
-                  icon={<Layers className="h-4 w-4" />}
-                  sparklineData={sparklines.leads}
-                  onClick={() => setSheetMetric("leads")}
-                />
-                <KPICard
-                  title="전환율"
-                  value={`${currentKpi.leads > 0 ? ((currentKpi.students / currentKpi.leads) * 100).toFixed(1) : "0.0"}%`}
-                  deltaPct={currentKpi.leads_delta_pct}
-                  icon={<TrendingUp className="h-4 w-4" />}
-                  sparklineData={sparklines.conversion}
-                  onClick={() => setSheetMetric("conversion")}
-                />
-              </div>
+            <TooltipProvider delayDuration={300}>
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <KPICard
+                          title="매출"
+                          value={formatWonCompact(currentKpi.revenue)}
+                          deltaPct={currentKpi.revenue_delta_pct}
+                          icon={<DollarSign className="h-4 w-4" />}
+                          sparklineData={sparklines.revenue}
+                          onClick={() => setSheetMetric("revenue")}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs tabular-nums">{formatWonFull(currentKpi.revenue)}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <KPICard
+                    title="수강생"
+                    value={`${formatInt(currentKpi.students)}명`}
+                    deltaPct={currentKpi.students_delta_pct}
+                    icon={<Users className="h-4 w-4" />}
+                    sparklineData={sparklines.students}
+                    onClick={() => setSheetMetric("students")}
+                  />
+                  <KPICard
+                    title="리드"
+                    value={`${formatInt(currentKpi.leads)}명`}
+                    deltaPct={currentKpi.leads_delta_pct}
+                    icon={<Layers className="h-4 w-4" />}
+                    sparklineData={sparklines.leads}
+                    onClick={() => setSheetMetric("leads")}
+                  />
+                  <KPICard
+                    title="전환율"
+                    value={`${currentKpi.conversion.toFixed(1)}%`}
+                    deltaPct={currentKpi.conversion_delta_pct}
+                    secondaryText={`리드 기준 ${currentKpi.conversion_secondary.toFixed(1)}%`}
+                    icon={<TrendingUp className="h-4 w-4" />}
+                    sparklineData={sparklines.conversion}
+                    onClick={() => setSheetMetric("conversion")}
+                  />
+                </div>
 
-              {/* Charts row */}
-              <div className="grid gap-3 lg:grid-cols-2">
-                <CohortTrendChart kpis={kpis} />
-                <FunnelTable funnel={funnel} loading={isDetailLoading} />
-              </div>
+                {/* Charts row */}
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <CohortTrendChart kpis={kpis} />
+                  <FunnelTable funnel={funnel} loading={isDetailLoading} />
+                </div>
 
-              {/* Bottom row: checklist + recent enrollments */}
-              <div className="grid gap-3 lg:grid-cols-2">
-                <ChecklistWidget checklist={checklist} loading={isDetailLoading} />
-                <RecentEnrollmentsTable enrollments={enrollments} loading={isDetailLoading} />
-              </div>
-            </>
+                {/* Bottom row: checklist + recent enrollments */}
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <ChecklistWidget checklist={checklist} loading={isDetailLoading} />
+                  <RecentEnrollmentsTable enrollments={enrollments} loading={isDetailLoading} />
+                </div>
+              </>
+            </TooltipProvider>
           ) : (
             <div className="flex h-48 items-center justify-center rounded-lg border border-dashed bg-card">
               <p className="text-sm text-muted-foreground">강사와 강의를 선택해주세요</p>

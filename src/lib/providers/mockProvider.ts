@@ -4,175 +4,168 @@ import type {
   FunnelData, ChecklistSummary, ChecklistItem, Enrollment,
 } from "../types";
 
-// ── Instructors ──
-const instructors: Instructor[] = [
-  { id: "inst-1", name: "김민수", email: "minsu@example.com" },
-  { id: "inst-2", name: "이지은", email: "jieun@example.com" },
-  { id: "inst-3", name: "박준호", email: "junho@example.com" },
-];
-
-// ── Courses ──
-const courses: Course[] = [
-  { id: "course-1", title: "풀스택 웹 개발 부트캠프", description: "React + Node.js 풀스택 과정" },
-  { id: "course-2", title: "데이터 분석 입문", description: "Python 기반 데이터 분석" },
-  { id: "course-3", title: "UX/UI 디자인 마스터", description: "피그마 기반 디자인 과정" },
-  { id: "course-4", title: "AI/ML 실전 프로젝트", description: "PyTorch 기반 딥러닝 실습" },
-];
-
-// instructor → course mapping
-const instructorCourses: Record<string, string[]> = {
-  "inst-1": ["course-1", "course-2"],
-  "inst-2": ["course-3", "course-4"],
-  "inst-3": ["course-1", "course-4"],
-};
-
-// ── Cohorts ──
-const cohorts: Cohort[] = [
-  // inst-1 / course-1 (5 cohorts)
-  { id: "coh-1",  course_id: "course-1", instructor_id: "inst-1", cohort_no: 1, start_date: "2024-01-15", end_date: "2024-04-15", status: "closed", price: 2500000 },
-  { id: "coh-2",  course_id: "course-1", instructor_id: "inst-1", cohort_no: 2, start_date: "2024-05-01", end_date: "2024-08-01", status: "closed", price: 2700000 },
-  { id: "coh-3",  course_id: "course-1", instructor_id: "inst-1", cohort_no: 3, start_date: "2024-09-01", end_date: "2024-12-01", status: "closed", price: 2800000 },
-  { id: "coh-4",  course_id: "course-1", instructor_id: "inst-1", cohort_no: 4, start_date: "2025-01-10", end_date: "2025-04-10", status: "active", price: 2900000 },
-  { id: "coh-5",  course_id: "course-1", instructor_id: "inst-1", cohort_no: 5, start_date: "2025-05-01", end_date: "2025-08-01", status: "planned", price: 3000000 },
-  // inst-1 / course-2 (3 cohorts)
-  { id: "coh-6",  course_id: "course-2", instructor_id: "inst-1", cohort_no: 1, start_date: "2024-03-01", end_date: "2024-05-30", status: "closed", price: 1800000 },
-  { id: "coh-7",  course_id: "course-2", instructor_id: "inst-1", cohort_no: 2, start_date: "2024-07-01", end_date: "2024-09-30", status: "closed", price: 1900000 },
-  { id: "coh-8",  course_id: "course-2", instructor_id: "inst-1", cohort_no: 3, start_date: "2024-11-01", end_date: "2025-01-31", status: "active", price: 2000000 },
-  // inst-2 / course-3 (4 cohorts)
-  { id: "coh-9",  course_id: "course-3", instructor_id: "inst-2", cohort_no: 1, start_date: "2024-02-01", end_date: "2024-05-01", status: "closed", price: 2200000 },
-  { id: "coh-10", course_id: "course-3", instructor_id: "inst-2", cohort_no: 2, start_date: "2024-06-01", end_date: "2024-09-01", status: "closed", price: 2400000 },
-  { id: "coh-11", course_id: "course-3", instructor_id: "inst-2", cohort_no: 3, start_date: "2024-10-01", end_date: "2025-01-01", status: "closed", price: 2500000 },
-  { id: "coh-12", course_id: "course-3", instructor_id: "inst-2", cohort_no: 4, start_date: "2025-02-01", end_date: "2025-05-01", status: "active", price: 2600000 },
-  // inst-2 / course-4 (3 cohorts)
-  { id: "coh-13", course_id: "course-4", instructor_id: "inst-2", cohort_no: 1, start_date: "2024-04-01", end_date: "2024-07-01", status: "closed", price: 3200000 },
-  { id: "coh-14", course_id: "course-4", instructor_id: "inst-2", cohort_no: 2, start_date: "2024-08-01", end_date: "2024-11-01", status: "closed", price: 3400000 },
-  { id: "coh-15", course_id: "course-4", instructor_id: "inst-2", cohort_no: 3, start_date: "2025-01-01", end_date: "2025-04-01", status: "active", price: 3500000 },
-  // inst-3 / course-1 (3 cohorts)
-  { id: "coh-16", course_id: "course-1", instructor_id: "inst-3", cohort_no: 1, start_date: "2024-04-01", end_date: "2024-07-01", status: "closed", price: 2600000 },
-  { id: "coh-17", course_id: "course-1", instructor_id: "inst-3", cohort_no: 2, start_date: "2024-08-01", end_date: "2024-11-01", status: "closed", price: 2800000 },
-  { id: "coh-18", course_id: "course-1", instructor_id: "inst-3", cohort_no: 3, start_date: "2025-01-15", end_date: "2025-04-15", status: "active", price: 2900000 },
-  // inst-3 / course-4 (3 cohorts)
-  { id: "coh-19", course_id: "course-4", instructor_id: "inst-3", cohort_no: 1, start_date: "2024-05-01", end_date: "2024-08-01", status: "closed", price: 3100000 },
-  { id: "coh-20", course_id: "course-4", instructor_id: "inst-3", cohort_no: 2, start_date: "2024-10-01", end_date: "2025-01-01", status: "active", price: 3300000 },
-];
-
-// ── KPI seed data (keyed by cohort id) ──
-interface KpiSeed {
+// ── Raw CSV data as constants ──
+interface RawRow {
+  instructor_name: string;
+  course_title: string;
+  cohort_no: number;
+  status: "planned" | "active" | "closed";
   revenue: number;
   students: number;
   leads: number;
-  youtube_denominator_est: number | null;
-  funnel_applied: number;
+  applied: number;
+  start_date: string;
 }
 
-const kpiSeed: Record<string, KpiSeed> = {
-  "coh-1":  { revenue: 70000000,  students: 28, leads: 45, funnel_applied: 36, youtube_denominator_est: null },
-  "coh-2":  { revenue: 94500000,  students: 35, leads: 60, funnel_applied: 47, youtube_denominator_est: null },
-  "coh-3":  { revenue: 112000000, students: 40, leads: 72, funnel_applied: 55, youtube_denominator_est: 850 },
-  "coh-4":  { revenue: 116000000, students: 40, leads: 68, funnel_applied: 52, youtube_denominator_est: 920 },
-  "coh-5":  { revenue: 0,         students: 0,  leads: 15, funnel_applied: 3,  youtube_denominator_est: null },
-  "coh-6":  { revenue: 30600000,  students: 17, leads: 30, funnel_applied: 22, youtube_denominator_est: null },
-  "coh-7":  { revenue: 39900000,  students: 21, leads: 40, funnel_applied: 29, youtube_denominator_est: 420 },
-  "coh-8":  { revenue: 42000000,  students: 21, leads: 38, funnel_applied: 28, youtube_denominator_est: 480 },
-  "coh-9":  { revenue: 39600000,  students: 18, leads: 35, funnel_applied: 26, youtube_denominator_est: null },
-  "coh-10": { revenue: 67200000,  students: 28, leads: 50, funnel_applied: 38, youtube_denominator_est: null },
-  "coh-11": { revenue: 72500000,  students: 29, leads: 48, funnel_applied: 37, youtube_denominator_est: 610 },
-  "coh-12": { revenue: 78000000,  students: 30, leads: 55, funnel_applied: 42, youtube_denominator_est: 700 },
-  "coh-13": { revenue: 89600000,  students: 28, leads: 42, funnel_applied: 34, youtube_denominator_est: null },
-  "coh-14": { revenue: 102000000, students: 30, leads: 48, funnel_applied: 38, youtube_denominator_est: 780 },
-  "coh-15": { revenue: 105000000, students: 30, leads: 52, funnel_applied: 40, youtube_denominator_est: 850 },
-  "coh-16": { revenue: 54600000,  students: 21, leads: 38, funnel_applied: 28, youtube_denominator_est: null },
-  "coh-17": { revenue: 72800000,  students: 26, leads: 45, funnel_applied: 34, youtube_denominator_est: 560 },
-  "coh-18": { revenue: 81200000,  students: 28, leads: 50, funnel_applied: 38, youtube_denominator_est: 650 },
-  "coh-19": { revenue: 68200000,  students: 22, leads: 40, funnel_applied: 30, youtube_denominator_est: null },
-  "coh-20": { revenue: 82500000,  students: 25, leads: 46, funnel_applied: 36, youtube_denominator_est: 720 },
-};
-
-// ── Checklist seeds ──
-const checklistLabels = [
-  "강의자료 업로드", "줌 링크 생성", "공지사항 발송", "출석부 준비",
-  "과제 템플릿 작성", "슬랙 채널 개설", "OT 일정 확정", "수료 기준 안내",
-  "녹화 설정 확인", "피드백 양식 준비",
+const rawData: RawRow[] = [
+  { instructor_name: "보부상", course_title: "[N잡연구소x보부상]", cohort_no: 4, status: "closed", revenue: 150000000, students: 48, leads: 2500, applied: 800, start_date: "2025-12-01" },
+  { instructor_name: "보부상", course_title: "[N잡연구소x보부상]", cohort_no: 5, status: "active", revenue: 20019915, students: 48, leads: 2300, applied: 550, start_date: "2026-01-31" },
+  { instructor_name: "최대표", course_title: "[타이탄x최대표]", cohort_no: 1, status: "active", revenue: 293000000, students: 105, leads: 2600, applied: 915, start_date: "2026-02-22" },
+  { instructor_name: "빽형", course_title: "[싸이클해커스x빽형]", cohort_no: 1, status: "active", revenue: 65000000, students: 25, leads: 2200, applied: 440, start_date: "2026-02-21" },
 ];
 
-function buildChecklist(cohortId: string): ChecklistSummary {
-  const seed = kpiSeed[cohortId];
-  if (!seed) return { total: 0, done: 0, items: [] };
-  // deterministic pseudo-random based on cohort index
-  const idx = parseInt(cohortId.replace("coh-", ""), 10);
-  const total = 10;
-  const done = Math.min(total, Math.max(0, (idx * 3 + 2) % (total + 1)));
-  const items: ChecklistItem[] = checklistLabels.map((label, i) => ({
-    id: `${cohortId}-cl-${i}`,
-    label,
-    is_done: i < done,
-    assignee: i % 3 === 0 ? "관리자" : i % 3 === 1 ? "강사" : null,
-  }));
-  return { total, done, items };
+// ── Derived lookups ──
+const instructorNames = [...new Set(rawData.map((r) => r.instructor_name))];
+const instructors: Instructor[] = instructorNames.map((name) => ({
+  id: `inst-${name}`,
+  name,
+}));
+
+function courseId(title: string): string {
+  return `course-${title}`;
 }
 
-// ── Enrollment seeds ──
-function buildEnrollments(cohortId: string): Enrollment[] {
-  const seed = kpiSeed[cohortId];
-  if (!seed || seed.students === 0) return [];
-  const cohort = cohorts.find((c) => c.id === cohortId);
-  return Array.from({ length: seed.students }, (_, i) => ({
-    id: `${cohortId}-enr-${i}`,
-    cohort_id: cohortId,
-    student_name: `수강생${String(i + 1).padStart(2, "0")}`,
-    student_email: `student${i + 1}@example.com`,
-    paid_amount: cohort?.price ?? 0,
-    refunded_amount: i < Math.floor(seed.students * 0.05) ? (cohort?.price ?? 0) : 0,
-    paid_at: cohort?.start_date ?? null,
-  }));
+function cohortId(row: RawRow): string {
+  return `coh-${row.instructor_name}-${row.course_title}-${row.cohort_no}`;
 }
 
-// ── Helper: compute delta % ──
-function deltaPct(current: number, previous: number | null): number | null {
-  if (previous === null || previous === 0) return null;
-  return ((current - previous) / previous) * 100;
+// ── Build cohorts ──
+const allCohorts: Cohort[] = rawData.map((r) => ({
+  id: cohortId(r),
+  course_id: courseId(r.course_title),
+  instructor_id: `inst-${r.instructor_name}`,
+  cohort_no: r.cohort_no,
+  start_date: r.start_date,
+  status: r.status,
+  revenue: r.revenue,
+  students: r.students,
+  leads: r.leads,
+  applied: r.applied,
+}));
+
+// ── Delta helper ──
+function deltaPct(cur: number, prev: number | null): number | null {
+  if (prev === null || prev === 0) return null;
+  return ((cur - prev) / prev) * 100;
 }
 
-// ── Build KPIs for a course-instructor pair ──
-function buildKpis(instructorId: string, courseId: string): CohortKpi[] {
-  const filtered = cohorts
-    .filter((c) => c.instructor_id === instructorId && c.course_id === courseId)
+// ── Build KPIs ──
+function buildKpis(instructorId: string, cId: string): CohortKpi[] {
+  const filtered = allCohorts
+    .filter((c) => c.instructor_id === instructorId && c.course_id === cId)
     .sort((a, b) => a.cohort_no - b.cohort_no);
 
   return filtered.map((c, i) => {
-    const seed = kpiSeed[c.id]!;
-    const prev = i > 0 ? kpiSeed[filtered[i - 1].id]! : null;
-    const convEst = seed.youtube_denominator_est
-      ? (seed.students / seed.youtube_denominator_est) * 100
-      : null;
-    const prevConvEst =
-      prev && prev.youtube_denominator_est
-        ? (prev.students / prev.youtube_denominator_est) * 100
-        : null;
+    const prev = i > 0 ? filtered[i - 1] : null;
+    const conv = c.applied > 0 ? (c.students / c.applied) * 100 : 0;
+    const prevConv = prev && prev.applied > 0 ? (prev.students / prev.applied) * 100 : null;
+    const convSec = c.leads > 0 ? (c.students / c.leads) * 100 : 0;
     return {
       cohort_id: c.id,
       cohort_no: c.cohort_no,
       course_id: c.course_id,
       instructor_id: c.instructor_id,
       start_date: c.start_date,
-      end_date: c.end_date,
       status: c.status,
-      revenue: seed.revenue,
-      students: seed.students,
-      leads: seed.leads,
-      revenue_delta_pct: deltaPct(seed.revenue, prev?.revenue ?? null),
-      students_delta_pct: deltaPct(seed.students, prev?.students ?? null),
-      leads_delta_pct: deltaPct(seed.leads, prev?.leads ?? null),
-      youtube_denominator_est: seed.youtube_denominator_est,
-      youtube_conversion_est: convEst,
-      youtube_conversion_delta_pct: deltaPct(convEst ?? 0, prevConvEst),
+      revenue: c.revenue,
+      students: c.students,
+      leads: c.leads,
+      applied: c.applied,
+      revenue_delta_pct: deltaPct(c.revenue, prev?.revenue ?? null),
+      students_delta_pct: deltaPct(c.students, prev?.students ?? null),
+      leads_delta_pct: deltaPct(c.leads, prev?.leads ?? null),
+      conversion: conv,
+      conversion_delta_pct: deltaPct(conv, prevConv),
+      conversion_secondary: convSec,
     };
   });
 }
 
-// Simulate async delay
-const delay = (ms = 120) => new Promise((r) => setTimeout(r, ms));
+// ── Checklist ──
+const checklistLabels = [
+  "강의자료 업로드", "줌 링크 생성", "공지사항 발송", "출석부 준비",
+  "과제 템플릿 작성", "슬랙 채널 개설", "OT 일정 확정", "수료 기준 안내",
+  "녹화 설정 확인", "피드백 양식 준비", "수강생 안내 메일 발송",
+  "강사료 정산 요청", "수료증 템플릿 준비", "중간 설문 제작",
+  "최종 평가 기준 수립", "수강생 포트폴리오 폴더 생성", "멘토링 일정 확정",
+  "커뮤니티 가이드 작성", "라이브 세션 리허설", "수강 후기 수집 폼 생성",
+  "강의 QnA 게시판 개설", "과제 채점 기준 공유", "출결 인정 기준 안내",
+  "보충 강의 일정 수립", "수료식 프로그램 기획", "파트너사 협찬 확인",
+  "수강생 네트워킹 행사 기획", "강의 피드백 분석 리포트", "차기 기수 모집 페이지 오픈",
+  "수강생 커리어 상담 예약", "강의 콘텐츠 백업", "수강생 만족도 조사",
+  "인스타그램 후기 수집", "유튜브 하이라이트 편집", "블로그 후기 작성 요청",
+  "강의 개선 사항 정리", "외부 강연 스케줄 확인", "교재 업데이트 검토",
+  "시스템 점검 및 백업", "최종 결산 보고서 작성",
+];
 
+function buildChecklist(cId: string): ChecklistSummary {
+  const cohort = allCohorts.find((c) => c.id === cId);
+  if (!cohort) return { total: 0, done: 0, items: [] };
+
+  const total = 40;
+  let done: number;
+  if (cohort.status === "closed") {
+    done = 40;
+  } else {
+    // deterministic based on cohort_no
+    done = Math.min(total, 18 + ((cohort.cohort_no * 7) % 13));
+  }
+
+  const items: ChecklistItem[] = checklistLabels.map((label, i) => ({
+    id: `${cId}-cl-${i}`,
+    label,
+    is_done: i < done,
+    assignee: i % 4 === 0 ? "관리자" : i % 4 === 1 ? "강사" : i % 4 === 2 ? "운영팀" : null,
+  }));
+
+  return { total, done, items };
+}
+
+// ── Enrollments ──
+const maskedNames = [
+  "김*수", "이*영", "박*진", "최*희", "정*호",
+  "강*미", "조*현", "윤*서", "임*준", "한*린",
+];
+
+function buildEnrollments(cId: string): Enrollment[] {
+  const cohort = allCohorts.find((c) => c.id === cId);
+  if (!cohort || cohort.students === 0) return [];
+
+  const perStudent = Math.round(cohort.revenue / cohort.students);
+  const count = Math.min(cohort.students, 10);
+
+  return Array.from({ length: count }, (_, i) => {
+    const dayOffset = i * 2 + 1;
+    const baseDate = new Date(cohort.start_date ?? "2026-01-01");
+    baseDate.setDate(baseDate.getDate() - dayOffset);
+    const jitter = Math.round(perStudent * (0.95 + (((i * 7 + 3) % 11) / 110)));
+
+    return {
+      id: `${cId}-enr-${i}`,
+      cohort_id: cId,
+      student_name: maskedNames[i % maskedNames.length],
+      student_email: `user${String(i + 1).padStart(3, "0")}***@example.com`,
+      paid_amount: jitter,
+      refunded_amount: 0,
+      paid_at: baseDate.toISOString().slice(0, 10),
+    };
+  });
+}
+
+// ── Simulate async ──
+const delay = (ms = 80) => new Promise((r) => setTimeout(r, ms));
+
+// ── Provider ──
 export const mockProvider: DataProvider = {
   async listInstructors() {
     await delay();
@@ -181,27 +174,28 @@ export const mockProvider: DataProvider = {
 
   async listCourses(instructorId: string) {
     await delay();
-    const ids = instructorCourses[instructorId] ?? [];
-    return courses.filter((c) => ids.includes(c.id));
+    const instName = instructorId.replace("inst-", "");
+    const titles = [...new Set(rawData.filter((r) => r.instructor_name === instName).map((r) => r.course_title))];
+    return titles.map((t) => ({ id: courseId(t), title: t }));
   },
 
-  async listCohorts(instructorId: string, courseId: string) {
+  async listCohorts(instructorId: string, cId: string) {
     await delay();
-    return cohorts
-      .filter((c) => c.instructor_id === instructorId && c.course_id === courseId)
+    return allCohorts
+      .filter((c) => c.instructor_id === instructorId && c.course_id === cId)
       .sort((a, b) => a.cohort_no - b.cohort_no);
   },
 
-  async getCohortKpis(instructorId: string, courseId: string) {
+  async getCohortKpis(instructorId: string, cId: string) {
     await delay();
-    return buildKpis(instructorId, courseId);
+    return buildKpis(instructorId, cId);
   },
 
   async getFunnel(cohortId: string) {
     await delay();
-    const seed = kpiSeed[cohortId];
-    if (!seed) return { lead: 0, applied: 0, paid: 0 };
-    return { lead: seed.leads, applied: seed.funnel_applied, paid: seed.students };
+    const cohort = allCohorts.find((c) => c.id === cohortId);
+    if (!cohort) return { lead: 0, applied: 0, paid: 0 };
+    return { lead: cohort.leads, applied: cohort.applied, paid: cohort.students };
   },
 
   async getChecklist(cohortId: string) {

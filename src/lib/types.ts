@@ -3,13 +3,11 @@
 export interface Instructor {
   id: string;
   name: string;
-  email: string | null;
 }
 
 export interface Course {
   id: string;
   title: string;
-  description: string | null;
 }
 
 export interface Cohort {
@@ -18,9 +16,11 @@ export interface Cohort {
   instructor_id: string;
   cohort_no: number;
   start_date: string | null;
-  end_date: string | null;
   status: "planned" | "active" | "closed";
-  price: number | null;
+  revenue: number;
+  students: number;
+  leads: number;
+  applied: number;
 }
 
 export interface CohortKpi {
@@ -29,17 +29,17 @@ export interface CohortKpi {
   course_id: string;
   instructor_id: string;
   start_date: string | null;
-  end_date: string | null;
   status: "planned" | "active" | "closed";
   revenue: number;
   students: number;
   leads: number;
+  applied: number;
   revenue_delta_pct: number | null;
   students_delta_pct: number | null;
   leads_delta_pct: number | null;
-  youtube_denominator_est: number | null;
-  youtube_conversion_est: number | null;
-  youtube_conversion_delta_pct: number | null;
+  conversion: number;          // students/applied * 100
+  conversion_delta_pct: number | null;
+  conversion_secondary: number; // students/leads * 100
 }
 
 export interface FunnelData {

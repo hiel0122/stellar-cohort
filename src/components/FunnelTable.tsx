@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { FunnelData } from "@/lib/types";
+import { formatInt } from "@/lib/format";
 
 interface Props {
   funnel: FunnelData | null;
@@ -54,7 +55,7 @@ export function FunnelTable({ funnel, loading }: Props) {
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-xs font-medium text-foreground">{step.label}</span>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-xs font-semibold tabular-nums text-foreground">{step.count}명</span>
+                  <span className="text-xs font-semibold tabular-nums text-foreground">{formatInt(step.count)}명</span>
                   <span className="text-[10px] tabular-nums text-muted-foreground">{step.pct.toFixed(1)}%</span>
                 </div>
               </div>
