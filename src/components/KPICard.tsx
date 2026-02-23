@@ -8,20 +8,19 @@ interface KPICardProps {
   deltaPct: number | null;
   icon: React.ReactNode;
   sparklineData?: number[];
+  secondaryText?: string;
   onClick?: () => void;
 }
 
-export function KPICard({ title, value, deltaPct, icon, sparklineData, onClick }: KPICardProps) {
+export function KPICard({ title, value, deltaPct, icon, sparklineData, secondaryText, onClick }: KPICardProps) {
   const deltaDisplay =
     deltaPct === null
-      ? { text: "N/A", color: "text-kpi-neutral", bg: "bg-kpi-neutral-bg", Icon: Minus }
+      ? { text: "—", color: "text-kpi-neutral", bg: "bg-kpi-neutral-bg", Icon: Minus }
       : deltaPct >= 0
       ? { text: `+${deltaPct.toFixed(1)}%`, color: "text-kpi-positive", bg: "bg-kpi-positive-bg", Icon: TrendingUp }
       : { text: `${deltaPct.toFixed(1)}%`, color: "text-kpi-negative", bg: "bg-kpi-negative-bg", Icon: TrendingDown };
 
   const sparkData = sparklineData?.map((v, i) => ({ v, i })) ?? [];
-
-  // Unified sparkline: always use primary color for consistency (Stripe style)
   const sparkColor = "hsl(var(--primary))";
 
   return (
@@ -41,6 +40,9 @@ export function KPICard({ title, value, deltaPct, icon, sparklineData, onClick }
               </span>
               <span className="text-[10px] text-muted-foreground">vs 전기수</span>
             </div>
+            {secondaryText && (
+              <p className="text-[10px] text-muted-foreground pt-0.5">{secondaryText}</p>
+            )}
           </div>
           <div className="rounded-md bg-muted p-2 text-muted-foreground">
             {icon}

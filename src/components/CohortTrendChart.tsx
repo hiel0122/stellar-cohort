@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CohortKpi } from "@/lib/types";
+import { formatWonCompact, formatWonFull } from "@/lib/format";
 
 interface Props {
   kpis: CohortKpi[];
@@ -28,7 +29,6 @@ const tooltipStyle: React.CSSProperties = {
   color: 'hsl(var(--popover-foreground))',
 };
 
-const formatKRW = (v: number) => `${(v / 10000).toLocaleString()}만`;
 const axisTickProps = { fill: 'hsl(var(--muted-foreground))', fontSize: 11 };
 
 export function CohortTrendChart({ kpis, loading }: Props) {
@@ -45,7 +45,7 @@ export function CohortTrendChart({ kpis, loading }: Props) {
     name: `${k.cohort_no}기`,
     revenue: k.revenue,
     students: k.students,
-    conversion: k.leads > 0 ? parseFloat(((k.students / k.leads) * 100).toFixed(1)) : 0,
+    conversion: k.conversion,
   }));
 
   return (
@@ -73,8 +73,8 @@ export function CohortTrendChart({ kpis, loading }: Props) {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={axisTickProps} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={formatKRW} tick={axisTickProps} axisLine={false} tickLine={false} width={52} />
-                  <Tooltip formatter={(value: number) => [`₩${value.toLocaleString()}`, "매출"]} contentStyle={tooltipStyle} />
+                  <YAxis tickFormatter={(v: number) => formatWonCompact(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={52} />
+                  <Tooltip formatter={(value: number) => [formatWonFull(value), "매출"]} contentStyle={tooltipStyle} />
                   <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#revenueGrad)" dot={{ fill: 'hsl(var(--primary))', r: 3, strokeWidth: 0 }} />
                 </AreaChart>
               </ResponsiveContainer>
@@ -108,7 +108,7 @@ export function CohortTrendChart({ kpis, loading }: Props) {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={axisTickProps} axisLine={false} tickLine={false} />
                   <YAxis tick={axisTickProps} unit="%" axisLine={false} tickLine={false} width={36} />
-                  <Tooltip formatter={(value: number) => [`${value}%`, "전환율"]} contentStyle={tooltipStyle} />
+                  <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, "전환율"]} contentStyle={tooltipStyle} />
                   <Line type="monotone" dataKey="conversion" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={{ fill: 'hsl(var(--primary))', r: 3, strokeWidth: 0 }} name="전환율" />
                 </LineChart>
               </ResponsiveContainer>
