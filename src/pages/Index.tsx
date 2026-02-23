@@ -6,12 +6,10 @@ import { CohortTrendChart } from "@/components/CohortTrendChart";
 import { FunnelTable } from "@/components/FunnelTable";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { KPIDetailSheet } from "@/components/KPIDetailSheet";
-import { ChecklistWidget } from "@/components/ChecklistWidget";
-import { RecentEnrollmentsTable } from "@/components/RecentEnrollmentsTable";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { formatWonCompact, formatWonFull, formatInt, formatPct } from "@/lib/format";
+import { formatWonCompact, formatWonFull, formatInt } from "@/lib/format";
 import {
   Tooltip,
   TooltipContent,
@@ -30,7 +28,7 @@ const Index = () => {
     instructors, courses, cohorts, kpis,
     currentKpi, currentCohort,
     sparklines,
-    funnel, checklist, enrollments,
+    funnel,
     loadState, detailLoadState, error,
   } = useDashboardData();
 
@@ -140,11 +138,8 @@ const Index = () => {
                   <FunnelTable funnel={funnel} loading={isDetailLoading} />
                 </div>
 
-                {/* Bottom row: checklist + recent enrollments */}
-                <div className="grid gap-3 lg:grid-cols-2">
-                  <ChecklistWidget checklist={checklist} loading={isDetailLoading} />
-                  <RecentEnrollmentsTable enrollments={enrollments} loading={isDetailLoading} />
-                </div>
+                {/* Cohorts Overview table */}
+                <CohortsOverview kpis={kpis} />
               </>
             </TooltipProvider>
           ) : (
@@ -164,5 +159,70 @@ const Index = () => {
     </Layout>
   );
 };
+
+// ── Cohorts Overview Table ──
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import type { CohortKpi } from "@/lib/types";
+
+function CohortsOverview({ kpis }: { kpis: CohortKpi[] }) {
+  if (!kpis || kpis.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-1 px-4 pt-4">
+        <CardTitle className="text-sm font-semibold">기수 요약</CardTitle>
+      </CardHeader>
+      <CardContent className="px-4 pb-4">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-border/50">
+              <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2">기수</TableHead>
+              <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2">상태</TableHead>
+              <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2">시작일</TableHead>
+              <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">매출</TableHead>
+              <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">수강생</TableHead>
+              <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">리드</TableHead>
+              <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">지원</TableHead>
+              <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">전환율</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {kpis.map((k) => (
+              <TableRow key={k.cohort_id} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
+                <TableCell className="py-2 px-2 text-xs font-medium">{k.cohort_no}기</TableCell>
+                <TableCell className="py-2 px-2 text-xs">
+                  <Badge
+                    variant={k.status === "active" ? "default" : k.status === "closed" ? "secondary" : "outline"}
+                    className="text-[9px] h-4 px-1.5"
+                  >
+                    {k.status === "active" ? "운영중" : k.status === "closed" ? "종료" : "계획"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="py-2 px-2 text-xs text-muted-foreground">{k.start_date ?? "—"}</TableCell>
+                <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>{formatWonCompact(k.revenue)}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs tabular-nums">{formatWonFull(k.revenue)}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.students)}명</TableCell>
+                <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.leads)}명</TableCell>
+                <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.applied)}명</TableCell>
+                <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{k.conversion.toFixed(1)}%</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default Index;

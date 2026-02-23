@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, BookOpen, Layers, CheckSquare, Settings, Pin, PinOff } from "lucide-react";
+import { LayoutDashboard, Pin, PinOff } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -15,12 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Instructors", url: "/instructors", icon: Users },
-  { title: "Courses", url: "/courses", icon: BookOpen },
-  { title: "Cohorts", url: "/cohorts", icon: Layers },
-  { title: "Checklists", url: "/checklists", icon: CheckSquare },
-  { title: "Settings", url: "/settings", icon: Settings },
+  { title: "대시보드", url: "/", icon: LayoutDashboard },
 ];
 
 interface Props {
