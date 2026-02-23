@@ -1,19 +1,45 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getFunnelData } from "@/data/mockData";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { FunnelData } from "@/lib/types";
 
 interface Props {
-  cohortId: string;
+  funnel: FunnelData | null;
+  loading?: boolean;
 }
 
-export function FunnelTable({ cohortId }: Props) {
-  const funnel = getFunnelData(cohortId);
+export function FunnelTable({ funnel, loading }: Props) {
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="pb-1 px-4 pt-4"><Skeleton className="h-4 w-20" /></CardHeader>
+        <CardContent className="px-4 pb-4 space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-6 w-full" />
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!funnel || funnel.lead === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-1 px-4 pt-4">
+          <CardTitle className="text-sm font-semibold">전환 퍼널</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <p className="text-xs text-muted-foreground py-6 text-center">퍼널 데이터가 없습니다</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const steps = [
     { label: "리드", count: funnel.lead, pct: 100 },
-    { label: "지원", count: funnel.applied, pct: funnel.lead > 0 ? (funnel.applied / funnel.lead) * 100 : 0 },
-    { label: "결제", count: funnel.paid, pct: funnel.lead > 0 ? (funnel.paid / funnel.lead) * 100 : 0 },
+    { label: "지원", count: funnel.applied, pct: (funnel.applied / funnel.lead) * 100 },
+    { label: "결제", count: funnel.paid, pct: (funnel.paid / funnel.lead) * 100 },
   ];
 
-  // Unified: use primary with decreasing opacity for each step
   const opacities = [1, 0.65, 0.4];
 
   return (
@@ -42,7 +68,6 @@ export function FunnelTable({ cohortId }: Props) {
           ))}
         </div>
 
-        {/* Step conversion rates */}
         <div className="mt-5 border-t pt-4">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">단계별 전환</p>
           <div className="grid grid-cols-2 gap-2.5">

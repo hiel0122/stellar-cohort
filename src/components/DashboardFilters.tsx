@@ -7,35 +7,26 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
-import {
-  instructors,
-  getCoursesForInstructor,
-  getCohortsForInstructorCourse,
-} from "@/data/mockData";
+import type { Instructor, Course, Cohort } from "@/lib/types";
 
 interface Props {
   instructorId: string;
   courseId: string;
   cohortId: string;
+  instructors: Instructor[];
+  courses: Course[];
+  cohorts: Cohort[];
   onInstructorChange: (v: string) => void;
   onCourseChange: (v: string) => void;
   onCohortChange: (v: string) => void;
+  onReset: () => void;
 }
 
 export function DashboardFilters({
-  instructorId,
-  courseId,
-  cohortId,
-  onInstructorChange,
-  onCourseChange,
-  onCohortChange,
+  instructorId, courseId, cohortId,
+  instructors, courses, cohorts,
+  onInstructorChange, onCourseChange, onCohortChange, onReset,
 }: Props) {
-  const availableCourses = instructorId ? getCoursesForInstructor(instructorId) : [];
-  const availableCohorts =
-    instructorId && courseId
-      ? getCohortsForInstructorCourse(instructorId, courseId)
-      : [];
-
   return (
     <div className="sticky top-12 z-20 -mx-4 md:-mx-8 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8 py-3">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2">
@@ -57,7 +48,7 @@ export function DashboardFilters({
             <SelectValue placeholder="강의 선택" />
           </SelectTrigger>
           <SelectContent>
-            {availableCourses.map((c) => (
+            {courses.map((c) => (
               <SelectItem key={c.id} value={c.id} className="text-xs">
                 {c.title}
               </SelectItem>
@@ -70,7 +61,7 @@ export function DashboardFilters({
             <SelectValue placeholder="기수" />
           </SelectTrigger>
           <SelectContent>
-            {availableCohorts.map((c) => (
+            {cohorts.map((c) => (
               <SelectItem key={c.id} value={c.id} className="text-xs">
                 {c.cohort_no}기
               </SelectItem>
@@ -82,9 +73,7 @@ export function DashboardFilters({
           variant="ghost"
           size="sm"
           className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
-          onClick={() => {
-            onInstructorChange("inst-1");
-          }}
+          onClick={onReset}
         >
           <RotateCcw className="h-3 w-3 mr-1" />
           Reset
