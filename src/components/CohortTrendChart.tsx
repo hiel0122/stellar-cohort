@@ -11,10 +11,12 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Cohort, getRevenue, getStudents, getConversionRate } from "@/data/mockData";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { CohortKpi } from "@/lib/types";
 
 interface Props {
-  cohorts: Cohort[];
+  kpis: CohortKpi[];
+  loading?: boolean;
 }
 
 const tooltipStyle: React.CSSProperties = {
@@ -26,17 +28,25 @@ const tooltipStyle: React.CSSProperties = {
   color: 'hsl(var(--popover-foreground))',
 };
 
-export function CohortTrendChart({ cohorts }: Props) {
-  const data = cohorts.map((c) => ({
-    name: `${c.cohort_no}기`,
-    revenue: getRevenue(c.id),
-    students: getStudents(c.id),
-    conversion: parseFloat(getConversionRate(c.id).toFixed(1)),
+const formatKRW = (v: number) => `${(v / 10000).toLocaleString()}만`;
+const axisTickProps = { fill: 'hsl(var(--muted-foreground))', fontSize: 11 };
+
+export function CohortTrendChart({ kpis, loading }: Props) {
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="pb-1 px-4 pt-4"><Skeleton className="h-4 w-24" /></CardHeader>
+        <CardContent className="px-4 pb-4"><Skeleton className="h-56 w-full" /></CardContent>
+      </Card>
+    );
+  }
+
+  const data = kpis.map((k) => ({
+    name: `${k.cohort_no}기`,
+    revenue: k.revenue,
+    students: k.students,
+    conversion: k.leads > 0 ? parseFloat(((k.students / k.leads) * 100).toFixed(1)) : 0,
   }));
-
-  const formatKRW = (v: number) => `${(v / 10000).toLocaleString()}만`;
-
-  const axisTickProps = { fill: 'hsl(var(--muted-foreground))', fontSize: 11 };
 
   return (
     <Card>

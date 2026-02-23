@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { DollarSign, Users, TrendingUp, Layers } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
@@ -6,98 +6,47 @@ import { CohortTrendChart } from "@/components/CohortTrendChart";
 import { FunnelTable } from "@/components/FunnelTable";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { KPIDetailSheet } from "@/components/KPIDetailSheet";
+import { ChecklistWidget } from "@/components/ChecklistWidget";
+import { RecentEnrollmentsTable } from "@/components/RecentEnrollmentsTable";
 import { Badge } from "@/components/ui/badge";
-import {
-  cohorts,
-  getRevenue,
-  getStudents,
-  getLeadCount,
-  getConversionRate,
-  getPreviousCohort,
-  getDeltaPct,
-  getCohortsForInstructorCourse,
-  getCoursesForInstructor,
-} from "@/data/mockData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 type MetricKey = "revenue" | "students" | "leads" | "conversion";
 
 const Index = () => {
-  const [instructorId, setInstructorId] = useState("inst-1");
-  const [courseId, setCourseId] = useState("course-1");
-  const [cohortId, setCohortId] = useState("coh-3");
   const [sheetMetric, setSheetMetric] = useState<MetricKey | null>(null);
 
-  const handleInstructorChange = (v: string) => {
-    setInstructorId(v);
-    const courses = getCoursesForInstructor(v);
-    if (courses.length > 0) {
-      const firstCourse = courses[0].id;
-      setCourseId(firstCourse);
-      const chs = getCohortsForInstructorCourse(v, firstCourse);
-      setCohortId(chs.length > 0 ? chs[chs.length - 1].id : "");
-    } else {
-      setCourseId("");
-      setCohortId("");
-    }
-  };
-
-  const handleCourseChange = (v: string) => {
-    setCourseId(v);
-    const chs = getCohortsForInstructorCourse(instructorId, v);
-    setCohortId(chs.length > 0 ? chs[chs.length - 1].id : "");
-  };
-
-  const currentCohort = cohorts.find((c) => c.id === cohortId);
-  const prevCohort = currentCohort ? getPreviousCohort(currentCohort) : null;
-
-  const trendCohorts = useMemo(() => {
-    if (!instructorId || !courseId) return [];
-    return getCohortsForInstructorCourse(instructorId, courseId);
-  }, [instructorId, courseId]);
-
-  const kpis = useMemo(() => {
-    if (!currentCohort) return null;
-    const revenue = getRevenue(currentCohort.id);
-    const students = getStudents(currentCohort.id);
-    const leadCount = getLeadCount(currentCohort.id);
-    const convRate = getConversionRate(currentCohort.id);
-
-    const prevRevenue = prevCohort ? getRevenue(prevCohort.id) : null;
-    const prevStudents = prevCohort ? getStudents(prevCohort.id) : null;
-    const prevConvRate = prevCohort ? getConversionRate(prevCohort.id) : null;
-    const prevLeads = prevCohort ? getLeadCount(prevCohort.id) : null;
-
-    // Sparkline data: values from all trend cohorts
-    const sparkRevenue = trendCohorts.map((c) => getRevenue(c.id));
-    const sparkStudents = trendCohorts.map((c) => getStudents(c.id));
-    const sparkLeads = trendCohorts.map((c) => getLeadCount(c.id));
-    const sparkConv = trendCohorts.map((c) => getConversionRate(c.id));
-
-    return {
-      revenue, students, leadCount, convRate,
-      deltaRevenue: getDeltaPct(revenue, prevRevenue),
-      deltaStudents: getDeltaPct(students, prevStudents),
-      deltaConvRate: getDeltaPct(convRate, prevConvRate),
-      deltaLeads: getDeltaPct(leadCount, prevLeads),
-      sparkRevenue, sparkStudents, sparkLeads, sparkConv,
-    };
-  }, [currentCohort, prevCohort, trendCohorts]);
+  const {
+    instructorId, courseId, cohortId,
+    handleInstructorChange, handleCourseChange, handleCohortChange, handleReset,
+    instructors, courses, cohorts, kpis,
+    currentKpi, currentCohort,
+    sparklines,
+    funnel, checklist, enrollments,
+    loadState, detailLoadState, error,
+  } = useDashboardData();
 
   const formatKRW = (v: number) => `₩${(v / 10000).toLocaleString()}만`;
-
   const statusLabel = currentCohort?.status === "active" ? "운영중" : currentCohort?.status === "closed" ? "종료" : "계획";
+
+  const isLoading = loadState === "loading";
+  const isDetailLoading = detailLoadState === "loading";
 
   return (
     <Layout>
       <div className="space-y-0">
-        {/* Sticky Filters */}
         <DashboardFilters
           instructorId={instructorId}
           courseId={courseId}
           cohortId={cohortId}
+          instructors={instructors}
+          courses={courses}
+          cohorts={cohorts}
           onInstructorChange={handleInstructorChange}
           onCourseChange={handleCourseChange}
-          onCohortChange={setCohortId}
+          onCohortChange={handleCohortChange}
+          onReset={handleReset}
         />
 
         <div className="space-y-6 pt-6">
@@ -105,9 +54,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold tracking-tight">대시보드</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                강사별 강의 KPI를 확인하세요
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">강사별 강의 KPI를 확인하세요</p>
             </div>
             {currentCohort && (
               <Badge
@@ -119,48 +66,67 @@ const Index = () => {
             )}
           </div>
 
+          {/* Error state */}
+          {error && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
           {/* KPI Cards */}
-          {kpis ? (
+          {isLoading ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-32 rounded-lg" />
+              ))}
+            </div>
+          ) : currentKpi ? (
             <>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <KPICard
                   title="매출"
-                  value={formatKRW(kpis.revenue)}
-                  deltaPct={kpis.deltaRevenue}
+                  value={formatKRW(currentKpi.revenue)}
+                  deltaPct={currentKpi.revenue_delta_pct}
                   icon={<DollarSign className="h-4 w-4" />}
-                  sparklineData={kpis.sparkRevenue}
+                  sparklineData={sparklines.revenue}
                   onClick={() => setSheetMetric("revenue")}
                 />
                 <KPICard
                   title="수강생"
-                  value={`${kpis.students}명`}
-                  deltaPct={kpis.deltaStudents}
+                  value={`${currentKpi.students}명`}
+                  deltaPct={currentKpi.students_delta_pct}
                   icon={<Users className="h-4 w-4" />}
-                  sparklineData={kpis.sparkStudents}
+                  sparklineData={sparklines.students}
                   onClick={() => setSheetMetric("students")}
                 />
                 <KPICard
                   title="리드"
-                  value={`${kpis.leadCount}명`}
-                  deltaPct={kpis.deltaLeads}
+                  value={`${currentKpi.leads}명`}
+                  deltaPct={currentKpi.leads_delta_pct}
                   icon={<Layers className="h-4 w-4" />}
-                  sparklineData={kpis.sparkLeads}
+                  sparklineData={sparklines.leads}
                   onClick={() => setSheetMetric("leads")}
                 />
                 <KPICard
                   title="전환율"
-                  value={`${kpis.convRate.toFixed(1)}%`}
-                  deltaPct={kpis.deltaConvRate}
+                  value={`${currentKpi.leads > 0 ? ((currentKpi.students / currentKpi.leads) * 100).toFixed(1) : "0.0"}%`}
+                  deltaPct={currentKpi.leads_delta_pct}
                   icon={<TrendingUp className="h-4 w-4" />}
-                  sparklineData={kpis.sparkConv}
+                  sparklineData={sparklines.conversion}
                   onClick={() => setSheetMetric("conversion")}
                 />
               </div>
 
-              {/* Charts */}
+              {/* Charts row */}
               <div className="grid gap-3 lg:grid-cols-2">
-                <CohortTrendChart cohorts={trendCohorts} />
-                <FunnelTable cohortId={cohortId} />
+                <CohortTrendChart kpis={kpis} />
+                <FunnelTable funnel={funnel} loading={isDetailLoading} />
+              </div>
+
+              {/* Bottom row: checklist + recent enrollments */}
+              <div className="grid gap-3 lg:grid-cols-2">
+                <ChecklistWidget checklist={checklist} loading={isDetailLoading} />
+                <RecentEnrollmentsTable enrollments={enrollments} loading={isDetailLoading} />
               </div>
             </>
           ) : (
@@ -171,12 +137,11 @@ const Index = () => {
         </div>
       </div>
 
-      {/* KPI Detail Drawer */}
       <KPIDetailSheet
         open={!!sheetMetric}
         onOpenChange={(o) => !o && setSheetMetric(null)}
         metric={sheetMetric}
-        cohorts={trendCohorts}
+        kpis={kpis}
       />
     </Layout>
   );
