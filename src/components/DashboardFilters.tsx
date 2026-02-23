@@ -5,6 +5,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 import {
   instructors,
   getCoursesForInstructor,
@@ -35,45 +37,59 @@ export function DashboardFilters({
       : [];
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <Select value={instructorId} onValueChange={onInstructorChange}>
-        <SelectTrigger className="w-[180px] bg-card">
-          <SelectValue placeholder="강사 선택" />
-        </SelectTrigger>
-        <SelectContent>
-          {instructors.map((inst) => (
-            <SelectItem key={inst.id} value={inst.id}>
-              {inst.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="sticky top-12 z-20 -mx-4 md:-mx-8 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8 py-3">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2">
+        <Select value={instructorId} onValueChange={onInstructorChange}>
+          <SelectTrigger className="h-8 w-[150px] text-xs bg-card border-border">
+            <SelectValue placeholder="강사 선택" />
+          </SelectTrigger>
+          <SelectContent>
+            {instructors.map((inst) => (
+              <SelectItem key={inst.id} value={inst.id} className="text-xs">
+                {inst.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select value={courseId} onValueChange={onCourseChange} disabled={!instructorId}>
-        <SelectTrigger className="w-[220px] bg-card">
-          <SelectValue placeholder="강의 선택" />
-        </SelectTrigger>
-        <SelectContent>
-          {availableCourses.map((c) => (
-            <SelectItem key={c.id} value={c.id}>
-              {c.title}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={courseId} onValueChange={onCourseChange} disabled={!instructorId}>
+          <SelectTrigger className="h-8 w-[200px] text-xs bg-card border-border">
+            <SelectValue placeholder="강의 선택" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableCourses.map((c) => (
+              <SelectItem key={c.id} value={c.id} className="text-xs">
+                {c.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select value={cohortId} onValueChange={onCohortChange} disabled={!courseId}>
-        <SelectTrigger className="w-[140px] bg-card">
-          <SelectValue placeholder="기수 선택" />
-        </SelectTrigger>
-        <SelectContent>
-          {availableCohorts.map((c) => (
-            <SelectItem key={c.id} value={c.id}>
-              {c.cohort_no}기 ({c.status})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={cohortId} onValueChange={onCohortChange} disabled={!courseId}>
+          <SelectTrigger className="h-8 w-[120px] text-xs bg-card border-border">
+            <SelectValue placeholder="기수" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableCohorts.map((c) => (
+              <SelectItem key={c.id} value={c.id} className="text-xs">
+                {c.cohort_no}기
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            onInstructorChange("inst-1");
+          }}
+        >
+          <RotateCcw className="h-3 w-3 mr-1" />
+          Reset
+        </Button>
+      </div>
     </div>
   );
 }
