@@ -13,29 +13,55 @@ export function FunnelTable({ cohortId }: Props) {
     { label: "결제", count: funnel.paid, pct: funnel.lead > 0 ? (funnel.paid / funnel.lead) * 100 : 0 },
   ];
 
+  const colors = [
+    "hsl(var(--primary))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--kpi-positive))",
+  ];
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">전환 퍼널</CardTitle>
+    <Card className="border">
+      <CardHeader className="pb-1 px-4 pt-4">
+        <CardTitle className="text-sm font-semibold">전환 퍼널</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="px-4 pb-4">
+        <div className="space-y-4">
           {steps.map((step, i) => (
             <div key={step.label}>
-              <div className="mb-1 flex items-center justify-between text-sm">
-                <span className="font-medium text-card-foreground">{step.label}</span>
-                <span className="text-muted-foreground">
-                  {step.count}명 ({step.pct.toFixed(1)}%)
-                </span>
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-xs font-medium text-card-foreground">{step.label}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-card-foreground">{step.count}명</span>
+                  <span className="text-[10px] text-muted-foreground">({step.pct.toFixed(1)}%)</span>
+                </div>
               </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${step.pct}%`, opacity: 1 - i * 0.15 }}
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${step.pct}%`, backgroundColor: colors[i] }}
                 />
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Funnel comparison mini table */}
+        <div className="mt-5 border-t pt-4">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">단계별 전환</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-md bg-muted/50 p-2.5">
+              <p className="text-[10px] text-muted-foreground">리드→지원</p>
+              <p className="text-sm font-semibold text-card-foreground">
+                {funnel.lead > 0 ? ((funnel.applied / funnel.lead) * 100).toFixed(1) : 0}%
+              </p>
+            </div>
+            <div className="rounded-md bg-muted/50 p-2.5">
+              <p className="text-[10px] text-muted-foreground">지원→결제</p>
+              <p className="text-sm font-semibold text-card-foreground">
+                {funnel.applied > 0 ? ((funnel.paid / funnel.applied) * 100).toFixed(1) : 0}%
+              </p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
