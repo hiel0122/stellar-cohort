@@ -6,13 +6,14 @@ interface KPICardProps {
   title: string;
   value: string;
   deltaPct: number | null;
+  deltaLabel?: string;
   icon: React.ReactNode;
   sparklineData?: number[];
   secondaryText?: string;
   onClick?: () => void;
 }
 
-export function KPICard({ title, value, deltaPct, icon, sparklineData, secondaryText, onClick }: KPICardProps) {
+export function KPICard({ title, value, deltaPct, deltaLabel = "vs 전기수", icon, sparklineData, secondaryText, onClick }: KPICardProps) {
   const deltaDisplay =
     deltaPct === null
       ? { text: "—", color: "text-kpi-neutral", bg: "bg-kpi-neutral-bg", Icon: Minus }
@@ -39,7 +40,7 @@ export function KPICard({ title, value, deltaPct, icon, sparklineData, secondary
                 <deltaDisplay.Icon className="h-2.5 w-2.5" />
                 {deltaDisplay.text}
               </span>
-              <span className="text-[10px] text-muted-foreground">vs 전기수</span>
+              <span className="text-[10px] text-muted-foreground">{deltaLabel}</span>
             </div>
             <div className="min-h-[16px]">
               {secondaryText ? (

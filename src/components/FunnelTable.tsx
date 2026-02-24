@@ -6,9 +6,16 @@ import { formatInt } from "@/lib/format";
 interface Props {
   funnel: FunnelData | null;
   loading?: boolean;
+  baselineFunnel?: FunnelData | null;
+  baselineCohortNo?: number | null;
 }
 
-export function FunnelTable({ funnel, loading }: Props) {
+function calcDelta(cur: number, base: number): number | null {
+  if (base === 0) return null;
+  return ((cur - base) / base) * 100;
+}
+
+export function FunnelTable({ funnel, loading, baselineFunnel, baselineCohortNo }: Props) {
   if (loading) {
     return (
       <Card>
@@ -42,6 +49,7 @@ export function FunnelTable({ funnel, loading }: Props) {
   ];
 
   const opacities = [1, 0.65, 0.4];
+  const isComparing = !!baselineFunnel && baselineFunnel.lead > 0;
 
   return (
     <Card>
@@ -86,6 +94,40 @@ export function FunnelTable({ funnel, loading }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Compare section */}
+        {isComparing && baselineFunnel && (
+          <div className="mt-4 border-t pt-4">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
+              현재 vs {baselineCohortNo}기 비교
+            </p>
+            <div className="space-y-1.5">
+              {[
+                { label: "리드", cur: funnel.lead, base: baselineFunnel.lead },
+                { label: "지원", cur: funnel.applied, base: baselineFunnel.applied },
+                { label: "결제", cur: funnel.paid, base: baselineFunnel.paid },
+              ].map((row) => {
+                const delta = calcDelta(row.cur, row.base);
+                return (
+                  <div key={row.label} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground w-8">{row.label}</span>
+                    <span className="tabular-nums font-medium">{formatInt(row.cur)}</span>
+                    <span className="text-muted-foreground tabular-nums">{formatInt(row.base)}</span>
+                    <span className={`tabular-nums text-[10px] font-medium ${delta === null ? "text-muted-foreground" : delta >= 0 ? "text-kpi-positive" : "text-kpi-negative"}`}>
+                      {delta === null ? "—" : `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`}
+                    </span>
+                  </div>
+                );
+              })}
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
+                <span></span>
+                <span>현재</span>
+                <span>기준</span>
+                <span>Δ</span>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -8,6 +8,7 @@ import {
   Tooltip,
   LineChart,
   Line,
+  ReferenceDot,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,8 @@ import { formatWonCompact, formatWonFull } from "@/lib/format";
 interface Props {
   kpis: CohortKpi[];
   loading?: boolean;
+  baselineKpi?: CohortKpi | null;
+  isComparing?: boolean;
 }
 
 const tooltipStyle: React.CSSProperties = {
@@ -31,7 +34,7 @@ const tooltipStyle: React.CSSProperties = {
 
 const axisTickProps = { fill: 'hsl(var(--muted-foreground))', fontSize: 11 };
 
-export function CohortTrendChart({ kpis, loading }: Props) {
+export function CohortTrendChart({ kpis, loading, baselineKpi, isComparing }: Props) {
   if (loading) {
     return (
       <Card>
@@ -46,7 +49,15 @@ export function CohortTrendChart({ kpis, loading }: Props) {
     revenue: k.revenue,
     students: k.students,
     conversion: k.conversion,
+    // baseline values for overlay
+    baseRevenue: isComparing && baselineKpi ? baselineKpi.revenue : undefined,
+    baseStudents: isComparing && baselineKpi ? baselineKpi.students : undefined,
+    baseConversion: isComparing && baselineKpi ? baselineKpi.conversion : undefined,
   }));
+
+  const baselineIdx = isComparing && baselineKpi
+    ? data.findIndex((d) => d.name === `${baselineKpi.cohort_no}기`)
+    : -1;
 
   return (
     <Card>
@@ -74,8 +85,24 @@ export function CohortTrendChart({ kpis, loading }: Props) {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={axisTickProps} axisLine={false} tickLine={false} />
                   <YAxis tickFormatter={(v: number) => formatWonCompact(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={52} />
-                  <Tooltip formatter={(value: number) => [formatWonFull(value), "매출"]} contentStyle={tooltipStyle} />
+                  <Tooltip
+                    formatter={(value: number, name: string) => {
+                      if (name === "baseRevenue") return [formatWonFull(value), "기준 매출"];
+                      return [formatWonFull(value), "매출"];
+                    }}
+                    contentStyle={tooltipStyle}
+                  />
                   <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#revenueGrad)" dot={{ fill: 'hsl(var(--primary))', r: 3, strokeWidth: 0 }} />
+                  {isComparing && baselineIdx >= 0 && (
+                    <ReferenceDot
+                      x={data[baselineIdx]?.name}
+                      y={data[baselineIdx]?.revenue}
+                      r={5}
+                      fill="hsl(var(--muted-foreground))"
+                      stroke="hsl(var(--background))"
+                      strokeWidth={2}
+                    />
+                  )}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -96,6 +123,16 @@ export function CohortTrendChart({ kpis, loading }: Props) {
                   <YAxis tick={axisTickProps} axisLine={false} tickLine={false} width={32} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Area type="monotone" dataKey="students" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#studentsGrad)" dot={{ fill: 'hsl(var(--primary))', r: 3, strokeWidth: 0 }} name="수강생" />
+                  {isComparing && baselineIdx >= 0 && (
+                    <ReferenceDot
+                      x={data[baselineIdx]?.name}
+                      y={data[baselineIdx]?.students}
+                      r={5}
+                      fill="hsl(var(--muted-foreground))"
+                      stroke="hsl(var(--background))"
+                      strokeWidth={2}
+                    />
+                  )}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -110,6 +147,16 @@ export function CohortTrendChart({ kpis, loading }: Props) {
                   <YAxis tick={axisTickProps} unit="%" axisLine={false} tickLine={false} width={36} />
                   <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, "전환율"]} contentStyle={tooltipStyle} />
                   <Line type="monotone" dataKey="conversion" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={{ fill: 'hsl(var(--primary))', r: 3, strokeWidth: 0 }} name="전환율" />
+                  {isComparing && baselineIdx >= 0 && (
+                    <ReferenceDot
+                      x={data[baselineIdx]?.name}
+                      y={data[baselineIdx]?.conversion}
+                      r={5}
+                      fill="hsl(var(--muted-foreground))"
+                      stroke="hsl(var(--background))"
+                      strokeWidth={2}
+                    />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>

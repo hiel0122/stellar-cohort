@@ -8,6 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 import type { Instructor, Course, Cohort } from "@/lib/types";
+import type { CompareMode } from "@/hooks/useDashboardData";
+import { CompareToggle } from "./CompareToggle";
 
 interface Props {
   instructorId: string;
@@ -20,12 +22,19 @@ interface Props {
   onCourseChange: (v: string) => void;
   onCohortChange: (v: string) => void;
   onReset: () => void;
+  // Compare
+  compareMode: CompareMode;
+  onCompareModeChange: (mode: CompareMode) => void;
+  baselineCohortId: string;
+  onBaselineChange: (id: string) => void;
+  baselineCohortNo: number | null;
 }
 
 export function DashboardFilters({
   instructorId, courseId, cohortId,
   instructors = [], courses = [], cohorts = [],
   onInstructorChange, onCourseChange, onCohortChange, onReset,
+  compareMode, onCompareModeChange, baselineCohortId, onBaselineChange, baselineCohortNo,
 }: Props) {
   return (
     <div className="sticky top-12 z-20 -mx-4 md:-mx-8 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8 py-3">
@@ -69,10 +78,22 @@ export function DashboardFilters({
           </SelectContent>
         </Select>
 
+        <div className="h-4 w-px bg-border mx-1" />
+
+        <CompareToggle
+          mode={compareMode}
+          onModeChange={onCompareModeChange}
+          baselineCohortId={baselineCohortId}
+          onBaselineChange={onBaselineChange}
+          cohorts={cohorts}
+          currentCohortId={cohortId}
+          baselineCohortNo={baselineCohortNo}
+        />
+
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+          className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground ml-auto"
           onClick={onReset}
         >
           <RotateCcw className="h-3 w-3 mr-1" />
