@@ -87,7 +87,7 @@ const Index = () => {
           ) : currentKpi ? (
             <TooltipProvider delayDuration={300}>
               <>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div>
