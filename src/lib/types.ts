@@ -70,3 +70,9 @@ export interface Enrollment {
   refunded_amount: number;
   paid_at: string | null;
 }
+
+export interface CourseTargets {
+  revenue_target: number | null;
+  students_target: number | null;
+  conversion_target: number | null; // % (students/applied)
+}

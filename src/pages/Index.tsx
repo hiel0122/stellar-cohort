@@ -1,14 +1,18 @@
 import { useState } from "react";
-import { DollarSign, Users, TrendingUp, Layers } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Layers, Target } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
 import { CohortTrendChart } from "@/components/CohortTrendChart";
 import { FunnelTable } from "@/components/FunnelTable";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { KPIDetailSheet } from "@/components/KPIDetailSheet";
+import { TargetSettingSheet } from "@/components/TargetSettingSheet";
+import { TargetProgressSection } from "@/components/TargetProgressSection";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useTargets, calcProgress } from "@/hooks/useTargets";
 import { formatWonCompact, formatWonFull, formatInt } from "@/lib/format";
 import {
   Tooltip,
@@ -31,6 +35,7 @@ function calcDelta(cur: number, base: number | null | undefined): number | null 
 
 const Index = () => {
   const [sheetMetric, setSheetMetric] = useState<MetricKey | null>(null);
+  const [targetSheetOpen, setTargetSheetOpen] = useState(false);
 
   const {
     instructorId, courseId, cohortId,
@@ -45,9 +50,10 @@ const Index = () => {
     loadState, detailLoadState, error,
   } = useDashboardData();
 
+  const { targets, setTargets, clearTargets } = useTargets(instructorId, courseId);
+
   const isComparing = compareMode !== "off" && !!baselineKpi;
 
-  // Delta: use baseline when comparing, else use built-in prev delta
   const getDelta = (metric: "revenue" | "students" | "leads" | "conversion") => {
     if (!currentKpi) return null;
     if (isComparing && baselineKpi) {
@@ -60,8 +66,12 @@ const Index = () => {
   const statusLabel = currentCohort?.status === "active" ? "운영중" : currentCohort?.status === "closed" ? "종료" : "계획";
   const isLoading = loadState === "loading";
   const isDetailLoading = detailLoadState === "loading";
-
   const deltaLabel = isComparing ? `vs ${baselineCohort?.cohort_no}기` : "vs 전기수";
+
+  // Progress for KPI cards
+  const revenueProgress = currentKpi ? calcProgress(currentKpi.revenue, targets?.revenue_target ?? null) : null;
+  const studentsProgress = currentKpi ? calcProgress(currentKpi.students, targets?.students_target ?? null) : null;
+  const conversionProgress = currentKpi ? calcProgress(currentKpi.conversion, targets?.conversion_target ?? null) : null;
 
   return (
     <Layout>
@@ -91,14 +101,25 @@ const Index = () => {
               <h2 className="text-lg font-semibold tracking-tight">대시보드</h2>
               <p className="text-xs text-muted-foreground mt-0.5">강사별 강의 KPI를 확인하세요</p>
             </div>
-            {currentCohort && (
-              <Badge
-                variant={currentCohort.status === "active" ? "default" : currentCohort.status === "closed" ? "secondary" : "outline"}
-                className="text-[10px] h-5"
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setTargetSheetOpen(true)}
               >
-                {statusLabel}
-              </Badge>
-            )}
+                <Target className="h-3 w-3" />
+                {targets ? "목표 수정" : "목표 설정"}
+              </Button>
+              {currentCohort && (
+                <Badge
+                  variant={currentCohort.status === "active" ? "default" : currentCohort.status === "closed" ? "secondary" : "outline"}
+                  className="text-[10px] h-5"
+                >
+                  {statusLabel}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {error && (
@@ -128,6 +149,7 @@ const Index = () => {
                           deltaLabel={deltaLabel}
                           icon={<DollarSign className="h-4 w-4" />}
                           sparklineData={sparklines.revenue}
+                          progress={revenueProgress}
                           onClick={() => setSheetMetric("revenue")}
                         />
                       </div>
@@ -146,6 +168,7 @@ const Index = () => {
                     deltaLabel={deltaLabel}
                     icon={<Users className="h-4 w-4" />}
                     sparklineData={sparklines.students}
+                    progress={studentsProgress}
                     onClick={() => setSheetMetric("students")}
                   />
                   <KPICard
@@ -165,6 +188,7 @@ const Index = () => {
                     secondaryText={`리드 기준 ${currentKpi.conversion_secondary.toFixed(1)}%`}
                     icon={<TrendingUp className="h-4 w-4" />}
                     sparklineData={sparklines.conversion}
+                    progress={conversionProgress}
                     onClick={() => setSheetMetric("conversion")}
                   />
                 </div>
@@ -174,6 +198,17 @@ const Index = () => {
                   <CohortTrendChart kpis={kpis} baselineKpi={baselineKpi} isComparing={isComparing} />
                   <FunnelTable funnel={funnel} loading={isDetailLoading} baselineFunnel={isComparing ? baselineFunnel : null} baselineCohortNo={baselineCohort?.cohort_no ?? null} />
                 </div>
+
+                {/* Target Progress */}
+                {currentKpi && (
+                  <TargetProgressSection
+                    targets={targets}
+                    revenue={currentKpi.revenue}
+                    students={currentKpi.students}
+                    conversion={currentKpi.conversion}
+                    onOpenSettings={() => setTargetSheetOpen(true)}
+                  />
+                )}
 
                 {/* Cohorts Overview table */}
                 <CohortsOverview kpis={kpis} currentCohortId={cohortId} baselineCohortId={baselineCohortId} isComparing={isComparing} />
@@ -192,6 +227,14 @@ const Index = () => {
         onOpenChange={(o) => !o && setSheetMetric(null)}
         metric={sheetMetric}
         kpis={kpis}
+      />
+
+      <TargetSettingSheet
+        open={targetSheetOpen}
+        onOpenChange={setTargetSheetOpen}
+        targets={targets}
+        onSave={setTargets}
+        onClear={clearTargets}
       />
     </Layout>
   );
