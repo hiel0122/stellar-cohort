@@ -10,12 +10,17 @@ import { mockProvider } from "@/lib/providers/mockProvider";
 const provider: DataProvider = mockProvider;
 
 export type LoadState = "idle" | "loading" | "error" | "success";
+export type CompareMode = "off" | "prev" | "select";
 
 export function useDashboardData() {
   // Filter state
   const [instructorId, setInstructorId] = useState("");
   const [courseId, setCourseId] = useState("");
   const [cohortId, setCohortId] = useState("");
+
+  // Compare mode
+  const [compareMode, setCompareMode] = useState<CompareMode>("off");
+  const [baselineCohortId, setBaselineCohortId] = useState<string>("");
 
   // Data
   const [instructors, setInstructors] = useState<Instructor[]>([]);
@@ -118,6 +123,38 @@ export function useDashboardData() {
     [cohorts, cohortId]
   );
 
+  // ── Compare mode: resolve baseline ──
+  const resolvedBaselineId = useMemo(() => {
+    if (compareMode === "off") return "";
+    if (compareMode === "select") return baselineCohortId;
+    // "prev" → find cohort with the next-lower cohort_no
+    if (!currentCohort) return "";
+    const sorted = [...cohorts]
+      .filter((c) => c.cohort_no < currentCohort.cohort_no)
+      .sort((a, b) => b.cohort_no - a.cohort_no);
+    return sorted[0]?.id ?? "";
+  }, [compareMode, baselineCohortId, currentCohort, cohorts]);
+
+  const baselineKpi = useMemo(
+    () => (resolvedBaselineId ? kpis.find((k) => k.cohort_id === resolvedBaselineId) ?? null : null),
+    [kpis, resolvedBaselineId]
+  );
+
+  const baselineCohort = useMemo(
+    () => (resolvedBaselineId ? cohorts.find((c) => c.id === resolvedBaselineId) ?? null : null),
+    [cohorts, resolvedBaselineId]
+  );
+
+  // Baseline funnel
+  const [baselineFunnel, setBaselineFunnel] = useState<FunnelData | null>(null);
+  useEffect(() => {
+    if (!resolvedBaselineId || compareMode === "off") {
+      setBaselineFunnel(null);
+      return;
+    }
+    provider.getFunnel(resolvedBaselineId).then(setBaselineFunnel);
+  }, [resolvedBaselineId, compareMode]);
+
   // Sparkline arrays
   const sparklines = useMemo(() => ({
     revenue: kpis.map((k) => k.revenue),
@@ -143,7 +180,18 @@ export function useDashboardData() {
     if (instructors.length > 0) {
       setInstructorId(instructors[0].id);
     }
+    setCompareMode("off");
+    setBaselineCohortId("");
   }, [instructors]);
+
+  const handleCompareModeChange = useCallback((mode: CompareMode) => {
+    setCompareMode(mode);
+    if (mode !== "select") setBaselineCohortId("");
+  }, []);
+
+  const handleBaselineChange = useCallback((id: string) => {
+    setBaselineCohortId(id);
+  }, []);
 
   return {
     // Filter state
@@ -154,6 +202,10 @@ export function useDashboardData() {
     // Current
     currentKpi, currentCohort,
     sparklines,
+    // Compare
+    compareMode, handleCompareModeChange,
+    baselineCohortId: resolvedBaselineId, handleBaselineChange,
+    baselineKpi, baselineCohort, baselineFunnel,
     // Detail
     funnel, checklist, enrollments,
     // State

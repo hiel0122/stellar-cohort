@@ -16,8 +16,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import type { CohortKpi } from "@/lib/types";
 
 type MetricKey = "revenue" | "students" | "leads" | "conversion";
+
+function calcDelta(cur: number, base: number | null | undefined): number | null {
+  if (base == null || base === 0) return null;
+  return ((cur - base) / base) * 100;
+}
 
 const Index = () => {
   const [sheetMetric, setSheetMetric] = useState<MetricKey | null>(null);
@@ -29,13 +39,29 @@ const Index = () => {
     currentKpi, currentCohort,
     sparklines,
     funnel,
+    compareMode, handleCompareModeChange,
+    baselineCohortId, handleBaselineChange,
+    baselineKpi, baselineCohort, baselineFunnel,
     loadState, detailLoadState, error,
   } = useDashboardData();
 
-  const statusLabel = currentCohort?.status === "active" ? "운영중" : currentCohort?.status === "closed" ? "종료" : "계획";
+  const isComparing = compareMode !== "off" && !!baselineKpi;
 
+  // Delta: use baseline when comparing, else use built-in prev delta
+  const getDelta = (metric: "revenue" | "students" | "leads" | "conversion") => {
+    if (!currentKpi) return null;
+    if (isComparing && baselineKpi) {
+      if (metric === "conversion") return calcDelta(currentKpi.conversion, baselineKpi.conversion);
+      return calcDelta(currentKpi[metric], baselineKpi[metric]);
+    }
+    return currentKpi[`${metric}_delta_pct` as keyof CohortKpi] as number | null;
+  };
+
+  const statusLabel = currentCohort?.status === "active" ? "운영중" : currentCohort?.status === "closed" ? "종료" : "계획";
   const isLoading = loadState === "loading";
   const isDetailLoading = detailLoadState === "loading";
+
+  const deltaLabel = isComparing ? `vs ${baselineCohort?.cohort_no}기` : "vs 전기수";
 
   return (
     <Layout>
@@ -51,6 +77,11 @@ const Index = () => {
           onCourseChange={handleCourseChange}
           onCohortChange={handleCohortChange}
           onReset={handleReset}
+          compareMode={compareMode}
+          onCompareModeChange={handleCompareModeChange}
+          baselineCohortId={baselineCohortId}
+          onBaselineChange={handleBaselineChange}
+          baselineCohortNo={baselineCohort?.cohort_no ?? null}
         />
 
         <div className="space-y-6 pt-6">
@@ -70,7 +101,6 @@ const Index = () => {
             )}
           </div>
 
-          {/* Error state */}
           {error && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
               {error}
@@ -94,7 +124,8 @@ const Index = () => {
                         <KPICard
                           title="매출"
                           value={formatWonCompact(currentKpi.revenue)}
-                          deltaPct={currentKpi.revenue_delta_pct}
+                          deltaPct={getDelta("revenue")}
+                          deltaLabel={deltaLabel}
                           icon={<DollarSign className="h-4 w-4" />}
                           sparklineData={sparklines.revenue}
                           onClick={() => setSheetMetric("revenue")}
@@ -103,12 +134,16 @@ const Index = () => {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-xs tabular-nums">{formatWonFull(currentKpi.revenue)}</p>
+                      {isComparing && baselineKpi && (
+                        <p className="text-[10px] text-muted-foreground">기준({baselineCohort?.cohort_no}기): {formatWonFull(baselineKpi.revenue)}</p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                   <KPICard
                     title="수강생"
                     value={`${formatInt(currentKpi.students)}명`}
-                    deltaPct={currentKpi.students_delta_pct}
+                    deltaPct={getDelta("students")}
+                    deltaLabel={deltaLabel}
                     icon={<Users className="h-4 w-4" />}
                     sparklineData={sparklines.students}
                     onClick={() => setSheetMetric("students")}
@@ -116,7 +151,8 @@ const Index = () => {
                   <KPICard
                     title="리드"
                     value={`${formatInt(currentKpi.leads)}명`}
-                    deltaPct={currentKpi.leads_delta_pct}
+                    deltaPct={getDelta("leads")}
+                    deltaLabel={deltaLabel}
                     icon={<Layers className="h-4 w-4" />}
                     sparklineData={sparklines.leads}
                     onClick={() => setSheetMetric("leads")}
@@ -124,7 +160,8 @@ const Index = () => {
                   <KPICard
                     title="전환율"
                     value={`${currentKpi.conversion.toFixed(1)}%`}
-                    deltaPct={currentKpi.conversion_delta_pct}
+                    deltaPct={getDelta("conversion")}
+                    deltaLabel={deltaLabel}
                     secondaryText={`리드 기준 ${currentKpi.conversion_secondary.toFixed(1)}%`}
                     icon={<TrendingUp className="h-4 w-4" />}
                     sparklineData={sparklines.conversion}
@@ -134,12 +171,12 @@ const Index = () => {
 
                 {/* Charts row */}
                 <div className="grid gap-3 lg:grid-cols-2">
-                  <CohortTrendChart kpis={kpis} />
-                  <FunnelTable funnel={funnel} loading={isDetailLoading} />
+                  <CohortTrendChart kpis={kpis} baselineKpi={baselineKpi} isComparing={isComparing} />
+                  <FunnelTable funnel={funnel} loading={isDetailLoading} baselineFunnel={isComparing ? baselineFunnel : null} baselineCohortNo={baselineCohort?.cohort_no ?? null} />
                 </div>
 
                 {/* Cohorts Overview table */}
-                <CohortsOverview kpis={kpis} />
+                <CohortsOverview kpis={kpis} currentCohortId={cohortId} baselineCohortId={baselineCohortId} isComparing={isComparing} />
               </>
             </TooltipProvider>
           ) : (
@@ -161,13 +198,7 @@ const Index = () => {
 };
 
 // ── Cohorts Overview Table ──
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import type { CohortKpi } from "@/lib/types";
-
-function CohortsOverview({ kpis }: { kpis: CohortKpi[] }) {
+function CohortsOverview({ kpis, currentCohortId, baselineCohortId, isComparing }: { kpis: CohortKpi[]; currentCohortId: string; baselineCohortId: string; isComparing: boolean }) {
   if (!kpis || kpis.length === 0) return null;
 
   return (
@@ -190,34 +221,45 @@ function CohortsOverview({ kpis }: { kpis: CohortKpi[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {kpis.map((k) => (
-              <TableRow key={k.cohort_id} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
-                <TableCell className="py-2 px-2 text-xs font-medium">{k.cohort_no}기</TableCell>
-                <TableCell className="py-2 px-2 text-xs">
-                  <Badge
-                    variant={k.status === "active" ? "default" : k.status === "closed" ? "secondary" : "outline"}
-                    className="text-[9px] h-4 px-1.5"
-                  >
-                    {k.status === "active" ? "운영중" : k.status === "closed" ? "종료" : "계획"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="py-2 px-2 text-xs text-muted-foreground">{k.start_date ?? "—"}</TableCell>
-                <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>{formatWonCompact(k.revenue)}</span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs tabular-nums">{formatWonFull(k.revenue)}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TableCell>
-                <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.students)}명</TableCell>
-                <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.leads)}명</TableCell>
-                <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.applied)}명</TableCell>
-                <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{k.conversion.toFixed(1)}%</TableCell>
-              </TableRow>
-            ))}
+            {kpis.map((k) => {
+              const isCurrent = k.cohort_id === currentCohortId;
+              const isBaseline = isComparing && k.cohort_id === baselineCohortId;
+              return (
+                <TableRow
+                  key={k.cohort_id}
+                  className={`border-b border-border/30 hover:bg-muted/30 transition-colors ${isCurrent ? "bg-primary/5" : ""} ${isBaseline ? "bg-accent/30" : ""}`}
+                >
+                  <TableCell className="py-2 px-2 text-xs font-medium">
+                    {k.cohort_no}기
+                    {isCurrent && <span className="ml-1 text-[9px] text-primary">(현재)</span>}
+                    {isBaseline && <span className="ml-1 text-[9px] text-muted-foreground">(기준)</span>}
+                  </TableCell>
+                  <TableCell className="py-2 px-2 text-xs">
+                    <Badge
+                      variant={k.status === "active" ? "default" : k.status === "closed" ? "secondary" : "outline"}
+                      className="text-[9px] h-4 px-1.5"
+                    >
+                      {k.status === "active" ? "운영중" : k.status === "closed" ? "종료" : "계획"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-2 px-2 text-xs text-muted-foreground">{k.start_date ?? "—"}</TableCell>
+                  <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>{formatWonCompact(k.revenue)}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs tabular-nums">{formatWonFull(k.revenue)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.students)}명</TableCell>
+                  <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.leads)}명</TableCell>
+                  <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.applied)}명</TableCell>
+                  <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{k.conversion.toFixed(1)}%</TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
