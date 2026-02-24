@@ -10,10 +10,11 @@ interface KPICardProps {
   icon: React.ReactNode;
   sparklineData?: number[];
   secondaryText?: string;
+  progress?: number | null; // 0~1
   onClick?: () => void;
 }
 
-export function KPICard({ title, value, deltaPct, deltaLabel = "vs 전기수", icon, sparklineData, secondaryText, onClick }: KPICardProps) {
+export function KPICard({ title, value, deltaPct, deltaLabel = "vs 전기수", icon, sparklineData, secondaryText, progress, onClick }: KPICardProps) {
   const deltaDisplay =
     deltaPct === null
       ? { text: "—", color: "text-kpi-neutral", bg: "bg-kpi-neutral-bg", Icon: Minus }
@@ -52,8 +53,24 @@ export function KPICard({ title, value, deltaPct, deltaLabel = "vs 전기수", i
             {icon}
           </div>
         </div>
+        {/* Progress bar (target) */}
+        <div className="min-h-[10px]">
+          {progress != null ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary/60 transition-all duration-500 ease-out"
+                  style={{ width: `${Math.min(progress * 100, 100)}%` }}
+                />
+              </div>
+              <span className="text-[9px] tabular-nums text-muted-foreground whitespace-nowrap">
+                {(progress * 100).toFixed(0)}%
+              </span>
+            </div>
+          ) : null}
+        </div>
         {/* Sparkline – fixed height always rendered */}
-        <div className="mt-3 h-10 w-full opacity-60 group-hover:opacity-80 transition-opacity duration-150">
+        <div className="mt-1.5 h-10 w-full opacity-60 group-hover:opacity-80 transition-opacity duration-150">
           {sparkData.length > 1 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={sparkData} margin={{ top: 1, right: 0, left: 0, bottom: 1 }}>
