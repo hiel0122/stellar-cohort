@@ -3,6 +3,7 @@ import type {
   Instructor, Course, Cohort, CohortKpi,
   FunnelData, ChecklistSummary, ChecklistItem, Enrollment,
 } from "../types";
+import { getOverride } from "../cohortOverrides";
 
 // ── Raw CSV data as constants ──
 interface RawRow {
@@ -35,23 +36,29 @@ function courseId(title: string): string {
   return `course-${title}`;
 }
 
-function cohortId(row: RawRow): string {
+function cohortIdFromRow(row: RawRow): string {
   return `coh-${row.instructor_name}-${row.course_title}-${row.cohort_no}`;
 }
 
-// ── Build cohorts ──
-const allCohorts: Cohort[] = rawData.map((r) => ({
-  id: cohortId(r),
-  course_id: courseId(r.course_title),
-  instructor_id: `inst-${r.instructor_name}`,
-  cohort_no: r.cohort_no,
-  start_date: r.start_date,
-  status: r.status,
-  revenue: r.revenue,
-  students: r.students,
-  leads: r.leads,
-  applied: r.applied,
-}));
+// ── Build cohorts (with overrides applied) ──
+function buildAllCohorts(): Cohort[] {
+  return rawData.map((r) => {
+    const id = cohortIdFromRow(r);
+    const ovr = getOverride(id);
+    return {
+      id,
+      course_id: courseId(r.course_title),
+      instructor_id: `inst-${r.instructor_name}`,
+      cohort_no: r.cohort_no,
+      start_date: ovr?.start_date ?? r.start_date,
+      status: ovr?.status ?? r.status,
+      revenue: ovr?.revenue ?? r.revenue,
+      students: ovr?.students ?? r.students,
+      leads: ovr?.leads ?? r.leads,
+      applied: ovr?.applied ?? r.applied,
+    };
+  });
+}
 
 // ── Delta helper ──
 function deltaPct(cur: number, prev: number | null): number | null {
@@ -61,6 +68,7 @@ function deltaPct(cur: number, prev: number | null): number | null {
 
 // ── Build KPIs ──
 function buildKpis(instructorId: string, cId: string): CohortKpi[] {
+  const allCohorts = buildAllCohorts();
   const filtered = allCohorts
     .filter((c) => c.instructor_id === instructorId && c.course_id === cId)
     .sort((a, b) => a.cohort_no - b.cohort_no);
@@ -109,6 +117,7 @@ const checklistLabels = [
 ];
 
 function buildChecklist(cId: string): ChecklistSummary {
+  const allCohorts = buildAllCohorts();
   const cohort = allCohorts.find((c) => c.id === cId);
   if (!cohort) return { total: 0, done: 0, items: [] };
 
@@ -117,7 +126,6 @@ function buildChecklist(cId: string): ChecklistSummary {
   if (cohort.status === "closed") {
     done = 40;
   } else {
-    // deterministic based on cohort_no
     done = Math.min(total, 18 + ((cohort.cohort_no * 7) % 13));
   }
 
@@ -138,6 +146,7 @@ const maskedNames = [
 ];
 
 function buildEnrollments(cId: string): Enrollment[] {
+  const allCohorts = buildAllCohorts();
   const cohort = allCohorts.find((c) => c.id === cId);
   if (!cohort || cohort.students === 0) return [];
 
@@ -181,7 +190,7 @@ export const mockProvider: DataProvider = {
 
   async listCohorts(instructorId: string, cId: string) {
     await delay();
-    return allCohorts
+    return buildAllCohorts()
       .filter((c) => c.instructor_id === instructorId && c.course_id === cId)
       .sort((a, b) => a.cohort_no - b.cohort_no);
   },
@@ -193,6 +202,7 @@ export const mockProvider: DataProvider = {
 
   async getFunnel(cohortId: string) {
     await delay();
+    const allCohorts = buildAllCohorts();
     const cohort = allCohorts.find((c) => c.id === cohortId);
     if (!cohort) return { lead: 0, applied: 0, paid: 0 };
     return { lead: cohort.leads, applied: cohort.applied, paid: cohort.students };
