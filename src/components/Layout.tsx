@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Menu, Search, Bell, User } from "lucide-react";
+import { Menu, Search, Bell, User, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { RawDataInputDrawer } from "@/components/RawDataInputDrawer";
 
 interface Props {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface Props {
 
 export function Layout({ children }: Props) {
   const [pinned, setPinned] = useState(true);
+  const [rawDataOpen, setRawDataOpen] = useState(false);
 
   return (
     <SidebarProvider defaultOpen={pinned}>
@@ -25,7 +27,16 @@ export function Layout({ children }: Props) {
               </SidebarTrigger>
               <h1 className="text-sm font-semibold text-foreground hidden sm:block">KPI Dashboard</h1>
             </div>
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5 mr-1"
+                onClick={() => setRawDataOpen(true)}
+              >
+                <Database className="h-3 w-3" />
+                원데이터 입력
+              </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                 <Search className="h-4 w-4" />
               </Button>
@@ -45,6 +56,11 @@ export function Layout({ children }: Props) {
           </main>
         </div>
       </div>
+
+      <RawDataInputDrawer
+        open={rawDataOpen}
+        onOpenChange={setRawDataOpen}
+      />
     </SidebarProvider>
   );
 }

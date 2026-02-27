@@ -5,7 +5,7 @@ import type {
   FunnelData, ChecklistSummary, Enrollment,
 } from "@/lib/types";
 import { mockProvider } from "@/lib/providers/mockProvider";
-import { useCohortOverrides } from "@/hooks/useCohortOverrides";
+import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 
 // Switch this single line to swap providers
 const provider: DataProvider = mockProvider;
@@ -14,11 +14,11 @@ export type LoadState = "idle" | "loading" | "error" | "success";
 export type CompareMode = "off" | "prev" | "select";
 
 export function useDashboardData() {
-  // Override reactivity – value changes when overrides are committed
-  const overrides = useCohortOverrides();
-  const overridesKey = JSON.stringify(overrides);
+  // Raw store reactivity – triggers re-fetch when raw data changes
+  const rawCohorts = useRawCohortStore();
+  const rawKey = rawCohorts.length + rawCohorts.reduce((s, c) => s + c.revenue + c.students + c.leads + c.applied + c.cohort_no, 0);
 
-  // Refresh counter – bumped after Quick Edit save
+  // Refresh counter – bumped manually if needed
   const [refreshKey, setRefreshKey] = useState(0);
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -52,23 +52,29 @@ export function useDashboardData() {
       .listInstructors()
       .then((list) => {
         setInstructors(list);
-        if (list.length > 0) setInstructorId(list[0].id);
+        setInstructorId((prev) => {
+          if (prev && list.some((i) => i.id === prev)) return prev;
+          return list.length > 0 ? list[0].id : "";
+        });
         setLoadState("success");
       })
       .catch((e) => {
         setError(e.message);
         setLoadState("error");
       });
-  }, []);
+  }, [rawKey, refreshKey]);
 
   // When instructor changes → load courses
   useEffect(() => {
     if (!instructorId) return;
     provider.listCourses(instructorId).then((list) => {
       setCourses(list);
-      setCourseId(list.length > 0 ? list[0].id : "");
+      setCourseId((prev) => {
+        if (prev && list.some((c) => c.id === prev)) return prev;
+        return list.length > 0 ? list[0].id : "";
+      });
     });
-  }, [instructorId]);
+  }, [instructorId, rawKey, refreshKey]);
 
   // When course changes → load cohorts + KPIs
   useEffect(() => {
@@ -81,7 +87,6 @@ export function useDashboardData() {
       .then(([cohortList, kpiList]) => {
         setCohorts(cohortList);
         setKpis(kpiList);
-        // default to latest cohort only if current selection is invalid
         setCohortId((prev) => {
           if (prev && cohortList.some((c) => c.id === prev)) return prev;
           return cohortList.length > 0 ? cohortList[cohortList.length - 1].id : "";
@@ -92,7 +97,7 @@ export function useDashboardData() {
         setError(e.message);
         setLoadState("error");
       });
-  }, [instructorId, courseId, overridesKey, refreshKey]);
+  }, [instructorId, courseId, rawKey, refreshKey]);
 
   // When cohort changes → load funnel + checklist + enrollments
   useEffect(() => {
@@ -118,9 +123,9 @@ export function useDashboardData() {
         setError(e.message);
         setDetailLoadState("error");
       });
-  }, [cohortId, overridesKey, refreshKey]);
+  }, [cohortId, rawKey, refreshKey]);
 
-  // Current KPI (latest cohort selected)
+  // Current KPI
   const currentKpi = useMemo(
     () => kpis.find((k) => k.cohort_id === cohortId) ?? null,
     [kpis, cohortId]
@@ -135,7 +140,6 @@ export function useDashboardData() {
   const resolvedBaselineId = useMemo(() => {
     if (compareMode === "off") return "";
     if (compareMode === "select") return baselineCohortId;
-    // "prev" → find cohort with the next-lower cohort_no
     if (!currentCohort) return "";
     const sorted = [...cohorts]
       .filter((c) => c.cohort_no < currentCohort.cohort_no)
@@ -202,23 +206,16 @@ export function useDashboardData() {
   }, []);
 
   return {
-    // Filter state
     instructorId, courseId, cohortId,
     handleInstructorChange, handleCourseChange, handleCohortChange, handleReset,
-    // Lists
     instructors, courses, cohorts, kpis,
-    // Current
     currentKpi, currentCohort,
     sparklines,
-    // Compare
     compareMode, handleCompareModeChange,
     baselineCohortId: resolvedBaselineId, handleBaselineChange,
     baselineKpi, baselineCohort, baselineFunnel,
-    // Detail
     funnel, checklist, enrollments,
-    // State
     loadState, detailLoadState, error,
-    // Quick Edit
     triggerRefresh,
   };
 }
