@@ -17,9 +17,10 @@ interface Props {
   children: React.ReactNode;
   defaultInstructor?: string;
   defaultCourse?: string;
+  defaultCohortNo?: number | null;
 }
 
-export function Layout({ children, defaultInstructor, defaultCourse }: Props) {
+export function Layout({ children, defaultInstructor, defaultCourse, defaultCohortNo }: Props) {
   const [pinned, setPinned] = useState(true);
   const [rawDataOpen, setRawDataOpen] = useState(false);
   const [rawDataTab, setRawDataTab] = useState<RawDataTabType>("cohorts");
@@ -61,6 +62,7 @@ export function Layout({ children, defaultInstructor, defaultCourse }: Props) {
           onOpenChange={setRawDataOpen}
           defaultInstructor={defaultInstructor}
           defaultCourse={defaultCourse}
+          defaultCohortNo={defaultCohortNo ?? undefined}
           defaultTab={rawDataTab}
         />
       </SidebarProvider>
