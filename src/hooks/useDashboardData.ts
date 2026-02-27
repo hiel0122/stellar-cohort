@@ -5,6 +5,7 @@ import type {
   FunnelData, ChecklistSummary, Enrollment,
 } from "@/lib/types";
 import { mockProvider } from "@/lib/providers/mockProvider";
+import { useCohortOverrides } from "@/hooks/useCohortOverrides";
 
 // Switch this single line to swap providers
 const provider: DataProvider = mockProvider;
@@ -13,6 +14,14 @@ export type LoadState = "idle" | "loading" | "error" | "success";
 export type CompareMode = "off" | "prev" | "select";
 
 export function useDashboardData() {
+  // Override reactivity – value changes when overrides are committed
+  const overrides = useCohortOverrides();
+  const overridesKey = JSON.stringify(overrides);
+
+  // Refresh counter – bumped after Quick Edit save
+  const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
   // Filter state
   const [instructorId, setInstructorId] = useState("");
   const [courseId, setCourseId] = useState("");
@@ -72,19 +81,18 @@ export function useDashboardData() {
       .then(([cohortList, kpiList]) => {
         setCohorts(cohortList);
         setKpis(kpiList);
-        // default to latest cohort
-        if (cohortList.length > 0) {
-          setCohortId(cohortList[cohortList.length - 1].id);
-        } else {
-          setCohortId("");
-        }
+        // default to latest cohort only if current selection is invalid
+        setCohortId((prev) => {
+          if (prev && cohortList.some((c) => c.id === prev)) return prev;
+          return cohortList.length > 0 ? cohortList[cohortList.length - 1].id : "";
+        });
         setLoadState("success");
       })
       .catch((e) => {
         setError(e.message);
         setLoadState("error");
       });
-  }, [instructorId, courseId]);
+  }, [instructorId, courseId, overridesKey, refreshKey]);
 
   // When cohort changes → load funnel + checklist + enrollments
   useEffect(() => {
@@ -110,7 +118,7 @@ export function useDashboardData() {
         setError(e.message);
         setDetailLoadState("error");
       });
-  }, [cohortId]);
+  }, [cohortId, overridesKey, refreshKey]);
 
   // Current KPI (latest cohort selected)
   const currentKpi = useMemo(
@@ -210,5 +218,7 @@ export function useDashboardData() {
     funnel, checklist, enrollments,
     // State
     loadState, detailLoadState, error,
+    // Quick Edit
+    triggerRefresh,
   };
 }
