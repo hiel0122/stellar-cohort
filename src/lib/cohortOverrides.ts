@@ -37,7 +37,7 @@ export function getOverride(cohortId: string): CohortOverride | undefined {
 }
 
 export function getAllOverrides(): OverridesMap {
-  return { ...load() };
+  return load();
 }
 
 export function saveOverride(cohortId: string, override: CohortOverride) {
