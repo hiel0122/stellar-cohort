@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, type RefObject } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -13,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Plus, Copy, Trash2, Check, Search } from "lucide-react";
+import { AlertTriangle, Plus, Copy, Trash2, Check, Search, Lock, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import {
   type RawCohort, loadRawCohorts, upsertRawCohort, deleteRawCohort, makeId, getNextCohortNo,
@@ -31,6 +31,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   defaultInstructor?: string;
   defaultCourse?: string;
+  defaultCohortNo?: number;
   defaultTab?: "cohorts" | "costs";
 }
 
@@ -43,7 +44,7 @@ function fmtInput(v: number): string {
 
 type StatusFilter = "all" | "active" | "closed" | "planned";
 
-export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defaultCourse, defaultTab }: Props) {
+export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defaultCourse, defaultCohortNo, defaultTab }: Props) {
   const [activeTab, setActiveTab] = useState<"cohorts" | "costs">(defaultTab ?? "cohorts");
 
   useEffect(() => {
@@ -69,7 +70,7 @@ export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defa
         {activeTab === "cohorts" ? (
           <CohortTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} />
         ) : (
-          <CostTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} />
+          <CostTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} defaultCohortNo={defaultCohortNo} />
         )}
       </SheetContent>
     </Sheet>
@@ -306,35 +307,59 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
 }
 
 // ═══════════════════════ Cost Tab (레벨1 비용) ═══════════════════════
-function CostTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: string; defaultCourse?: string }) {
+function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaultInstructor?: string; defaultCourse?: string; defaultCohortNo?: number }) {
   const rawCohorts = useRawCohortStore();
   const platformCosts = usePlatformCosts();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved">("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [form, setForm] = useState<PlatformCost | null>(null);
+  const newRowRef = useRef<string | null>(null);
+
+  // Locked filter state
+  const [lockedFilter, setLockedFilter] = useState<{
+    instructor: string; course: string; cohortNo: number;
+  } | null>(null);
 
   // Resolve default instructor/course names
   const defaultInstName = rawCohorts.find((c) => `inst-${c.instructor_name}` === defaultInstructor)?.instructor_name;
   const defaultCourseName = rawCohorts.find((c) => `course-${c.course_title}` === defaultCourse)?.course_title;
 
-  // Filter costs by current dashboard context
+  // Active filter: locked filter takes priority over defaults
+  const activeInstName = lockedFilter?.instructor ?? defaultInstName;
+  const activeCourseName = lockedFilter?.course ?? defaultCourseName;
+  const activeCohortNo = lockedFilter?.cohortNo ?? null;
+
+  // Filter costs
   const filteredCosts = useMemo(() => {
     let list = [...platformCosts];
-    if (defaultInstName) list = list.filter((c) => c.instructor_name === defaultInstName);
-    if (defaultCourseName) list = list.filter((c) => c.course_title === defaultCourseName);
+    if (activeInstName) list = list.filter((c) => c.instructor_name === activeInstName);
+    if (activeCourseName) list = list.filter((c) => c.course_title === activeCourseName);
+    if (activeCohortNo != null) list = list.filter((c) => c.cohort_no === activeCohortNo);
     return list.sort((a, b) => a.cohort_no - b.cohort_no || a.platform_name.localeCompare(b.platform_name));
-  }, [platformCosts, defaultInstName, defaultCourseName]);
+  }, [platformCosts, activeInstName, activeCourseName, activeCohortNo]);
 
+  // Auto-select first if nothing selected
   useEffect(() => {
     if (!selectedId && filteredCosts.length > 0) setSelectedId(filteredCosts[0].id);
-  }, [filteredCosts.length]);
+  }, [filteredCosts.length, selectedId]);
 
+  // Sync form from store
   useEffect(() => {
     if (!selectedId) { setForm(null); return; }
     const found = platformCosts.find((c) => c.id === selectedId);
     if (found) setForm({ ...found });
+    else setForm(null);
   }, [selectedId, platformCosts]);
+
+  // Scroll to newly created row
+  useEffect(() => {
+    if (newRowRef.current) {
+      const el = document.getElementById(`cost-row-${newRowRef.current}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      newRowRef.current = null;
+    }
+  }, [filteredCosts]);
 
   const autoSave = useCallback((updated: PlatformCost) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -359,28 +384,34 @@ function CostTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: str
   // Available cohorts for dropdown
   const availableCohorts = useMemo(() => {
     let list = [...rawCohorts];
-    if (defaultInstName) list = list.filter((c) => c.instructor_name === defaultInstName);
-    if (defaultCourseName) list = list.filter((c) => c.course_title === defaultCourseName);
+    if (activeInstName) list = list.filter((c) => c.instructor_name === activeInstName);
+    if (activeCourseName) list = list.filter((c) => c.course_title === activeCourseName);
     return list.sort((a, b) => a.cohort_no - b.cohort_no);
-  }, [rawCohorts, defaultInstName, defaultCourseName]);
+  }, [rawCohorts, activeInstName, activeCourseName]);
 
   const handleAddNew = () => {
-    const instName = defaultInstName ?? rawCohorts[0]?.instructor_name ?? "";
-    const courseName = defaultCourseName ?? rawCohorts[0]?.course_title ?? "";
-    const latestCohort = availableCohorts[availableCohorts.length - 1];
+    const instName = (activeInstName ?? rawCohorts[0]?.instructor_name ?? "").trim();
+    const courseName = (activeCourseName ?? rawCohorts[0]?.course_title ?? "").trim();
+    const cohortNo = defaultCohortNo ?? availableCohorts[availableCohorts.length - 1]?.cohort_no ?? 1;
+
     const newCost: PlatformCost = {
       id: generateCostId(),
       instructor_name: instName,
       course_title: courseName,
-      cohort_no: latestCohort?.cohort_no ?? 1,
+      cohort_no: cohortNo,
       platform_name: recentPlatforms[0] ?? "N잡연구소",
       fee_amount: 0,
       ad_cost_amount: 0,
       note: "",
       updated_at: new Date().toISOString(),
     };
+
+    // Lock filter to this cohort so the new record is guaranteed visible
+    setLockedFilter({ instructor: instName, course: courseName, cohortNo });
+
     upsertPlatformCost(newCost);
     setSelectedId(newCost.id);
+    newRowRef.current = newCost.id;
     toast.success("비용 레코드 추가됨");
   };
 
@@ -406,6 +437,20 @@ function CostTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: str
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
           {saveStatus === "saved" && <Badge variant="secondary" className="text-[10px] h-5 gap-1 ml-auto"><Check className="h-3 w-3" /> 저장됨</Badge>}
         </div>
+
+        {/* Locked filter indicator */}
+        {lockedFilter && (
+          <div className="flex items-center gap-1.5 px-2 py-1.5 border-b bg-muted/50">
+            <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
+            <span className="text-[10px] text-muted-foreground truncate">
+              {lockedFilter.instructor} · {lockedFilter.cohortNo}기 고정
+            </span>
+            <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5 ml-auto gap-1 text-muted-foreground hover:text-foreground" onClick={() => setLockedFilter(null)}>
+              <Unlock className="h-3 w-3" /> 해제
+            </Button>
+          </div>
+        )}
+
         <div className="flex-1 overflow-auto">
           <Table>
             <TableHeader>
@@ -418,7 +463,12 @@ function CostTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: str
             </TableHeader>
             <TableBody>
               {filteredCosts.map((c) => (
-                <TableRow key={c.id} className={`cursor-pointer border-b border-border/30 transition-colors ${c.id === selectedId ? "bg-primary/5" : "hover:bg-muted/30"}`} onClick={() => setSelectedId(c.id)}>
+                <TableRow
+                  key={c.id}
+                  id={`cost-row-${c.id}`}
+                  className={`cursor-pointer border-b border-border/30 transition-colors ${c.id === selectedId ? "bg-primary/5" : "hover:bg-muted/30"}`}
+                  onClick={() => setSelectedId(c.id)}
+                >
                   <TableCell className="py-1.5 px-2 text-[11px]">{c.platform_name}</TableCell>
                   <TableCell className="py-1.5 px-2 text-[11px] text-center">{c.cohort_no}기</TableCell>
                   <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.fee_amount)}</TableCell>

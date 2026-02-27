@@ -104,7 +104,7 @@ const Index = () => {
   }, [kpis, platformCosts]);
 
   return (
-    <Layout defaultInstructor={instructorId} defaultCourse={courseId}>
+    <Layout defaultInstructor={instructorId} defaultCourse={courseId} defaultCohortNo={currentCohort?.cohort_no ?? null}>
       <div className="space-y-0">
         <DashboardFilters
           instructorId={instructorId} courseId={courseId} cohortId={cohortId}
