@@ -3,61 +3,23 @@ import type {
   Instructor, Course, Cohort, CohortKpi,
   FunnelData, ChecklistSummary, ChecklistItem, Enrollment,
 } from "../types";
-import { getOverride } from "../cohortOverrides";
+import { loadRawCohorts, type RawCohort } from "../rawCohortStore";
 
-// ── Raw CSV data as constants ──
-interface RawRow {
-  instructor_name: string;
-  course_title: string;
-  cohort_no: number;
-  status: "planned" | "active" | "closed";
-  revenue: number;
-  students: number;
-  leads: number;
-  applied: number;
-  start_date: string;
-}
+// ── Build domain objects from raw store ──
 
-const rawData: RawRow[] = [
-  { instructor_name: "보부상", course_title: "[N잡연구소x보부상]", cohort_no: 4, status: "closed", revenue: 150000000, students: 48, leads: 2500, applied: 800, start_date: "2025-12-01" },
-  { instructor_name: "보부상", course_title: "[N잡연구소x보부상]", cohort_no: 5, status: "active", revenue: 20019915, students: 48, leads: 2300, applied: 550, start_date: "2026-01-31" },
-  { instructor_name: "최대표", course_title: "[타이탄x최대표]", cohort_no: 1, status: "active", revenue: 293000000, students: 105, leads: 2600, applied: 915, start_date: "2026-02-22" },
-  { instructor_name: "빽형", course_title: "[싸이클해커스x빽형]", cohort_no: 1, status: "active", revenue: 65000000, students: 25, leads: 2200, applied: 440, start_date: "2026-02-21" },
-];
-
-// ── Derived lookups ──
-const instructorNames = [...new Set(rawData.map((r) => r.instructor_name))];
-const instructors: Instructor[] = instructorNames.map((name) => ({
-  id: `inst-${name}`,
-  name,
-}));
-
-function courseId(title: string): string {
-  return `course-${title}`;
-}
-
-function cohortIdFromRow(row: RawRow): string {
-  return `coh-${row.instructor_name}-${row.course_title}-${row.cohort_no}`;
-}
-
-// ── Build cohorts (with overrides applied) ──
 function buildAllCohorts(): Cohort[] {
-  return rawData.map((r) => {
-    const id = cohortIdFromRow(r);
-    const ovr = getOverride(id);
-    return {
-      id,
-      course_id: courseId(r.course_title),
-      instructor_id: `inst-${r.instructor_name}`,
-      cohort_no: r.cohort_no,
-      start_date: ovr?.start_date ?? r.start_date,
-      status: ovr?.status ?? r.status,
-      revenue: ovr?.revenue ?? r.revenue,
-      students: ovr?.students ?? r.students,
-      leads: ovr?.leads ?? r.leads,
-      applied: ovr?.applied ?? r.applied,
-    };
-  });
+  return loadRawCohorts().map((r) => ({
+    id: r.id,
+    course_id: `course-${r.course_title}`,
+    instructor_id: `inst-${r.instructor_name}`,
+    cohort_no: r.cohort_no,
+    start_date: r.start_date,
+    status: r.status,
+    revenue: r.revenue,
+    students: r.students,
+    leads: r.leads,
+    applied: r.applied,
+  }));
 }
 
 // ── Delta helper ──
@@ -178,14 +140,17 @@ const delay = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 export const mockProvider: DataProvider = {
   async listInstructors() {
     await delay();
-    return instructors;
+    const raw = loadRawCohorts();
+    const names = [...new Set(raw.map((r) => r.instructor_name))];
+    return names.map((name) => ({ id: `inst-${name}`, name }));
   },
 
   async listCourses(instructorId: string) {
     await delay();
     const instName = instructorId.replace("inst-", "");
-    const titles = [...new Set(rawData.filter((r) => r.instructor_name === instName).map((r) => r.course_title))];
-    return titles.map((t) => ({ id: courseId(t), title: t }));
+    const raw = loadRawCohorts();
+    const titles = [...new Set(raw.filter((r) => r.instructor_name === instName).map((r) => r.course_title))];
+    return titles.map((t) => ({ id: `course-${t}`, title: t }));
   },
 
   async listCohorts(instructorId: string, cId: string) {

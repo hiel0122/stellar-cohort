@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DollarSign, Users, TrendingUp, Layers, Target, Pencil } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Layers, Target } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
 import { CohortTrendChart } from "@/components/CohortTrendChart";
@@ -8,7 +8,6 @@ import { DashboardFilters } from "@/components/DashboardFilters";
 import { KPIDetailSheet } from "@/components/KPIDetailSheet";
 import { TargetSettingSheet } from "@/components/TargetSettingSheet";
 import { TargetProgressSection } from "@/components/TargetProgressSection";
-import { CohortQuickEditSheet } from "@/components/CohortQuickEditSheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,7 +36,6 @@ function calcDelta(cur: number, base: number | null | undefined): number | null 
 const Index = () => {
   const [sheetMetric, setSheetMetric] = useState<MetricKey | null>(null);
   const [targetSheetOpen, setTargetSheetOpen] = useState(false);
-  const [editCohort, setEditCohort] = useState<Cohort | null>(null);
 
   const {
     instructorId, courseId, cohortId,
@@ -50,7 +48,6 @@ const Index = () => {
     baselineCohortId, handleBaselineChange,
     baselineKpi, baselineCohort, baselineFunnel,
     loadState, detailLoadState, error,
-    triggerRefresh,
   } = useDashboardData();
 
   const { targets, setTargets, clearTargets } = useTargets(instructorId, courseId);
@@ -71,7 +68,6 @@ const Index = () => {
   const isDetailLoading = detailLoadState === "loading";
   const deltaLabel = isComparing ? `vs ${baselineCohort?.cohort_no}기` : "vs 전기수";
 
-  // Progress for KPI cards
   const revenueProgress = currentKpi ? calcProgress(currentKpi.revenue, targets?.revenue_target ?? null) : null;
   const studentsProgress = currentKpi ? calcProgress(currentKpi.students, targets?.students_target ?? null) : null;
   const conversionProgress = currentKpi ? calcProgress(currentKpi.conversion, targets?.conversion_target ?? null) : null;
@@ -213,14 +209,13 @@ const Index = () => {
                   />
                 )}
 
-                {/* Cohorts Overview table */}
+                {/* Cohorts Overview table (read-only) */}
                 <CohortsOverview
                   kpis={kpis}
                   cohorts={cohorts}
                   currentCohortId={cohortId}
                   baselineCohortId={baselineCohortId}
                   isComparing={isComparing}
-                  onEdit={(c) => setEditCohort(c)}
                 />
               </>
             </TooltipProvider>
@@ -246,32 +241,23 @@ const Index = () => {
         onSave={setTargets}
         onClear={clearTargets}
       />
-
-      <CohortQuickEditSheet
-        open={!!editCohort}
-        onOpenChange={(o) => !o && setEditCohort(null)}
-        cohort={editCohort}
-        onSaved={triggerRefresh}
-      />
     </Layout>
   );
 };
 
-// ── Cohorts Overview Table ──
+// ── Cohorts Overview Table (read-only, no edit button) ──
 function CohortsOverview({
   kpis,
   cohorts,
   currentCohortId,
   baselineCohortId,
   isComparing,
-  onEdit,
 }: {
   kpis: CohortKpi[];
   cohorts: Cohort[];
   currentCohortId: string;
   baselineCohortId: string;
   isComparing: boolean;
-  onEdit: (cohort: Cohort) => void;
 }) {
   if (!kpis || kpis.length === 0) return null;
 
@@ -292,14 +278,12 @@ function CohortsOverview({
               <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">리드</TableHead>
               <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">지원</TableHead>
               <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">전환율</TableHead>
-              <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {kpis.map((k) => {
               const isCurrent = k.cohort_id === currentCohortId;
               const isBaseline = isComparing && k.cohort_id === baselineCohortId;
-              const cohort = cohorts.find((c) => c.id === k.cohort_id);
               return (
                 <TableRow
                   key={k.cohort_id}
@@ -333,21 +317,6 @@ function CohortsOverview({
                   <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.leads)}명</TableCell>
                   <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.applied)}명</TableCell>
                   <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{k.conversion.toFixed(1)}%</TableCell>
-                  <TableCell className="py-2 px-2">
-                    {cohort && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEdit(cohort);
-                        }}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </TableCell>
                 </TableRow>
               );
             })}
