@@ -58,7 +58,12 @@ const Index = () => {
     loadState, detailLoadState, error,
   } = useDashboardData();
 
-  const { targets, setTargets, clearTargets } = useTargets(instructorId, courseId);
+  // Resolve instructor/course names from raw cohorts for target key
+  const rawCohortsAll = useMemo(() => loadRawCohorts(), []);
+  const currentInstName = rawCohortsAll.find((c) => `inst-${c.instructor_name}` === instructorId)?.instructor_name ?? "";
+  const currentCourseName = rawCohortsAll.find((c) => `course-${c.course_title}` === courseId)?.course_title ?? "";
+  const currentCohortNo = currentCohort?.cohort_no ?? null;
+  const { targets } = useTargets(currentInstName, currentCourseName, currentCohortNo);
   // Subscribe to cost changes for reactivity
   const platformCosts = usePlatformCosts();
 
@@ -103,7 +108,7 @@ const Index = () => {
   }, [kpis, platformCosts]);
 
   return (
-    <Layout defaultInstructor={instructorId} defaultCourse={courseId} defaultCohortNo={currentCohort?.cohort_no ?? null}>
+    <Layout defaultInstructor={instructorId} defaultCourse={courseId} defaultCohortNo={currentCohortNo}>
       <div className="space-y-0">
         <DashboardFilters
           instructorId={instructorId} courseId={courseId} cohortId={cohortId}
@@ -192,7 +197,11 @@ const Index = () => {
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-foreground">목표가 설정되지 않았습니다</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">목표를 설정하면 달성률(진행률)이 표시됩니다.</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {currentInstName && currentCourseName && currentCohortNo
+                            ? `현재: ${currentInstName} / ${currentCourseName} / ${currentCohortNo}기`
+                            : "목표를 설정하면 달성률(진행률)이 표시됩니다."}
+                        </p>
                       </div>
                       <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 shrink-0" onClick={() => openRawData("targets")}>
                         <Target className="h-3 w-3" /> 목표 설정하기
