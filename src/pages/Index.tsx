@@ -1,12 +1,11 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Users, TrendingUp, Layers, Target, Receipt, Megaphone, PiggyBank, Percent } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent } from "lucide-react";
 import { Layout, useLayoutActions } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
 import { CohortTrendChart } from "@/components/CohortTrendChart";
 import { FunnelTable } from "@/components/FunnelTable";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { KPIDetailSheet } from "@/components/KPIDetailSheet";
-import { TargetSettingSheet } from "@/components/TargetSettingSheet";
 import { TargetProgressSection } from "@/components/TargetProgressSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +43,6 @@ function resolveCostSummary(kpi: CohortKpi | null): CohortCostSummary | null {
 
 const Index = () => {
   const [sheetMetric, setSheetMetric] = useState<MetricKey | null>(null);
-  const [targetSheetOpen, setTargetSheetOpen] = useState(false);
 
   const {
     instructorId, courseId, cohortId,
@@ -122,16 +120,11 @@ const Index = () => {
               <h2 className="text-lg font-semibold tracking-tight">대시보드</h2>
               <p className="text-xs text-muted-foreground mt-0.5">강사별 강의 KPI를 확인하세요</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setTargetSheetOpen(true)}>
-                <Target className="h-3 w-3" /> {targets ? "목표 수정" : "목표 설정"}
-              </Button>
-              {currentCohort && (
-                <Badge variant={currentCohort.status === "active" ? "default" : currentCohort.status === "closed" ? "secondary" : "outline"} className="text-[10px] h-5">
-                  {statusLabel}
-                </Badge>
-              )}
-            </div>
+            {currentCohort && (
+              <Badge variant={currentCohort.status === "active" ? "default" : currentCohort.status === "closed" ? "secondary" : "outline"} className="text-[10px] h-5">
+                {statusLabel}
+              </Badge>
+            )}
           </div>
 
           {error && (
@@ -186,7 +179,7 @@ const Index = () => {
                 {/* Target Progress */}
                 {currentKpi && (
                   <TargetProgressSection targets={targets} revenue={currentKpi.revenue} students={currentKpi.students}
-                    conversion={currentKpi.conversion} onOpenSettings={() => setTargetSheetOpen(true)} />
+                    conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")} />
                 )}
 
                 {/* Cohorts Overview table */}
@@ -203,7 +196,6 @@ const Index = () => {
       </div>
 
       <KPIDetailSheet open={!!sheetMetric} onOpenChange={(o) => !o && setSheetMetric(null)} metric={sheetMetric} kpis={kpis} />
-      <TargetSettingSheet open={targetSheetOpen} onOpenChange={setTargetSheetOpen} targets={targets} onSave={setTargets} onClear={clearTargets} />
     </Layout>
   );
 };
