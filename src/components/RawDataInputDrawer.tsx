@@ -13,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Plus, Copy, Trash2, Check, Search, Lock, Unlock } from "lucide-react";
+import { AlertTriangle, Plus, Copy, Trash2, Check, Search, Lock, Unlock, Save, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
   type RawCohort, loadRawCohorts, upsertRawCohort, deleteRawCohort, makeId, getNextCohortNo,
@@ -25,6 +25,9 @@ import {
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
 import { formatWonCompact } from "@/lib/format";
+import type { CourseTargets } from "@/lib/types";
+
+type TabType = "cohorts" | "costs" | "targets";
 
 interface Props {
   open: boolean;
@@ -32,7 +35,7 @@ interface Props {
   defaultInstructor?: string;
   defaultCourse?: string;
   defaultCohortNo?: number;
-  defaultTab?: "cohorts" | "costs";
+  defaultTab?: TabType;
 }
 
 function parseNum(v: string): number {
@@ -45,7 +48,7 @@ function fmtInput(v: number): string {
 type StatusFilter = "all" | "active" | "closed" | "planned";
 
 export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defaultCourse, defaultCohortNo, defaultTab }: Props) {
-  const [activeTab, setActiveTab] = useState<"cohorts" | "costs">(defaultTab ?? "cohorts");
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab ?? "cohorts");
 
   useEffect(() => {
     if (open && defaultTab) setActiveTab(defaultTab);
@@ -57,20 +60,23 @@ export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defa
         <SheetHeader className="px-4 pt-4 pb-2 border-b shrink-0">
           <SheetTitle className="text-sm">원데이터 입력</SheetTitle>
           <SheetDescription className="text-[11px]">
-            기수별 원천 데이터와 플랫폼별 비용을 입력하세요.
+            기수별 원천 데이터, 비용, 목표를 통합 관리하세요.
           </SheetDescription>
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "cohorts" | "costs")} className="mt-1">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="mt-1">
             <TabsList className="h-7 p-0.5 bg-muted">
               <TabsTrigger value="cohorts" className="text-xs h-6 px-3">기수 원데이터</TabsTrigger>
               <TabsTrigger value="costs" className="text-xs h-6 px-3">비용 입력 (L1)</TabsTrigger>
+              <TabsTrigger value="targets" className="text-xs h-6 px-3">목표 설정</TabsTrigger>
             </TabsList>
           </Tabs>
         </SheetHeader>
 
         {activeTab === "cohorts" ? (
           <CohortTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} />
-        ) : (
+        ) : activeTab === "costs" ? (
           <CostTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} defaultCohortNo={defaultCohortNo} />
+        ) : (
+          <TargetsTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} />
         )}
       </SheetContent>
     </Sheet>
@@ -561,6 +567,144 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
         ) : (
           <div className="flex h-full items-center justify-center"><p className="text-xs text-muted-foreground">"새 비용" 버튼을 눌러 입력하세요</p></div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════ Targets Tab (목표 설정) ═══════════════════════
+const TARGETS_STORAGE_KEY = "dashboard_targets";
+
+function loadAllTargets(): Record<string, CourseTargets> {
+  try {
+    const raw = localStorage.getItem(TARGETS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function saveAllTargets(data: Record<string, CourseTargets>) {
+  localStorage.setItem(TARGETS_STORAGE_KEY, JSON.stringify(data));
+}
+function makeTargetKey(instructorId: string, courseId: string): string {
+  return `${instructorId}::${courseId}`;
+}
+
+function TargetsTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: string; defaultCourse?: string }) {
+  const instId = defaultInstructor ?? "";
+  const courseId = defaultCourse ?? "";
+  const key = makeTargetKey(instId, courseId);
+
+  const rawCohorts = useRawCohortStore();
+  const instName = rawCohorts.find((c) => `inst-${c.instructor_name}` === instId)?.instructor_name ?? instId;
+  const courseName = rawCohorts.find((c) => `course-${c.course_title}` === courseId)?.course_title ?? courseId;
+
+  const [revenue, setRevenue] = useState("");
+  const [students, setStudents] = useState("");
+  const [conversion, setConversion] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "dirty">("idle");
+
+  // Load on mount / key change
+  useEffect(() => {
+    const all = loadAllTargets();
+    const t = all[key] ?? null;
+    setRevenue(t?.revenue_target != null ? String(t.revenue_target) : "");
+    setStudents(t?.students_target != null ? String(t.students_target) : "");
+    setConversion(t?.conversion_target != null ? String(t.conversion_target) : "");
+    setSaveStatus("idle");
+  }, [key]);
+
+  const markDirty = () => setSaveStatus("dirty");
+
+  const handleSave = () => {
+    const all = loadAllTargets();
+    all[key] = {
+      revenue_target: revenue ? Number(revenue) : null,
+      students_target: students ? Number(students) : null,
+      conversion_target: conversion ? Number(conversion) : null,
+    };
+    saveAllTargets(all);
+    setSaveStatus("saved");
+    toast.success("목표 저장됨");
+    setTimeout(() => setSaveStatus("idle"), 2000);
+  };
+
+  const handleClear = () => {
+    const all = loadAllTargets();
+    delete all[key];
+    saveAllTargets(all);
+    setRevenue("");
+    setStudents("");
+    setConversion("");
+    setSaveStatus("idle");
+    toast.success("목표 초기화됨");
+  };
+
+  const hasValues = revenue || students || conversion;
+
+  if (!instId || !courseId) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <p className="text-xs text-muted-foreground">대시보드에서 강사와 과정을 먼저 선택해주세요.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-auto p-4">
+      <div className="max-w-md mx-auto space-y-5">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-foreground">대상</p>
+          <p className="text-[11px] text-muted-foreground">{instName} · {courseName}</p>
+        </div>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="target-revenue" className="text-xs font-medium">목표 매출 (원)</Label>
+            <Input
+              id="target-revenue" type="number" placeholder="예: 300000000"
+              value={revenue} onChange={(e) => { setRevenue(e.target.value); markDirty(); }}
+              className="h-9 text-sm tabular-nums"
+            />
+            <p className="text-[10px] text-muted-foreground">원 단위로 입력 (예: 3억 = 300000000)</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="target-students" className="text-xs font-medium">목표 수강생 (명)</Label>
+            <Input
+              id="target-students" type="number" placeholder="예: 100"
+              value={students} onChange={(e) => { setStudents(e.target.value); markDirty(); }}
+              className="h-9 text-sm tabular-nums"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="target-conversion" className="text-xs font-medium">목표 전환율 (%, 결제/지원)</Label>
+            <Input
+              id="target-conversion" type="number" step="0.1" placeholder="예: 10"
+              value={conversion} onChange={(e) => { setConversion(e.target.value); markDirty(); }}
+              className="h-9 text-sm tabular-nums"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button onClick={handleSave} className="flex-1 h-9 text-xs gap-1.5">
+            <Save className="h-3 w-3" /> 저장
+          </Button>
+          {saveStatus === "saved" && <Badge variant="secondary" className="text-[10px] h-5 gap-1"><Check className="h-3 w-3" /> 저장됨</Badge>}
+          {saveStatus === "dirty" && <Badge variant="outline" className="text-[10px] h-5 border-yellow-500/50 text-yellow-600 dark:text-yellow-400">미저장</Badge>}
+        </div>
+
+        {hasValues && (
+          <Button variant="ghost" size="sm" className="w-full h-8 text-xs text-muted-foreground hover:text-destructive gap-1.5" onClick={handleClear}>
+            <RotateCcw className="h-3 w-3" /> 목표 초기화
+          </Button>
+        )}
+
+        <div className="rounded-md bg-muted p-2.5">
+          <p className="text-[10px] text-muted-foreground">
+            💡 목표는 강사+과정 단위로 저장됩니다. 저장 후 대시보드에서 현재 기수 기준 달성률이 표시됩니다.
+          </p>
+        </div>
       </div>
     </div>
   );

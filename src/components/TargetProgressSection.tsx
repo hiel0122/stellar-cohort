@@ -28,17 +28,7 @@ function statusBadge(progress: number | null) {
 
 export function TargetProgressSection({ targets, revenue, students, conversion, onOpenSettings }: Props) {
   if (!targets) {
-    return (
-      <Card>
-        <CardContent className="py-8 flex flex-col items-center gap-3">
-          <Target className="h-6 w-6 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">목표를 설정하면 달성률이 표시됩니다</p>
-          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onOpenSettings}>
-            목표 설정
-          </Button>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   const items = [
@@ -91,7 +81,7 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
             <span className="text-[10px] text-muted-foreground">현재 기수 기준</span>
           </div>
           <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground" onClick={onOpenSettings}>
-            수정
+            목표 관리
           </Button>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
