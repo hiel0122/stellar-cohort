@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent, Target, AlertTriangle } from "lucide-react";
 import { Layout, useLayoutActions } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
 import { CohortTrendChart } from "@/components/CohortTrendChart";
@@ -42,6 +42,7 @@ function resolveCostSummary(kpi: CohortKpi | null): CohortCostSummary | null {
 }
 
 const Index = () => {
+  const { openRawData } = useLayoutActions();
   const [sheetMetric, setSheetMetric] = useState<MetricKey | null>(null);
 
   const {
@@ -182,6 +183,24 @@ const Index = () => {
                     conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")} />
                 )}
 
+                {/* Target warning / Cohorts Overview */}
+                {!targets && currentKpi && (
+                  <Card className="border-yellow-500/30 bg-yellow-500/5">
+                    <CardContent className="py-4 px-4 flex items-center gap-3">
+                      <div className="rounded-full p-1.5 bg-yellow-500/10">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">목표가 설정되지 않았습니다</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">목표를 설정하면 달성률(진행률)이 표시됩니다.</p>
+                      </div>
+                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 shrink-0" onClick={() => openRawData("targets")}>
+                        <Target className="h-3 w-3" /> 목표 설정하기
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Cohorts Overview table */}
                 <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
                   baselineCohortId={baselineCohortId} isComparing={isComparing} />
@@ -245,24 +264,13 @@ function L1ProfitCards({
         sparklineData={netProfitSparkline.some((v) => v !== 0) ? netProfitSparkline : undefined}
         secondaryText={!hasCost ? undefined : undefined}
       />
-      {hasCost ? (
-        <KPICard
+      <KPICard
           title="순이익률 (L1)"
-          value={currentCost.net_margin_l1 != null ? `${currentCost.net_margin_l1.toFixed(1)}%` : "—"}
+          value={hasCost && currentCost.net_margin_l1 != null ? `${currentCost.net_margin_l1.toFixed(1)}%` : "—"}
           deltaPct={marginDelta}
-          deltaLabel={deltaLabel}
+          deltaLabel={hasCost ? deltaLabel : undefined}
           icon={<Percent className="h-4 w-4" />}
         />
-      ) : (
-        <Card className="h-full flex items-center justify-center">
-          <CardContent className="p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-2">비용 데이터가 없습니다</p>
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => openRawData("costs")}>
-              비용 입력하기
-            </Button>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
