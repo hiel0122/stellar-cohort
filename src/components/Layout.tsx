@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RawDataInputDrawer } from "@/components/RawDataInputDrawer";
 
-type RawDataTabType = "cohorts" | "costs";
+type RawDataTabType = "cohorts" | "costs" | "targets";
 interface LayoutContextType {
   openRawData: (tab?: RawDataTabType) => void;
 }
