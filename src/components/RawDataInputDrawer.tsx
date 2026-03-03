@@ -13,7 +13,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Plus, Copy, Trash2, Check, Search, Lock, Unlock, Save, RotateCcw } from "lucide-react";
+import { AlertTriangle, Plus, Trash2, Check, Search, Lock, Unlock, Save, RotateCcw } from "lucide-react";
+import { NewCohortModal } from "@/components/NewCohortModal";
 import { toast } from "sonner";
 import {
   type RawCohort, loadRawCohorts, upsertRawCohort, deleteRawCohort, makeId, getNextCohortNo,
@@ -57,7 +58,7 @@ export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defa
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-3xl overflow-hidden p-0 flex flex-col" side="right">
+      <SheetContent className="w-full sm:max-w-3xl overflow-hidden p-0 flex flex-col overflow-x-hidden" side="right">
         <SheetHeader className="px-4 pt-4 pb-2 border-b shrink-0">
           <SheetTitle className="text-sm">원데이터 입력</SheetTitle>
           <SheetDescription className="text-[11px]">
@@ -93,6 +94,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved">("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [form, setForm] = useState<RawCohort | null>(null);
+  const [showNewModal, setShowNewModal] = useState(false);
 
   useEffect(() => {
     if (rawCohorts.length > 0 && !selectedId) setSelectedId(rawCohorts[0].id);
@@ -159,29 +161,8 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
   const conversion = form && form.applied > 0 ? ((form.students / form.applied) * 100).toFixed(1) : "—";
   const conversionSec = form && form.leads > 0 ? ((form.students / form.leads) * 100).toFixed(1) : "—";
 
-  const handleAddNew = () => {
-    const actualInst = rawCohorts.find((c) => `inst-${c.instructor_name}` === defaultInstructor)?.instructor_name ?? rawCohorts[0]?.instructor_name ?? "강사";
-    const actualCourse = rawCohorts.find((c) => `course-${c.course_title}` === defaultCourse)?.course_title ?? rawCohorts[0]?.course_title ?? "과정";
-    const nextNo = getNextCohortNo(actualInst, actualCourse);
-    const newCohort: RawCohort = {
-      id: makeId(actualInst, actualCourse, nextNo),
-      instructor_name: actualInst, course_title: actualCourse,
-      cohort_no: nextNo, status: "active",
-      start_date: new Date().toISOString().slice(0, 10),
-      revenue: 0, leads: 0, applied: 0, students: 0,
-    };
-    upsertRawCohort(newCohort);
-    setSelectedId(newCohort.id);
-    toast.success(`${nextNo}기 추가됨`);
-  };
-
-  const handleClonePrev = () => {
-    if (!form) return;
-    const nextNo = getNextCohortNo(form.instructor_name, form.course_title);
-    const cloned: RawCohort = { ...form, id: makeId(form.instructor_name, form.course_title, nextNo), cohort_no: nextNo, status: "active", revenue: 0 };
-    upsertRawCohort(cloned);
-    setSelectedId(cloned.id);
-    toast.success(`${form.cohort_no}기 복제 → ${nextNo}기`);
+  const handleNewCohortCreated = (id: string) => {
+    setSelectedId(id);
   };
 
   const handleDelete = () => {
@@ -198,19 +179,26 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
         value={form ? fmtInput(form[key]) : ""}
         onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField(key, n); }}
         onBlur={() => form && updateField(key, form[key])}
-        className="tabular-nums h-8 text-xs" inputMode="numeric"
+        className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
       />
-      {suffix && form && <p className="text-[10px] text-muted-foreground">{suffix}: {formatWonCompact(form[key])}</p>}
+      {suffix && form && <p className="text-[10px] text-muted-foreground break-words">{suffix}: {formatWonCompact(form[key])}</p>}
     </div>
   );
 
   return (
     <div className="flex flex-1 overflow-hidden">
+      <NewCohortModal
+        open={showNewModal}
+        onOpenChange={setShowNewModal}
+        rawCohorts={rawCohorts}
+        defaultInstructor={defaultInstructor}
+        defaultCourse={defaultCourse}
+        onCreated={handleNewCohortCreated}
+      />
       {/* Left: list */}
-      <div className="w-[55%] border-r flex flex-col overflow-hidden">
+      <div className="w-[55%] min-w-0 border-r flex flex-col overflow-hidden">
         <div className="flex items-center gap-1.5 p-2 border-b">
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleAddNew}><Plus className="h-3 w-3" /> 새 기수</Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleClonePrev} disabled={!form}><Copy className="h-3 w-3" /> 복제</Button>
+          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowNewModal(true)}><Plus className="h-3 w-3" /> 새 기수</Button>
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
           {saveStatus === "saved" && <Badge variant="secondary" className="text-[10px] h-5 gap-1 ml-auto"><Check className="h-3 w-3" /> 저장됨</Badge>}
         </div>
@@ -265,7 +253,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
       </div>
 
       {/* Right: form */}
-      <div className="w-[45%] overflow-auto p-3">
+      <div className="w-[45%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
         {form ? (
           <div className="space-y-3">
             {hardErrors.length > 0 && (
@@ -279,19 +267,19 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
               </div>
             )}
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1"><Label className="text-xs">강사</Label><Input value={form.instructor_name} onChange={(e) => updateField("instructor_name", e.target.value)} className="h-8 text-xs" /></div>
-              <div className="space-y-1"><Label className="text-xs">과정</Label><Input value={form.course_title} onChange={(e) => updateField("course_title", e.target.value)} className="h-8 text-xs" /></div>
+              <div className="space-y-1"><Label className="text-xs">강사</Label><Input value={form.instructor_name} onChange={(e) => updateField("instructor_name", e.target.value)} className="h-8 text-xs w-full" /></div>
+              <div className="space-y-1"><Label className="text-xs">과정</Label><Input value={form.course_title} onChange={(e) => updateField("course_title", e.target.value)} className="h-8 text-xs w-full truncate" /></div>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1"><Label className="text-xs">기수</Label><Input type="number" min={1} value={form.cohort_no} onChange={(e) => updateField("cohort_no", parseInt(e.target.value) || 1)} className="h-8 text-xs tabular-nums" /></div>
+              <div className="space-y-1"><Label className="text-xs">기수</Label><Input type="number" min={1} value={form.cohort_no} onChange={(e) => updateField("cohort_no", parseInt(e.target.value) || 1)} className="h-8 text-xs tabular-nums w-full" /></div>
               <div className="space-y-1">
                 <Label className="text-xs">상태</Label>
                 <Select value={form.status} onValueChange={(v) => updateField("status", v as RawCohort["status"])}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="planned">계획</SelectItem><SelectItem value="active">운영중</SelectItem><SelectItem value="closed">종료</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1"><Label className="text-xs">시작일</Label><Input type="date" value={form.start_date} onChange={(e) => updateField("start_date", e.target.value)} className="h-8 text-xs" /></div>
+              <div className="space-y-1"><Label className="text-xs">시작일</Label><Input type="date" value={form.start_date} onChange={(e) => updateField("start_date", e.target.value)} className="h-8 text-xs w-full" /></div>
             </div>
             {numField("매출 (원)", "revenue", "표시")}
             <div className="grid grid-cols-3 gap-2">
@@ -438,7 +426,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Left: cost list */}
-      <div className="w-[50%] border-r flex flex-col overflow-hidden">
+      <div className="w-[50%] min-w-0 border-r flex flex-col overflow-hidden">
         <div className="flex items-center gap-1.5 p-2 border-b">
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleAddNew}><Plus className="h-3 w-3" /> 새 비용</Button>
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
@@ -491,7 +479,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
       </div>
 
       {/* Right: cost form */}
-      <div className="w-[50%] overflow-auto p-3">
+      <div className="w-[50%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
         {form ? (
           <div className="space-y-3">
             <div className="space-y-1">
