@@ -26,7 +26,7 @@ import {
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
 import { formatWonCompact } from "@/lib/format";
-import { makeTargetKey, loadAllTargets, saveAllTargets } from "@/hooks/useTargets";
+import { makeTargetKey, loadAllTargets, upsertTarget, deleteTarget } from "@/lib/targetStore";
 import type { CourseTargets } from "@/lib/types";
 
 type TabType = "cohorts" | "costs" | "targets";
@@ -638,22 +638,18 @@ function TargetsTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { def
     if (revenue && Number(revenue) < 0) { toast.error("매출 목표는 0 이상이어야 합니다."); return; }
     if (students && Number(students) < 0) { toast.error("수강생 목표는 0 이상이어야 합니다."); return; }
 
-    const all = loadAllTargets();
-    all[key] = {
+    upsertTarget(key, {
       revenue_target: revenue ? Number(revenue) : null,
       students_target: students ? Number(students) : null,
       conversion_target: convNum,
-    };
-    saveAllTargets(all);
+    });
     setSaveStatus("saved");
     toast.success("목표 저장됨");
     setTimeout(() => setSaveStatus("idle"), 2000);
   };
 
   const handleClear = () => {
-    const all = loadAllTargets();
-    delete all[key];
-    saveAllTargets(all);
+    deleteTarget(key);
     setRevenue("");
     setStudents("");
     setConversion("");
