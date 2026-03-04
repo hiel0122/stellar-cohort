@@ -26,7 +26,7 @@ import {
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
 import { formatWonCompact } from "@/lib/format";
-import { makeTargetKey, loadAllTargets, saveAllTargets } from "@/hooks/useTargets";
+import { makeTargetKey, loadAllTargets, upsertTarget, deleteTarget } from "@/lib/targetStore";
 import type { CourseTargets } from "@/lib/types";
 
 type TabType = "cohorts" | "costs" | "targets";
