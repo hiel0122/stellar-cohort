@@ -638,13 +638,11 @@ function TargetsTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { def
     if (revenue && Number(revenue) < 0) { toast.error("매출 목표는 0 이상이어야 합니다."); return; }
     if (students && Number(students) < 0) { toast.error("수강생 목표는 0 이상이어야 합니다."); return; }
 
-    const all = loadAllTargets();
-    all[key] = {
+    upsertTarget(key, {
       revenue_target: revenue ? Number(revenue) : null,
       students_target: students ? Number(students) : null,
       conversion_target: convNum,
-    };
-    saveAllTargets(all);
+    });
     setSaveStatus("saved");
     toast.success("목표 저장됨");
     setTimeout(() => setSaveStatus("idle"), 2000);
