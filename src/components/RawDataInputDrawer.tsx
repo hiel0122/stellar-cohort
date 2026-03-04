@@ -649,9 +649,7 @@ function TargetsTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { def
   };
 
   const handleClear = () => {
-    const all = loadAllTargets();
-    delete all[key];
-    saveAllTargets(all);
+    deleteTarget(key);
     setRevenue("");
     setStudents("");
     setConversion("");
