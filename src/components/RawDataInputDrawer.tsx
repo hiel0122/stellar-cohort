@@ -644,7 +644,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
           {costsForCohort.length > 0 && (
             <div className="border-t p-2 text-xs flex justify-between">
               <span className="text-muted-foreground">합계</span>
-              <span className="font-medium tabular-nums">{formatWonCompact(totalCost)}</span>
+              <span className="font-medium tabular-nums">{formatWonCompact(costsForCohort.reduce((s, c) => s + c.fee_amount + c.ad_cost_amount, 0))}</span>
             </div>
           )}
         </div>
