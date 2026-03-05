@@ -13,7 +13,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Plus, Trash2, Check, Search, Lock, Unlock, Save, RotateCcw } from "lucide-react";
+import { AlertTriangle, Plus, Trash2, Check, Search, Lock, Unlock, Save, RotateCcw, CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format, parse } from "date-fns";
+import { cn } from "@/lib/utils";
 import { NewCohortModal } from "@/components/NewCohortModal";
 import { toast } from "sonner";
 import {
@@ -82,6 +86,48 @@ export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defa
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+
+function DatePickerField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const dateObj = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
+  const isValid = dateObj && !isNaN(dateObj.getTime());
+  const dayOfWeek = isValid ? WEEKDAYS_KO[dateObj.getDay()] : null;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "h-8 w-full min-w-0 justify-start text-left font-normal px-2 gap-1.5",
+            !isValid && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="h-3 w-3 shrink-0 opacity-60" />
+          <span className="truncate text-xs">
+            {isValid ? `${format(dateObj, "yyyy. MM. dd.")} (${dayOfWeek})` : "시작일 선택"}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={isValid ? dateObj : undefined}
+          onSelect={(d) => {
+            if (d) {
+              onChange(format(d, "yyyy-MM-dd"));
+            }
+            setOpen(false);
+          }}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -277,7 +323,10 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
                   <SelectContent><SelectItem value="planned">계획</SelectItem><SelectItem value="active">운영중</SelectItem><SelectItem value="closed">종료</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1 min-w-0"><Label className="text-xs">시작일</Label><Input type="date" value={form.start_date} onChange={(e) => updateField("start_date", e.target.value)} className="h-8 text-[11px] w-full min-w-0 overflow-hidden" /></div>
+              <div className="space-y-1 min-w-0">
+                <Label className="text-xs">시작일</Label>
+                <DatePickerField value={form.start_date} onChange={(v) => updateField("start_date", v)} />
+              </div>
             </div>
             {numField("매출 (원)", "revenue", "표시")}
             <div className="grid grid-cols-3 gap-2">
