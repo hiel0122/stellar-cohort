@@ -424,7 +424,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Left: cost list */}
-      <div className="w-[50%] min-w-0 border-r flex flex-col overflow-hidden">
+      <div className="w-[45%] min-w-0 border-r flex flex-col overflow-hidden">
         <div className="flex items-center gap-1.5 p-2 border-b">
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleAddNew}><Plus className="h-3 w-3" /> 새 비용</Button>
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
