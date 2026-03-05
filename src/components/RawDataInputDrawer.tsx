@@ -196,7 +196,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
         onCreated={handleNewCohortCreated}
       />
       {/* Left: list */}
-      <div className="w-[55%] min-w-0 border-r flex flex-col overflow-hidden">
+      <div className="w-[45%] min-w-0 border-r flex flex-col overflow-hidden">
         <div className="flex items-center gap-1.5 p-2 border-b">
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowNewModal(true)}><Plus className="h-3 w-3" /> 새 기수</Button>
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
