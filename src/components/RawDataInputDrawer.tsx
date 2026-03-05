@@ -13,7 +13,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Plus, Trash2, Check, Search, Lock, Unlock, Save, RotateCcw } from "lucide-react";
+import { AlertTriangle, Plus, Trash2, Check, Search, Lock, Unlock, Save, RotateCcw, CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format, parse } from "date-fns";
+import { cn } from "@/lib/utils";
 import { NewCohortModal } from "@/components/NewCohortModal";
 import { toast } from "sonner";
 import {
