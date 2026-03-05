@@ -596,7 +596,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
   };
 
   const recentPlatforms = getRecentPlatformNames();
-  const totalCost = costsForCohort.reduce((sum, c) => sum + c.cost, 0);
+  const totalCost = costsForCohort.reduce((sum, c) => sum + c.fee_amount + c.ad_cost_amount, 0);
 
   return (
     <div className="flex flex-1 overflow-hidden flex-col">
