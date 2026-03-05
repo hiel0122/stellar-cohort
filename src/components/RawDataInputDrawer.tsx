@@ -225,7 +225,6 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
                 <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2">과정</TableHead>
                 <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2 text-center">기수</TableHead>
                 <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2">상태</TableHead>
-                <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2 text-right">매출</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
