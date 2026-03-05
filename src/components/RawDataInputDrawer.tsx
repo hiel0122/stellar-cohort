@@ -477,7 +477,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
       </div>
 
       {/* Right: cost form */}
-      <div className="w-[50%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
+      <div className="w-[55%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
         {form ? (
           <div className="space-y-3">
             <div className="space-y-1">
