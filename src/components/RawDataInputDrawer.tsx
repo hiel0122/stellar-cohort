@@ -633,7 +633,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
                   return (
                     <TableRow key={c.id} className={`cursor-pointer border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/30"}`} onClick={() => setSelectedId(c.id)}>
                       <TableCell className="py-1.5 px-2 text-[11px]">{c.platform_name || "(미입력)"}</TableCell>
-                      <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.cost)}</TableCell>
+                      <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.fee_amount + c.ad_cost_amount)}</TableCell>
                     </TableRow>
                   );
                 })}
