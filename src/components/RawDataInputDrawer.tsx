@@ -196,7 +196,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
         onCreated={handleNewCohortCreated}
       />
       {/* Left: list */}
-      <div className="w-[55%] min-w-0 border-r flex flex-col overflow-hidden">
+      <div className="w-[45%] min-w-0 border-r flex flex-col overflow-hidden">
         <div className="flex items-center gap-1.5 p-2 border-b">
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowNewModal(true)}><Plus className="h-3 w-3" /> 새 기수</Button>
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
@@ -225,7 +225,6 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
                 <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2">과정</TableHead>
                 <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2 text-center">기수</TableHead>
                 <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2">상태</TableHead>
-                <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2 text-right">매출</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -242,18 +241,17 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
                         {c.status === "active" ? "운영중" : c.status === "closed" ? "종료" : "계획"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.revenue)}</TableCell>
                   </TableRow>
                 );
               })}
-              {filtered.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-xs text-muted-foreground">데이터가 없습니다</TableCell></TableRow>}
+              {filtered.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-8 text-xs text-muted-foreground">데이터가 없습니다</TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>
       </div>
 
       {/* Right: form */}
-      <div className="w-[45%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
+      <div className="w-[55%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
         {form ? (
           <div className="space-y-3">
             {hardErrors.length > 0 && (
@@ -279,7 +277,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
                   <SelectContent><SelectItem value="planned">계획</SelectItem><SelectItem value="active">운영중</SelectItem><SelectItem value="closed">종료</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1"><Label className="text-xs">시작일</Label><Input type="date" value={form.start_date} onChange={(e) => updateField("start_date", e.target.value)} className="h-8 text-xs w-full" /></div>
+              <div className="space-y-1 min-w-0"><Label className="text-xs">시작일</Label><Input type="date" value={form.start_date} onChange={(e) => updateField("start_date", e.target.value)} className="h-8 text-[11px] w-full min-w-0 overflow-hidden" /></div>
             </div>
             {numField("매출 (원)", "revenue", "표시")}
             <div className="grid grid-cols-3 gap-2">
@@ -426,7 +424,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Left: cost list */}
-      <div className="w-[50%] min-w-0 border-r flex flex-col overflow-hidden">
+      <div className="w-[45%] min-w-0 border-r flex flex-col overflow-hidden">
         <div className="flex items-center gap-1.5 p-2 border-b">
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleAddNew}><Plus className="h-3 w-3" /> 새 비용</Button>
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
@@ -479,7 +477,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
       </div>
 
       {/* Right: cost form */}
-      <div className="w-[50%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
+      <div className="w-[55%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
         {form ? (
           <div className="space-y-3">
             <div className="space-y-1">
