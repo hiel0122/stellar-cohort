@@ -667,17 +667,26 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
                 )}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">비용 (원)</Label>
+                <Label className="text-xs">수수료 (원)</Label>
                 <Input
-                  value={form.cost ? fmtInput(form.cost) : ""}
-                  onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("cost", n); }}
+                  value={form.fee_amount ? fmtInput(form.fee_amount) : ""}
+                  onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("fee_amount", n); }}
                   className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
                 />
-                {form.cost > 0 && <p className="text-[10px] text-muted-foreground">표시: {formatWonCompact(form.cost)}</p>}
+                {form.fee_amount > 0 && <p className="text-[10px] text-muted-foreground">표시: {formatWonCompact(form.fee_amount)}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">광고비 (원)</Label>
+                <Input
+                  value={form.ad_cost_amount ? fmtInput(form.ad_cost_amount) : ""}
+                  onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("ad_cost_amount", n); }}
+                  className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
+                />
+                {form.ad_cost_amount > 0 && <p className="text-[10px] text-muted-foreground">표시: {formatWonCompact(form.ad_cost_amount)}</p>}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">메모</Label>
-                <Input value={form.memo} onChange={(e) => updateField("memo", e.target.value)} className="h-8 text-xs w-full" placeholder="(선택)" />
+                <Input value={form.note} onChange={(e) => updateField("note", e.target.value)} className="h-8 text-xs w-full" placeholder="(선택)" />
               </div>
               <div className="rounded-md bg-muted p-2.5">
                 <p className="text-[10px] text-muted-foreground">
