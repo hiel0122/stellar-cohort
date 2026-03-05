@@ -578,8 +578,10 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
       course_title: sel.course,
       cohort_no: sel.cohortNo,
       platform_name: "",
-      cost: 0,
-      memo: "",
+      fee_amount: 0,
+      ad_cost_amount: 0,
+      note: "",
+      updated_at: new Date().toISOString(),
     };
     upsertPlatformCost(newCost);
     setSelectedId(newCost.id);
