@@ -533,7 +533,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
   const costsForCohort = useMemo(() => {
     const sel = cohortList.find((c) => c.id === selCohortId);
     if (!sel) return [];
-    return getCostsForCohort(sel.instructor, sel.course, sel.cohortNo, platformCosts);
+    return getCostsForCohort(sel.instructor, sel.course, sel.cohortNo);
   }, [selCohortId, platformCosts, cohortList]);
 
   // Form state
