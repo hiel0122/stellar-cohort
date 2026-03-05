@@ -241,7 +241,6 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
                         {c.status === "active" ? "운영중" : c.status === "closed" ? "종료" : "계획"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.revenue)}</TableCell>
                   </TableRow>
                 );
               })}
