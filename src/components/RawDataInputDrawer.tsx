@@ -314,16 +314,16 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
               <div className="space-y-1"><Label className="text-xs">강사</Label><Input value={form.instructor_name} onChange={(e) => updateField("instructor_name", e.target.value)} className="h-8 text-xs w-full" /></div>
               <div className="space-y-1"><Label className="text-xs">과정</Label><Input value={form.course_title} onChange={(e) => updateField("course_title", e.target.value)} className="h-8 text-xs w-full truncate" /></div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1"><Label className="text-xs">기수</Label><Input type="number" min={1} value={form.cohort_no} onChange={(e) => updateField("cohort_no", parseInt(e.target.value) || 1)} className="h-8 text-xs tabular-nums w-full" /></div>
-              <div className="space-y-1">
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-2 space-y-1 min-w-0"><Label className="text-xs">기수</Label><Input type="number" min={1} value={form.cohort_no} onChange={(e) => updateField("cohort_no", parseInt(e.target.value) || 1)} className="h-8 text-xs tabular-nums w-full min-w-0" /></div>
+              <div className="col-span-3 space-y-1 min-w-0">
                 <Label className="text-xs">상태</Label>
                 <Select value={form.status} onValueChange={(v) => updateField("status", v as RawCohort["status"])}>
-                  <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs w-full min-w-0"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="planned">계획</SelectItem><SelectItem value="active">운영중</SelectItem><SelectItem value="closed">종료</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1 min-w-0">
+              <div className="col-span-7 space-y-1 min-w-0">
                 <Label className="text-xs">시작일</Label>
                 <DatePickerField value={form.start_date} onChange={(v) => updateField("start_date", v)} />
               </div>
