@@ -277,7 +277,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
                   <SelectContent><SelectItem value="planned">계획</SelectItem><SelectItem value="active">운영중</SelectItem><SelectItem value="closed">종료</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1"><Label className="text-xs">시작일</Label><Input type="date" value={form.start_date} onChange={(e) => updateField("start_date", e.target.value)} className="h-8 text-xs w-full" /></div>
+              <div className="space-y-1 min-w-0"><Label className="text-xs">시작일</Label><Input type="date" value={form.start_date} onChange={(e) => updateField("start_date", e.target.value)} className="h-8 text-[11px] w-full min-w-0 overflow-hidden" /></div>
             </div>
             {numField("매출 (원)", "revenue", "표시")}
             <div className="grid grid-cols-3 gap-2">
