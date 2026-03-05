@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, type RefObject } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Plus, Trash2, Check, Search, Lock, Unlock, Save, RotateCcw, CalendarIcon } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertTriangle, Plus, Trash2, Check, Search, Save, CalendarIcon, RotateCcw, Target } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parse } from "date-fns";
@@ -31,9 +31,10 @@ import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
 import { formatWonCompact } from "@/lib/format";
 import { makeTargetKey, loadAllTargets, upsertTarget, deleteTarget } from "@/lib/targetStore";
+import { useTargets } from "@/hooks/useTargets";
 import type { CourseTargets } from "@/lib/types";
 
-type TabType = "cohorts" | "costs" | "targets";
+type TabType = "cohorts" | "costs";
 
 interface Props {
   open: boolean;
@@ -41,7 +42,7 @@ interface Props {
   defaultInstructor?: string;
   defaultCourse?: string;
   defaultCohortNo?: number;
-  defaultTab?: TabType;
+  defaultTab?: TabType | "targets";
 }
 
 function parseNum(v: string): number {
@@ -53,11 +54,31 @@ function fmtInput(v: number): string {
 
 type StatusFilter = "all" | "active" | "closed" | "planned";
 
+// ── Status color helpers ──
+const STATUS_COLORS = {
+  planned: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+  active: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+  closed: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30",
+} as const;
+
+const STATUS_DOT = {
+  planned: "bg-amber-500",
+  active: "bg-emerald-500",
+  closed: "bg-red-500",
+} as const;
+
+const STATUS_LABEL: Record<string, string> = {
+  planned: "계획",
+  active: "운영중",
+  closed: "종료",
+};
+
 export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defaultCourse, defaultCohortNo, defaultTab }: Props) {
-  const [activeTab, setActiveTab] = useState<TabType>(defaultTab ?? "cohorts");
+  // Map legacy "targets" tab to "cohorts"
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab === "targets" ? "cohorts" : (defaultTab as TabType) ?? "cohorts");
 
   useEffect(() => {
-    if (open && defaultTab) setActiveTab(defaultTab);
+    if (open && defaultTab) setActiveTab(defaultTab === "targets" ? "cohorts" : defaultTab as TabType);
   }, [open, defaultTab]);
 
   return (
@@ -66,23 +87,20 @@ export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defa
         <SheetHeader className="px-4 pt-4 pb-2 border-b shrink-0">
           <SheetTitle className="text-sm">원데이터 입력</SheetTitle>
           <SheetDescription className="text-[11px]">
-            기수별 원천 데이터, 비용, 목표를 통합 관리하세요.
+            기수별 원천 데이터와 비용을 통합 관리하세요.
           </SheetDescription>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="mt-1">
             <TabsList className="h-7 p-0.5 bg-muted">
               <TabsTrigger value="cohorts" className="text-xs h-6 px-3">기수 원데이터</TabsTrigger>
               <TabsTrigger value="costs" className="text-xs h-6 px-3">비용 입력 (L1)</TabsTrigger>
-              <TabsTrigger value="targets" className="text-xs h-6 px-3">목표 설정</TabsTrigger>
             </TabsList>
           </Tabs>
         </SheetHeader>
 
         {activeTab === "cohorts" ? (
           <CohortTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} />
-        ) : activeTab === "costs" ? (
-          <CostTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} defaultCohortNo={defaultCohortNo} />
         ) : (
-          <TargetsTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} defaultCohortNo={defaultCohortNo} />
+          <CostTab defaultInstructor={defaultInstructor} defaultCourse={defaultCourse} defaultCohortNo={defaultCohortNo} />
         )}
       </SheetContent>
     </Sheet>
@@ -131,7 +149,123 @@ function DatePickerField({ value, onChange }: { value: string; onChange: (v: str
   );
 }
 
-// ═══════════════════════ Cohort Tab (기존) ═══════════════════════
+// ── Status-colored Select Trigger ──
+function StatusSelectTrigger({ status }: { status: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium", STATUS_COLORS[status as keyof typeof STATUS_COLORS] ?? "")}>
+      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", STATUS_DOT[status as keyof typeof STATUS_DOT] ?? "bg-muted-foreground")} />
+      {STATUS_LABEL[status] ?? status}
+    </span>
+  );
+}
+
+// ── Inline Targets Section (기수별 목표 B안) ──
+function InlineTargetsSection({ instructorName, courseTitle, cohortNo }: { instructorName: string; courseTitle: string; cohortNo: number }) {
+  const { targets } = useTargets(instructorName, courseTitle, cohortNo);
+
+  const [revenue, setRevenue] = useState("");
+  const [students, setStudents] = useState("");
+  const [conversion, setConversion] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "dirty">("idle");
+
+  const key = makeTargetKey(instructorName, courseTitle, cohortNo);
+
+  // Sync form when targets change (from store subscription)
+  useEffect(() => {
+    setRevenue(targets?.revenue_target != null ? String(targets.revenue_target) : "");
+    setStudents(targets?.students_target != null ? String(targets.students_target) : "");
+    setConversion(targets?.conversion_target != null ? String(targets.conversion_target) : "");
+    setSaveStatus("idle");
+  }, [targets?.revenue_target, targets?.students_target, targets?.conversion_target]);
+
+  const markDirty = () => setSaveStatus("dirty");
+
+  const handleSave = () => {
+    const convNum = conversion ? Number(conversion) : null;
+    if (convNum != null && (convNum < 0 || convNum > 100)) {
+      toast.error("전환율은 0~100% 범위로 입력하세요.");
+      return;
+    }
+    if (revenue && Number(revenue) < 0) { toast.error("매출 목표는 0 이상이어야 합니다."); return; }
+    if (students && Number(students) < 0) { toast.error("수강생 목표는 0 이상이어야 합니다."); return; }
+
+    upsertTarget(key, {
+      revenue_target: revenue ? Number(revenue) : null,
+      students_target: students ? Number(students) : null,
+      conversion_target: convNum,
+    });
+    setSaveStatus("saved");
+    toast.success("목표 저장됨");
+    setTimeout(() => setSaveStatus("idle"), 2000);
+  };
+
+  const handleClear = () => {
+    deleteTarget(key);
+    setRevenue("");
+    setStudents("");
+    setConversion("");
+    setSaveStatus("idle");
+    toast.success("목표 삭제됨");
+  };
+
+  const hasValues = revenue || students || conversion;
+  const revenueNum = revenue ? Number(revenue) : 0;
+
+  return (
+    <div className="rounded-md border border-border/60 p-2.5 space-y-2.5">
+      <div className="flex items-center gap-1.5">
+        <Target className="h-3.5 w-3.5 text-muted-foreground" />
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">기수 목표 (선택)</p>
+        {!targets && (
+          <span className="text-[10px] text-muted-foreground ml-auto">목표 미설정</span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">목표 매출 (원)</Label>
+          <Input
+            type="number" min="0" placeholder="300000000"
+            value={revenue} onChange={(e) => { setRevenue(e.target.value); markDirty(); }}
+            className="h-7 text-xs tabular-nums"
+          />
+          {revenueNum > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(revenueNum)}</p>}
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">목표 수강생</Label>
+          <Input
+            type="number" min="0" placeholder="50"
+            value={students} onChange={(e) => { setStudents(e.target.value); markDirty(); }}
+            className="h-7 text-xs tabular-nums"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">목표 전환율 (%)</Label>
+          <Input
+            type="number" step="0.1" min="0" max="100" placeholder="15"
+            value={conversion} onChange={(e) => { setConversion(e.target.value); markDirty(); }}
+            className="h-7 text-xs tabular-nums"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <Button onClick={handleSave} size="sm" className="h-7 text-[11px] gap-1 flex-1">
+          <Save className="h-3 w-3" /> 목표 저장
+        </Button>
+        {hasValues && (
+          <Button variant="ghost" size="sm" className="h-7 text-[11px] text-muted-foreground hover:text-destructive gap-1" onClick={handleClear}>
+            <RotateCcw className="h-3 w-3" /> 삭제
+          </Button>
+        )}
+        {saveStatus === "saved" && <Badge variant="secondary" className="text-[9px] h-5 gap-1"><Check className="h-3 w-3" /> 저장됨</Badge>}
+        {saveStatus === "dirty" && <Badge variant="outline" className="text-[9px] h-5 border-amber-500/50 text-amber-600 dark:text-amber-400">미저장</Badge>}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════ Cohort Tab ═══════════════════════
 function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: string; defaultCourse?: string }) {
   const rawCohorts = useRawCohortStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -281,11 +415,12 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
                   <TableRow key={c.id} className={`cursor-pointer border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/30"}`} onClick={() => setSelectedId(c.id)}>
                     <TableCell className="py-1.5 px-2 text-[11px]">{c.instructor_name}</TableCell>
                     <TableCell className="py-1.5 px-2 text-[11px] max-w-[120px] truncate">{c.course_title}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-[11px] text-center">{c.cohort_no}기{hasWarn && <span className="ml-1 text-yellow-500">⚠</span>}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-[11px] text-center">{c.cohort_no}기{hasWarn && <span className="ml-1 text-amber-500">⚠</span>}</TableCell>
                     <TableCell className="py-1.5 px-2">
-                      <Badge variant={c.status === "active" ? "default" : c.status === "closed" ? "secondary" : "outline"} className="text-[9px] h-4 px-1">
-                        {c.status === "active" ? "운영중" : c.status === "closed" ? "종료" : "계획"}
-                      </Badge>
+                      <span className={cn("inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-medium", STATUS_COLORS[c.status])}>
+                        <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_DOT[c.status])} />
+                        {STATUS_LABEL[c.status]}
+                      </span>
                     </TableCell>
                   </TableRow>
                 );
@@ -306,8 +441,8 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
               </div>
             )}
             {warnings.length > 0 && (
-              <div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 p-2 space-y-0.5">
-                {warnings.map((w, i) => <p key={i} className="text-[10px] text-yellow-700 dark:text-yellow-400 flex items-center gap-1"><AlertTriangle className="h-3 w-3 shrink-0" /> {w}</p>)}
+              <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 space-y-0.5">
+                {warnings.map((w, i) => <p key={i} className="text-[10px] text-amber-700 dark:text-amber-400 flex items-center gap-1"><AlertTriangle className="h-3 w-3 shrink-0" /> {w}</p>)}
               </div>
             )}
             <div className="grid grid-cols-2 gap-2">
@@ -319,8 +454,19 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
               <div className="col-span-3 space-y-1 min-w-0">
                 <Label className="text-xs">상태</Label>
                 <Select value={form.status} onValueChange={(v) => updateField("status", v as RawCohort["status"])}>
-                  <SelectTrigger className="h-8 text-xs w-full min-w-0"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="planned">계획</SelectItem><SelectItem value="active">운영중</SelectItem><SelectItem value="closed">종료</SelectItem></SelectContent>
+                  <SelectTrigger className="h-8 text-xs w-full min-w-0 [&>span]:flex [&>span]:items-center">
+                    <StatusSelectTrigger status={form.status} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["planned", "active", "closed"] as const).map((s) => (
+                      <SelectItem key={s} value={s}>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className={cn("h-2 w-2 rounded-full", STATUS_DOT[s])} />
+                          {STATUS_LABEL[s]}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="col-span-7 space-y-1 min-w-0">
@@ -339,6 +485,13 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
               <div className="flex justify-between text-xs"><span className="text-muted-foreground">전환율 (결제/지원)</span><span className="font-medium tabular-nums">{conversion}%</span></div>
               <div className="flex justify-between text-xs"><span className="text-muted-foreground">참고 전환율 (결제/리드)</span><span className="font-medium tabular-nums">{conversionSec}%</span></div>
             </div>
+
+            {/* ── Inline Targets Section ── */}
+            <InlineTargetsSection
+              instructorName={form.instructor_name}
+              courseTitle={form.course_title}
+              cohortNo={form.cohort_no}
+            />
           </div>
         ) : (
           <div className="flex h-full items-center justify-center"><p className="text-xs text-muted-foreground">좌측 목록에서 기수를 선택하세요</p></div>
@@ -355,53 +508,48 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved">("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [form, setForm] = useState<PlatformCost | null>(null);
-  const newRowRef = useRef<string | null>(null);
 
-  // Locked filter state
-  const [lockedFilter, setLockedFilter] = useState<{
-    instructor: string; course: string; cohortNo: number;
-  } | null>(null);
+  // ─── Cohort selector ───
+  const cohortList = useMemo(() => {
+    return rawCohorts
+      .map((c) => ({ id: c.id, label: `${c.instructor_name} / ${c.course_title} ${c.cohort_no}기`, instructor: c.instructor_name, course: c.course_title, cohortNo: c.cohort_no }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [rawCohorts]);
 
-  // Resolve default instructor/course names
-  const defaultInstName = rawCohorts.find((c) => `inst-${c.instructor_name}` === defaultInstructor)?.instructor_name;
-  const defaultCourseName = rawCohorts.find((c) => `course-${c.course_title}` === defaultCourse)?.course_title;
+  const [selCohortId, setSelCohortId] = useState<string>(() => {
+    if (defaultInstructor && defaultCourse && defaultCohortNo) {
+      const match = rawCohorts.find((c) => `inst-${c.instructor_name}` === defaultInstructor && `course-${c.course_title}` === defaultCourse && c.cohort_no === defaultCohortNo);
+      return match?.id ?? cohortList[0]?.id ?? "";
+    }
+    return cohortList[0]?.id ?? "";
+  });
 
-  // Active filter: locked filter takes priority over defaults
-  const activeInstName = lockedFilter?.instructor ?? defaultInstName;
-  const activeCourseName = lockedFilter?.course ?? defaultCourseName;
-  const activeCohortNo = lockedFilter?.cohortNo ?? null;
-
-  // Filter costs
-  const filteredCosts = useMemo(() => {
-    let list = [...platformCosts];
-    if (activeInstName) list = list.filter((c) => c.instructor_name === activeInstName);
-    if (activeCourseName) list = list.filter((c) => c.course_title === activeCourseName);
-    if (activeCohortNo != null) list = list.filter((c) => c.cohort_no === activeCohortNo);
-    return list.sort((a, b) => a.cohort_no - b.cohort_no || a.platform_name.localeCompare(b.platform_name));
-  }, [platformCosts, activeInstName, activeCourseName, activeCohortNo]);
-
-  // Auto-select first if nothing selected
   useEffect(() => {
-    if (!selectedId && filteredCosts.length > 0) setSelectedId(filteredCosts[0].id);
-  }, [filteredCosts.length, selectedId]);
+    if (cohortList.length > 0 && !cohortList.find((c) => c.id === selCohortId)) {
+      setSelCohortId(cohortList[0].id);
+    }
+  }, [cohortList, selCohortId]);
 
-  // Sync form from store
+  const costsForCohort = useMemo(() => {
+    const sel = cohortList.find((c) => c.id === selCohortId);
+    if (!sel) return [];
+    return getCostsForCohort(sel.instructor, sel.course, sel.cohortNo);
+  }, [selCohortId, platformCosts, cohortList]);
+
+  // Form state
+  const [form, setForm] = useState<PlatformCost | null>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
+
+  useEffect(() => {
+    if (costsForCohort.length > 0 && !selectedId) setSelectedId(costsForCohort[0].id);
+    if (costsForCohort.length === 0) { setSelectedId(null); setForm(null); }
+  }, [costsForCohort.length]);
+
   useEffect(() => {
     if (!selectedId) { setForm(null); return; }
-    const found = platformCosts.find((c) => c.id === selectedId);
+    const found = costsForCohort.find((c) => c.id === selectedId);
     if (found) setForm({ ...found });
-    else setForm(null);
-  }, [selectedId, platformCosts]);
-
-  // Scroll to newly created row
-  useEffect(() => {
-    if (newRowRef.current) {
-      const el = document.getElementById(`cost-row-${newRowRef.current}`);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      newRowRef.current = null;
-    }
-  }, [filteredCosts]);
+  }, [selectedId, costsForCohort]);
 
   const autoSave = useCallback((updated: PlatformCost) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -421,40 +569,23 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
     });
   }, [autoSave]);
 
-  const recentPlatforms = useMemo(() => getRecentPlatformNames(), [platformCosts]);
-
-  // Available cohorts for dropdown
-  const availableCohorts = useMemo(() => {
-    let list = [...rawCohorts];
-    if (activeInstName) list = list.filter((c) => c.instructor_name === activeInstName);
-    if (activeCourseName) list = list.filter((c) => c.course_title === activeCourseName);
-    return list.sort((a, b) => a.cohort_no - b.cohort_no);
-  }, [rawCohorts, activeInstName, activeCourseName]);
-
-  const handleAddNew = () => {
-    const instName = (activeInstName ?? rawCohorts[0]?.instructor_name ?? "").trim();
-    const courseName = (activeCourseName ?? rawCohorts[0]?.course_title ?? "").trim();
-    const cohortNo = defaultCohortNo ?? availableCohorts[availableCohorts.length - 1]?.cohort_no ?? 1;
-
+  const handleNewCost = () => {
+    const sel = cohortList.find((c) => c.id === selCohortId);
+    if (!sel) return;
     const newCost: PlatformCost = {
       id: generateCostId(),
-      instructor_name: instName,
-      course_title: courseName,
-      cohort_no: cohortNo,
-      platform_name: recentPlatforms[0] ?? "N잡연구소",
+      instructor_name: sel.instructor,
+      course_title: sel.course,
+      cohort_no: sel.cohortNo,
+      platform_name: "",
       fee_amount: 0,
       ad_cost_amount: 0,
       note: "",
       updated_at: new Date().toISOString(),
     };
-
-    // Lock filter to this cohort so the new record is guaranteed visible
-    setLockedFilter({ instructor: instName, course: courseName, cohortNo });
-
     upsertPlatformCost(newCost);
     setSelectedId(newCost.id);
-    newRowRef.current = newCost.id;
-    toast.success("비용 레코드 추가됨");
+    setShowNewForm(false);
   };
 
   const handleDelete = () => {
@@ -464,355 +595,108 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
     toast.success("비용 삭제됨");
   };
 
-  const [platformInput, setPlatformInput] = useState("");
-
-  useEffect(() => {
-    if (form) setPlatformInput(form.platform_name);
-  }, [form?.id]);
+  const recentPlatforms = getRecentPlatformNames();
+  const totalCost = costsForCohort.reduce((sum, c) => sum + c.fee_amount + c.ad_cost_amount, 0);
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      {/* Left: cost list */}
-      <div className="w-[45%] min-w-0 border-r flex flex-col overflow-hidden">
-        <div className="flex items-center gap-1.5 p-2 border-b">
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleAddNew}><Plus className="h-3 w-3" /> 새 비용</Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
-          {saveStatus === "saved" && <Badge variant="secondary" className="text-[10px] h-5 gap-1 ml-auto"><Check className="h-3 w-3" /> 저장됨</Badge>}
-        </div>
-
-        {/* Locked filter indicator */}
-        {lockedFilter && (
-          <div className="flex items-center gap-1.5 px-2 py-1.5 border-b bg-muted/50">
-            <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
-            <span className="text-[10px] text-muted-foreground truncate">
-              {lockedFilter.instructor} · {lockedFilter.cohortNo}기 고정
-            </span>
-            <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5 ml-auto gap-1 text-muted-foreground hover:text-foreground" onClick={() => setLockedFilter(null)}>
-              <Unlock className="h-3 w-3" /> 해제
-            </Button>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-border/50">
-                <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2">플랫폼</TableHead>
-                <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2 text-center">기수</TableHead>
-                <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2 text-right">수수료</TableHead>
-                <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2 text-right">광고비</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCosts.map((c) => (
-                <TableRow
-                  key={c.id}
-                  id={`cost-row-${c.id}`}
-                  className={`cursor-pointer border-b border-border/30 transition-colors ${c.id === selectedId ? "bg-primary/5" : "hover:bg-muted/30"}`}
-                  onClick={() => setSelectedId(c.id)}
-                >
-                  <TableCell className="py-1.5 px-2 text-[11px]">{c.platform_name}</TableCell>
-                  <TableCell className="py-1.5 px-2 text-[11px] text-center">{c.cohort_no}기</TableCell>
-                  <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.fee_amount)}</TableCell>
-                  <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.ad_cost_amount)}</TableCell>
-                </TableRow>
-              ))}
-              {filteredCosts.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="text-center py-8 text-xs text-muted-foreground">비용 데이터가 없습니다</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+    <div className="flex flex-1 overflow-hidden flex-col">
+      {/* Cohort selector */}
+      <div className="flex items-center gap-2 p-2 border-b shrink-0">
+        <Label className="text-xs text-muted-foreground shrink-0">기수:</Label>
+        <Select value={selCohortId} onValueChange={setSelCohortId}>
+          <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {cohortList.map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Right: cost form */}
-      <div className="w-[55%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
-        {form ? (
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs">플랫폼</Label>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left: cost list */}
+        <div className="w-[45%] min-w-0 border-r flex flex-col overflow-hidden">
+          <div className="flex items-center gap-1.5 p-2 border-b">
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleNewCost}><Plus className="h-3 w-3" /> 새 비용</Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
+            {saveStatus === "saved" && <Badge variant="secondary" className="text-[10px] h-5 gap-1 ml-auto"><Check className="h-3 w-3" /> 저장됨</Badge>}
+          </div>
+          <div className="flex-1 overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-border/50">
+                  <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2">플랫폼</TableHead>
+                  <TableHead className="h-7 text-[9px] uppercase tracking-widest px-2 text-right">비용</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {costsForCohort.map((c) => {
+                  const isSelected = c.id === selectedId;
+                  return (
+                    <TableRow key={c.id} className={`cursor-pointer border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/30"}`} onClick={() => setSelectedId(c.id)}>
+                      <TableCell className="py-1.5 px-2 text-[11px]">{c.platform_name || "(미입력)"}</TableCell>
+                      <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.fee_amount + c.ad_cost_amount)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+                {costsForCohort.length === 0 && <TableRow><TableCell colSpan={2} className="text-center py-8 text-xs text-muted-foreground">비용 데이터가 없습니다</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </div>
+          {costsForCohort.length > 0 && (
+            <div className="border-t p-2 text-xs flex justify-between">
+              <span className="text-muted-foreground">합계</span>
+              <span className="font-medium tabular-nums">{formatWonCompact(costsForCohort.reduce((s, c) => s + c.fee_amount + c.ad_cost_amount, 0))}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Right: cost form */}
+        <div className="w-[55%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
+          {form ? (
+            <div className="space-y-3">
               <div className="space-y-1">
-                <Input
-                  value={platformInput}
-                  onChange={(e) => { setPlatformInput(e.target.value); updateField("platform_name", e.target.value); }}
-                  placeholder="예: N잡연구소"
-                  className="h-8 text-xs"
-                />
+                <Label className="text-xs">플랫폼 이름</Label>
+                <Input value={form.platform_name} onChange={(e) => updateField("platform_name", e.target.value)} className="h-8 text-xs w-full" placeholder="예: 네이버, 구글" />
                 {recentPlatforms.length > 0 && (
-                  <div className="flex gap-1 flex-wrap">
-                    {recentPlatforms.map((p) => (
-                      <button key={p} type="button" onClick={() => { setPlatformInput(p); updateField("platform_name", p); }}
-                        className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground hover:bg-accent transition-colors">{p}</button>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {recentPlatforms.slice(0, 5).map((name) => (
+                      <Button key={name} variant="outline" size="sm" className="h-5 text-[9px] px-1.5" onClick={() => updateField("platform_name", name)}>
+                        {name}
+                      </Button>
                     ))}
                   </div>
                 )}
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">강사</Label>
-                <Input value={form.instructor_name} onChange={(e) => updateField("instructor_name", e.target.value)} className="h-8 text-xs" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">과정</Label>
-                <Input value={form.course_title} onChange={(e) => updateField("course_title", e.target.value)} className="h-8 text-xs" />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">기수</Label>
-              {availableCohorts.length > 0 ? (
-                <Select value={String(form.cohort_no)} onValueChange={(v) => updateField("cohort_no", Number(v))}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {availableCohorts.map((c) => (
-                      <SelectItem key={c.cohort_no} value={String(c.cohort_no)}>{c.cohort_no}기</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input type="number" min={1} value={form.cohort_no} onChange={(e) => updateField("cohort_no", parseInt(e.target.value) || 1)} className="h-8 text-xs tabular-nums" />
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">수수료 (원)</Label>
-                <Input value={fmtInput(form.fee_amount)} onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("fee_amount", n); }} className="h-8 text-xs tabular-nums" inputMode="numeric" />
-                <p className="text-[10px] text-muted-foreground">{formatWonCompact(form.fee_amount)}</p>
+                <Input
+                  value={form.fee_amount ? fmtInput(form.fee_amount) : ""}
+                  onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("fee_amount", n); }}
+                  className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
+                />
+                {form.fee_amount > 0 && <p className="text-[10px] text-muted-foreground">표시: {formatWonCompact(form.fee_amount)}</p>}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">광고비 (원)</Label>
-                <Input value={fmtInput(form.ad_cost_amount)} onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("ad_cost_amount", n); }} className="h-8 text-xs tabular-nums" inputMode="numeric" />
-                <p className="text-[10px] text-muted-foreground">{formatWonCompact(form.ad_cost_amount)}</p>
+                <Input
+                  value={form.ad_cost_amount ? fmtInput(form.ad_cost_amount) : ""}
+                  onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("ad_cost_amount", n); }}
+                  className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
+                />
+                {form.ad_cost_amount > 0 && <p className="text-[10px] text-muted-foreground">표시: {formatWonCompact(form.ad_cost_amount)}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">메모</Label>
+                <Input value={form.note} onChange={(e) => updateField("note", e.target.value)} className="h-8 text-xs w-full" placeholder="(선택)" />
+              </div>
+              <div className="rounded-md bg-muted p-2.5">
+                <p className="text-[10px] text-muted-foreground">
+                  💡 비용은 플랫폼별로 입력합니다. 같은 기수의 비용 합계가 대시보드에 표시됩니다.
+                </p>
               </div>
             </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">메모 (선택)</Label>
-              <Input value={form.note} onChange={(e) => updateField("note", e.target.value)} placeholder="정산 관련 메모" className="h-8 text-xs" />
-            </div>
-
-            <div className="rounded-md bg-muted p-2.5">
-              <p className="text-[10px] text-muted-foreground">
-                💡 총매출은 대시보드 매출을 사용하며, 수수료/광고비만 입력하면 순이익이 자동 계산됩니다.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex h-full items-center justify-center"><p className="text-xs text-muted-foreground">"새 비용" 버튼을 눌러 입력하세요</p></div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════ Targets Tab (목표 설정 - 기수별 B안) ═══════════════════════
-
-function TargetsTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaultInstructor?: string; defaultCourse?: string; defaultCohortNo?: number }) {
-  const rawCohorts = useRawCohortStore();
-
-  // Extract unique instructors
-  const instructors = useMemo(() => [...new Set(rawCohorts.map((c) => c.instructor_name))].sort(), [rawCohorts]);
-
-  // Selected instructor
-  const defaultInstName = rawCohorts.find((c) => `inst-${c.instructor_name}` === defaultInstructor)?.instructor_name ?? instructors[0] ?? "";
-  const [selInstructor, setSelInstructor] = useState(defaultInstName);
-
-  // Courses for selected instructor
-  const coursesForInst = useMemo(
-    () => [...new Set(rawCohorts.filter((c) => c.instructor_name === selInstructor).map((c) => c.course_title))].sort(),
-    [rawCohorts, selInstructor]
-  );
-  const defaultCourseName = rawCohorts.find((c) => `course-${c.course_title}` === defaultCourse && c.instructor_name === selInstructor)?.course_title ?? coursesForInst[0] ?? "";
-  const [selCourse, setSelCourse] = useState(defaultCourseName);
-
-  // Cohorts for selected instructor + course
-  const cohortsForCourse = useMemo(
-    () => rawCohorts.filter((c) => c.instructor_name === selInstructor && c.course_title === selCourse).map((c) => c.cohort_no).sort((a, b) => a - b),
-    [rawCohorts, selInstructor, selCourse]
-  );
-  const defaultCohNo = defaultCohortNo && cohortsForCourse.includes(defaultCohortNo) ? defaultCohortNo : cohortsForCourse[cohortsForCourse.length - 1] ?? 1;
-  const [selCohortNo, setSelCohortNo] = useState(defaultCohNo);
-
-  // Reset dependent when parent changes
-  useEffect(() => {
-    if (!coursesForInst.includes(selCourse)) setSelCourse(coursesForInst[0] ?? "");
-  }, [selInstructor, coursesForInst]);
-  useEffect(() => {
-    if (!cohortsForCourse.includes(selCohortNo)) setSelCohortNo(cohortsForCourse[cohortsForCourse.length - 1] ?? 1);
-  }, [selCourse, cohortsForCourse]);
-
-  // Sync defaults when drawer opens with new context
-  useEffect(() => {
-    const inst = rawCohorts.find((c) => `inst-${c.instructor_name}` === defaultInstructor)?.instructor_name;
-    if (inst) setSelInstructor(inst);
-  }, [defaultInstructor]);
-  useEffect(() => {
-    const course = rawCohorts.find((c) => `course-${c.course_title}` === defaultCourse && c.instructor_name === selInstructor)?.course_title;
-    if (course) setSelCourse(course);
-  }, [defaultCourse]);
-  useEffect(() => {
-    if (defaultCohortNo && cohortsForCourse.includes(defaultCohortNo)) setSelCohortNo(defaultCohortNo);
-  }, [defaultCohortNo]);
-
-  const key = makeTargetKey(selInstructor, selCourse, selCohortNo);
-
-  const [revenue, setRevenue] = useState("");
-  const [students, setStudents] = useState("");
-  const [conversion, setConversion] = useState("");
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "dirty">("idle");
-
-  // Load on key change
-  useEffect(() => {
-    const all = loadAllTargets();
-    const t = all[key] ?? null;
-    setRevenue(t?.revenue_target != null ? String(t.revenue_target) : "");
-    setStudents(t?.students_target != null ? String(t.students_target) : "");
-    setConversion(t?.conversion_target != null ? String(t.conversion_target) : "");
-    setSaveStatus("idle");
-  }, [key]);
-
-  const markDirty = () => setSaveStatus("dirty");
-
-  const handleSave = () => {
-    const convNum = conversion ? Number(conversion) : null;
-    if (convNum != null && (convNum < 0 || convNum > 100)) {
-      toast.error("전환율은 0~100% 범위로 입력하세요.");
-      return;
-    }
-    if (revenue && Number(revenue) < 0) { toast.error("매출 목표는 0 이상이어야 합니다."); return; }
-    if (students && Number(students) < 0) { toast.error("수강생 목표는 0 이상이어야 합니다."); return; }
-
-    upsertTarget(key, {
-      revenue_target: revenue ? Number(revenue) : null,
-      students_target: students ? Number(students) : null,
-      conversion_target: convNum,
-    });
-    setSaveStatus("saved");
-    toast.success("목표 저장됨");
-    setTimeout(() => setSaveStatus("idle"), 2000);
-  };
-
-  const handleClear = () => {
-    deleteTarget(key);
-    setRevenue("");
-    setStudents("");
-    setConversion("");
-    setSaveStatus("idle");
-    toast.success("목표 삭제됨");
-  };
-
-  const handleResetToDefault = () => {
-    const inst = rawCohorts.find((c) => `inst-${c.instructor_name}` === defaultInstructor)?.instructor_name;
-    const course = rawCohorts.find((c) => `course-${c.course_title}` === defaultCourse && c.instructor_name === (inst ?? selInstructor))?.course_title;
-    if (inst) setSelInstructor(inst);
-    if (course) setSelCourse(course);
-    if (defaultCohortNo) setSelCohortNo(defaultCohortNo);
-  };
-
-  const hasValues = revenue || students || conversion;
-
-  if (instructors.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-8">
-        <p className="text-xs text-muted-foreground">기수 원데이터가 없습니다. 먼저 기수를 추가해주세요.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-1 overflow-auto p-4">
-      <div className="max-w-md mx-auto space-y-5">
-        {/* Target scope selectors */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-foreground">대상 선택</p>
-            <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground" onClick={handleResetToDefault}>
-              <RotateCcw className="h-3 w-3 mr-1" /> 현재 대시보드로
-            </Button>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">강사</Label>
-              <Select value={selInstructor} onValueChange={setSelInstructor}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {instructors.map((inst) => <SelectItem key={inst} value={inst}>{inst}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">과정</Label>
-              <Select value={selCourse} onValueChange={setSelCourse}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {coursesForInst.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">기수</Label>
-              <Select value={String(selCohortNo)} onValueChange={(v) => setSelCohortNo(Number(v))}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {cohortsForCourse.map((no) => <SelectItem key={no} value={String(no)}>{no}기</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Form fields */}
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="target-revenue" className="text-xs font-medium">목표 매출 (원)</Label>
-            <Input
-              id="target-revenue" type="number" min="0" placeholder="예: 300000000"
-              value={revenue} onChange={(e) => { setRevenue(e.target.value); markDirty(); }}
-              className="h-9 text-sm tabular-nums"
-            />
-            <p className="text-[10px] text-muted-foreground">원 단위로 입력 (예: 3억 = 300000000)</p>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="target-students" className="text-xs font-medium">목표 수강생 (명)</Label>
-            <Input
-              id="target-students" type="number" min="0" placeholder="예: 100"
-              value={students} onChange={(e) => { setStudents(e.target.value); markDirty(); }}
-              className="h-9 text-sm tabular-nums"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="target-conversion" className="text-xs font-medium">목표 전환율 (%, 결제/지원)</Label>
-            <Input
-              id="target-conversion" type="number" step="0.1" min="0" max="100" placeholder="예: 10"
-              value={conversion} onChange={(e) => { setConversion(e.target.value); markDirty(); }}
-              className="h-9 text-sm tabular-nums"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button onClick={handleSave} className="flex-1 h-9 text-xs gap-1.5">
-            <Save className="h-3 w-3" /> 저장
-          </Button>
-          {saveStatus === "saved" && <Badge variant="secondary" className="text-[10px] h-5 gap-1"><Check className="h-3 w-3" /> 저장됨</Badge>}
-          {saveStatus === "dirty" && <Badge variant="outline" className="text-[10px] h-5 border-yellow-500/50 text-yellow-600 dark:text-yellow-400">미저장</Badge>}
-        </div>
-
-        {hasValues && (
-          <Button variant="ghost" size="sm" className="w-full h-8 text-xs text-muted-foreground hover:text-destructive gap-1.5" onClick={handleClear}>
-            <RotateCcw className="h-3 w-3" /> 이 기수 목표 삭제
-          </Button>
-        )}
-
-        <div className="rounded-md bg-muted p-2.5">
-          <p className="text-[10px] text-muted-foreground">
-            💡 목표는 강사+과정+기수 단위로 저장됩니다. 대시보드에서 선택한 기수의 목표 달성률이 표시됩니다.
-          </p>
+          ) : (
+            <div className="flex h-full items-center justify-center"><p className="text-xs text-muted-foreground">"새 비용" 버튼을 눌러 입력하세요</p></div>
+          )}
         </div>
       </div>
     </div>
