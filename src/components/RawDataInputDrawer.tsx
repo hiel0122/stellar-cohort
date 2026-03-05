@@ -569,9 +569,15 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
     });
   }, [autoSave]);
 
+  const costListRef = useRef<HTMLDivElement>(null);
+
   const handleNewCost = () => {
     const sel = cohortList.find((c) => c.id === selCohortId);
-    if (!sel) return;
+    if (!sel) {
+      toast.error("기수를 먼저 선택하세요.");
+      return;
+    }
+    const recent = getRecentPlatformNames();
     const newCost: PlatformCost = {
       id: generateCostId(),
       instructor_name: sel.instructor,
@@ -586,6 +592,12 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
     upsertPlatformCost(newCost);
     setSelectedId(newCost.id);
     setShowNewForm(false);
+    toast.success("비용 레코드가 추가되었습니다");
+    // Scroll to new row after render
+    requestAnimationFrame(() => {
+      const row = costListRef.current?.querySelector(`[data-cost-id="${newCost.id}"]`);
+      row?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
   };
 
   const handleDelete = () => {
@@ -615,11 +627,11 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
         {/* Left: cost list */}
         <div className="w-[45%] min-w-0 border-r flex flex-col overflow-hidden">
           <div className="flex items-center gap-1.5 p-2 border-b">
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleNewCost}><Plus className="h-3 w-3" /> 새 비용</Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleNewCost} disabled={!selCohortId}><Plus className="h-3 w-3" /> 새 비용</Button>
             <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
             {saveStatus === "saved" && <Badge variant="secondary" className="text-[10px] h-5 gap-1 ml-auto"><Check className="h-3 w-3" /> 저장됨</Badge>}
           </div>
-          <div className="flex-1 overflow-auto">
+          <div ref={costListRef} className="flex-1 overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-border/50">
@@ -631,7 +643,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
                 {costsForCohort.map((c) => {
                   const isSelected = c.id === selectedId;
                   return (
-                    <TableRow key={c.id} className={`cursor-pointer border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/30"}`} onClick={() => setSelectedId(c.id)}>
+                    <TableRow key={c.id} data-cost-id={c.id} className={`cursor-pointer border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/30"}`} onClick={() => setSelectedId(c.id)}>
                       <TableCell className="py-1.5 px-2 text-[11px]">{c.platform_name || "(미입력)"}</TableCell>
                       <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.fee_amount + c.ad_cost_amount)}</TableCell>
                     </TableRow>
