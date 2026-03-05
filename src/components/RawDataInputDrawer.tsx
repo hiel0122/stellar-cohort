@@ -89,6 +89,48 @@ export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defa
   );
 }
 
+const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+
+function DatePickerField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const dateObj = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
+  const isValid = dateObj && !isNaN(dateObj.getTime());
+  const dayOfWeek = isValid ? WEEKDAYS_KO[dateObj.getDay()] : null;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "h-8 w-full min-w-0 justify-start text-left font-normal px-2 gap-1.5",
+            !isValid && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="h-3 w-3 shrink-0 opacity-60" />
+          <span className="truncate text-xs">
+            {isValid ? `${format(dateObj, "yyyy. MM. dd.")} (${dayOfWeek})` : "시작일 선택"}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={isValid ? dateObj : undefined}
+          onSelect={(d) => {
+            if (d) {
+              onChange(format(d, "yyyy-MM-dd"));
+            }
+            setOpen(false);
+          }}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ═══════════════════════ Cohort Tab (기존) ═══════════════════════
 function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: string; defaultCourse?: string }) {
   const rawCohorts = useRawCohortStore();
