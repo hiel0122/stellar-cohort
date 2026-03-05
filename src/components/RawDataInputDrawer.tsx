@@ -251,7 +251,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
       </div>
 
       {/* Right: form */}
-      <div className="w-[45%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
+      <div className="w-[55%] min-w-0 overflow-y-auto overflow-x-hidden p-3">
         {form ? (
           <div className="space-y-3">
             {hardErrors.length > 0 && (
