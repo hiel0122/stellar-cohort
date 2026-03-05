@@ -244,7 +244,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
                   </TableRow>
                 );
               })}
-              {filtered.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-xs text-muted-foreground">데이터가 없습니다</TableCell></TableRow>}
+              {filtered.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-8 text-xs text-muted-foreground">데이터가 없습니다</TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>
