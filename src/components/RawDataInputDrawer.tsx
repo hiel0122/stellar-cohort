@@ -569,9 +569,15 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
     });
   }, [autoSave]);
 
+  const costListRef = useRef<HTMLDivElement>(null);
+
   const handleNewCost = () => {
     const sel = cohortList.find((c) => c.id === selCohortId);
-    if (!sel) return;
+    if (!sel) {
+      toast.error("기수를 먼저 선택하세요.");
+      return;
+    }
+    const recent = getRecentPlatformNames();
     const newCost: PlatformCost = {
       id: generateCostId(),
       instructor_name: sel.instructor,
@@ -586,6 +592,12 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
     upsertPlatformCost(newCost);
     setSelectedId(newCost.id);
     setShowNewForm(false);
+    toast.success("비용 레코드가 추가되었습니다");
+    // Scroll to new row after render
+    requestAnimationFrame(() => {
+      const row = costListRef.current?.querySelector(`[data-cost-id="${newCost.id}"]`);
+      row?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
   };
 
   const handleDelete = () => {
