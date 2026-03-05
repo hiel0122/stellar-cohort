@@ -631,7 +631,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
             <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete} disabled={!form}><Trash2 className="h-3 w-3" /></Button>
             {saveStatus === "saved" && <Badge variant="secondary" className="text-[10px] h-5 gap-1 ml-auto"><Check className="h-3 w-3" /> 저장됨</Badge>}
           </div>
-          <div className="flex-1 overflow-auto">
+          <div ref={costListRef} className="flex-1 overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-border/50">
