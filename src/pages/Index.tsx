@@ -357,8 +357,9 @@ function CohortsOverview({
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{k.conversion.toFixed(1)}%</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_fee) : "—"}</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_ads) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost ? formatWonFull(cost.net_profit_l1) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{cost?.net_margin_l1 != null ? `${cost.net_margin_l1.toFixed(1)}%` : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost?.settlement_total != null ? formatWonFull(cost.settlement_total) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost?.payout != null ? formatWonFull(cost.payout) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{cost?.payout_margin != null ? `${cost.payout_margin.toFixed(1)}%` : "—"}</TableCell>
                   </TableRow>
                 );
               })}
