@@ -91,19 +91,19 @@ const Index = () => {
   const currentCost = useMemo(() => resolveCostSummary(currentKpi), [currentKpi, platformCosts]);
   const baselineCost = useMemo(() => resolveCostSummary(baselineKpi), [baselineKpi, platformCosts]);
 
-  // Sparkline for net profit across all kpis
-  const netProfitSparkline = useMemo(() => {
+  // Sparkline for payout (실지급액) across all kpis
+  const payoutSparkline = useMemo(() => {
     return kpis.map((k) => {
       const cs = resolveCostSummary(k);
-      return cs ? cs.net_profit_l1 : 0;
+      return cs?.payout ?? 0;
     });
   }, [kpis, platformCosts]);
 
-  // Net profit series for chart
-  const netProfitSeries = useMemo(() => {
+  // Payout series for chart (null = no data)
+  const payoutSeries = useMemo(() => {
     return kpis.map((k) => {
       const cs = resolveCostSummary(k);
-      return cs ? cs.net_profit_l1 : null;
+      return cs?.payout ?? null;
     });
   }, [kpis, platformCosts]);
 
