@@ -17,7 +17,7 @@ import {
 } from "@/lib/rawCohortStore";
 import { makeTargetKey, upsertTarget, loadAllTargets } from "@/lib/targetStore";
 import type { CourseTargets } from "@/lib/types";
-import { formatWonCompact } from "@/lib/format";
+import { formatWonFull } from "@/lib/format";
 
 interface Props {
   open: boolean;
