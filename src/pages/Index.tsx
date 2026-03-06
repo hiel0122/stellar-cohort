@@ -228,34 +228,37 @@ const Index = () => {
   );
 };
 
-// ── L1 Profit Cards ──
-function L1ProfitCards({
-  currentCost, baselineCost, isComparing, deltaLabel, netProfitSparkline,
+// ── Settlement / Payout Cards ──
+function SettlementCards({
+  currentCost, baselineCost, isComparing, deltaLabel, payoutSparkline,
 }: {
   currentCost: CohortCostSummary | null;
   baselineCost: CohortCostSummary | null;
   isComparing: boolean;
   deltaLabel: string;
-  netProfitSparkline: number[];
+  payoutSparkline: number[];
 }) {
   const { openRawData } = useLayoutActions();
   const hasCost = !!currentCost;
+  const hasPayout = currentCost?.payout != null;
 
   const feeDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.total_fee, baselineCost.total_fee) : null;
   const adsDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.total_ads, baselineCost.total_ads) : null;
-  const profitDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.net_profit_l1, baselineCost.net_profit_l1) : null;
-  const marginDelta = hasCost && isComparing && baselineCost && baselineCost.net_margin_l1 != null && currentCost.net_margin_l1 != null
-    ? currentCost.net_margin_l1 - baselineCost.net_margin_l1 : null;
+  const settleDelta = hasPayout && isComparing && baselineCost?.settlement_total != null
+    ? calcDelta(currentCost.settlement_total!, baselineCost.settlement_total) : null;
+  const payoutDelta = hasPayout && isComparing && baselineCost?.payout != null
+    ? calcDelta(currentCost.payout!, baselineCost.payout) : null;
+  const payoutMarginDelta = hasPayout && isComparing && baselineCost?.payout_margin != null && currentCost.payout_margin != null
+    ? currentCost.payout_margin - baselineCost.payout_margin : null;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch mt-3">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 items-stretch mt-3">
       <KPICard
         title="수수료"
         value={hasCost ? formatWonFull(currentCost.total_fee) : "—"}
         deltaPct={feeDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Receipt className="h-4 w-4" />}
-        secondaryText={!hasCost ? undefined : undefined}
       />
       <KPICard
         title="광고비"
@@ -265,21 +268,30 @@ function L1ProfitCards({
         icon={<Megaphone className="h-4 w-4" />}
       />
       <KPICard
-        title="순이익 (L1)"
-        value={hasCost ? formatWonFull(currentCost.net_profit_l1) : "—"}
-        deltaPct={profitDelta}
-        deltaLabel={hasCost ? deltaLabel : undefined}
-        icon={<PiggyBank className="h-4 w-4" />}
-        sparklineData={netProfitSparkline.some((v) => v !== 0) ? netProfitSparkline : undefined}
-        secondaryText={!hasCost ? undefined : undefined}
+        title="정산금 합계"
+        value={hasPayout ? formatWonFull(currentCost.settlement_total!) : "—"}
+        deltaPct={settleDelta}
+        deltaLabel={hasPayout ? deltaLabel : undefined}
+        icon={<Calculator className="h-4 w-4" />}
+        secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
       <KPICard
-          title="순이익률 (L1)"
-          value={hasCost && currentCost.net_margin_l1 != null ? `${currentCost.net_margin_l1.toFixed(1)}%` : "—"}
-          deltaPct={marginDelta}
-          deltaLabel={hasCost ? deltaLabel : undefined}
-          icon={<Percent className="h-4 w-4" />}
-        />
+        title="순이익 (실지급액)"
+        value={hasPayout ? formatWonFull(currentCost.payout!) : "—"}
+        deltaPct={payoutDelta}
+        deltaLabel={hasPayout ? deltaLabel : undefined}
+        icon={<Wallet className="h-4 w-4" />}
+        sparklineData={payoutSparkline.some((v) => v !== 0) ? payoutSparkline : undefined}
+        secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
+      />
+      <KPICard
+        title="순이익률 (실지급률)"
+        value={hasPayout && currentCost.payout_margin != null ? `${currentCost.payout_margin.toFixed(1)}%` : "—"}
+        deltaPct={payoutMarginDelta}
+        deltaLabel={hasPayout ? deltaLabel : undefined}
+        icon={<Percent className="h-4 w-4" />}
+        secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
+      />
     </div>
   );
 }
