@@ -192,8 +192,10 @@ const Index = () => {
 
                 {/* Target Progress */}
                 {currentKpi && (
-                  <TargetProgressSection targets={targets} revenue={currentKpi.revenue} students={currentKpi.students}
-                    conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")} />
+                  <div className="section-container">
+                    <TargetProgressSection targets={targets} revenue={currentKpi.revenue} students={currentKpi.students}
+                      conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")} />
+                  </div>
                 )}
 
                 {/* Target warning / Cohorts Overview */}
