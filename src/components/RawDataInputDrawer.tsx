@@ -76,7 +76,7 @@ export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defa
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        className="w-full sm:w-[85vw] sm:max-w-[1400px] overflow-hidden p-0 flex flex-col overflow-x-hidden"
+        className="w-full md:w-[75vw] lg:w-[50vw] md:max-w-[75vw] lg:max-w-[50vw] overflow-hidden p-0 flex flex-col overflow-x-hidden"
         side="right"
       >
         <SheetHeader className="px-4 pt-4 pb-2 border-b shrink-0">
