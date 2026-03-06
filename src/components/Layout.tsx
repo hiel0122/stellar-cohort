@@ -37,9 +37,8 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
           <div className="flex flex-1 flex-col min-w-0">
             <header className="sticky top-0 z-30 flex min-h-[3.5rem] items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4 py-2">
               <div className="flex items-center gap-3">
-                <SidebarTrigger><Menu className="h-4 w-4" /></SidebarTrigger>
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-semibold text-foreground">KPI Dashboard</h1>
+                  <h1 className="text-lg font-semibold text-foreground">매출 대시보드</h1>
                 </div>
               </div>
               <div className="flex items-center gap-1">
