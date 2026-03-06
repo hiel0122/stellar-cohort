@@ -45,7 +45,7 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
                 <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 mr-1" onClick={() => openRawData("cohorts")}>
                   <Database className="h-3 w-3" /> 원데이터 입력
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><Search className="h-4 w-4" /></Button>
+                
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><Bell className="h-4 w-4" /></Button>
                 <ThemeToggle />
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><User className="h-4 w-4" /></Button>
