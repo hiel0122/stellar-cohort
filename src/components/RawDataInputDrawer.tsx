@@ -618,8 +618,8 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
           </div>
           {totalPreview > 0 && (
             <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
-              합계: <span className="font-medium text-foreground tabular-nums">{formatWonCompact(totalPreview)}</span>
-              <span className="ml-2">(수수료 {formatWonCompact(feeAmount)} + 광고비 {formatWonCompact(ad)})</span>
+              합계: <span className="font-medium text-foreground tabular-nums">{formatWonFull(totalPreview)}</span>
+              <span className="ml-2">(수수료 {formatWonFull(feeAmount)} + 광고비 {formatWonFull(ad)})</span>
             </div>
           )}
         </div>
