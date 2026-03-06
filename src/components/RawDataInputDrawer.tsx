@@ -506,41 +506,46 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
 
 // ═══════════════════════ New Cost Modal ═══════════════════════
 
-function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, onCreated }: {
+function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenue, onCreated }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   instructor: string;
   course: string;
   cohortNo: number;
+  revenue: number;
   onCreated: (id: string) => void;
 }) {
   const [platformName, setPlatformName] = useState("");
-  const [feeAmount, setFeeAmount] = useState("");
+  const [feeRatePct, setFeeRatePct] = useState("");
   const [adCostAmount, setAdCostAmount] = useState("");
   const [note, setNote] = useState("");
   const recentPlatforms = getRecentPlatformNames();
 
-  // Reset form when modal opens
   useEffect(() => {
     if (open) {
       setPlatformName("");
-      setFeeAmount("");
+      setFeeRatePct("");
       setAdCostAmount("");
       setNote("");
     }
   }, [open]);
 
-  const fee = parseNum(feeAmount);
+  const rate = Number(feeRatePct) || 0;
+  const feeAmount = Math.round(revenue * (rate / 100));
   const ad = parseNum(adCostAmount);
-  const totalPreview = fee + ad;
+  const totalPreview = feeAmount + ad;
 
   const handleCreate = () => {
     if (!platformName.trim()) {
       toast.error("플랫폼 이름을 입력하세요.");
       return;
     }
-    if (fee < 0 || ad < 0) {
-      toast.error("비용은 0 이상이어야 합니다.");
+    if (rate < 0 || rate > 100) {
+      toast.error("수수료율은 0~100% 범위로 입력하세요.");
+      return;
+    }
+    if (ad < 0) {
+      toast.error("광고비는 0 이상이어야 합니다.");
       return;
     }
     const newCost: PlatformCost = {
@@ -549,11 +554,13 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, onCrea
       course_title: course.trim(),
       cohort_no: Number(cohortNo),
       platform_name: platformName.trim(),
-      fee_amount: fee,
+      fee_rate_pct: rate,
+      fee_amount: feeAmount,
       ad_cost_amount: ad,
       note: note.trim(),
       updated_at: new Date().toISOString(),
     };
+    console.log("[NewCostModal] creating cost", { newId: newCost.id, feeRate: rate, feeAmount, ad });
     upsertPlatformCost(newCost);
     onCreated(newCost.id);
     onOpenChange(false);
@@ -566,7 +573,7 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, onCrea
         <DialogHeader>
           <DialogTitle className="text-sm">새 비용 생성</DialogTitle>
           <DialogDescription className="text-xs">
-            {instructor} / {course} {cohortNo}기
+            {instructor} / {course} {cohortNo}기 · 매출 {formatWonCompact(revenue)}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
@@ -583,25 +590,27 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, onCrea
               </div>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs">수수료 (원)</Label>
-              <Input
-                value={feeAmount}
-                onChange={(e) => setFeeAmount(e.target.value)}
-                className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
-              />
-              {fee > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(fee)}</p>}
+          <div className="space-y-1">
+            <Label className="text-xs">수수료율 (%)</Label>
+            <Input
+              type="number" step="0.1" min="0" max="100"
+              value={feeRatePct}
+              onChange={(e) => setFeeRatePct(e.target.value)}
+              className="tabular-nums h-8 text-xs" placeholder="예: 7.5"
+            />
+            <div className="text-[10px] text-muted-foreground space-y-0.5">
+              <p>수수료 금액 = 매출 × 수수료율 = <span className="font-medium text-foreground tabular-nums">{feeAmount.toLocaleString("ko-KR")}원</span></p>
+              {revenue === 0 && <p className="text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">광고비 (원)</Label>
-              <Input
-                value={adCostAmount}
-                onChange={(e) => setAdCostAmount(e.target.value)}
-                className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
-              />
-              {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(ad)}</p>}
-            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">광고비 (원)</Label>
+            <Input
+              value={adCostAmount}
+              onChange={(e) => setAdCostAmount(e.target.value)}
+              className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
+            />
+            {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(ad)}</p>}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">메모 (선택)</Label>
@@ -610,6 +619,7 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, onCrea
           {totalPreview > 0 && (
             <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
               합계: <span className="font-medium text-foreground tabular-nums">{formatWonCompact(totalPreview)}</span>
+              <span className="ml-2">(수수료 {formatWonCompact(feeAmount)} + 광고비 {formatWonCompact(ad)})</span>
             </div>
           )}
         </div>
