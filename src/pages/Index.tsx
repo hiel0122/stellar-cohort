@@ -14,7 +14,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useTargets, calcProgress } from "@/hooks/useTargets";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
 import { getCohortCostSummary, type CohortCostSummary } from "@/lib/platformCostStore";
-import { formatWonCompact, formatWonFull, formatInt, formatPct } from "@/lib/format";
+import { formatWonFull, formatInt, formatPct } from "@/lib/format";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
@@ -149,7 +149,7 @@ const Index = () => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div>
-                        <KPICard title="매출" value={formatWonCompact(currentKpi.revenue)} deltaPct={getDelta("revenue")} deltaLabel={deltaLabel}
+                        <KPICard title="매출" value={formatWonFull(currentKpi.revenue)} deltaPct={getDelta("revenue")} deltaLabel={deltaLabel}
                           icon={<DollarSign className="h-4 w-4" />} sparklineData={sparklines.revenue} progress={revenueProgress} onClick={() => setSheetMetric("revenue")} />
                       </div>
                     </TooltipTrigger>
@@ -251,7 +251,7 @@ function L1ProfitCards({
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch mt-3">
       <KPICard
         title="수수료"
-        value={hasCost ? formatWonCompact(currentCost.total_fee) : "—"}
+        value={hasCost ? formatWonFull(currentCost.total_fee) : "—"}
         deltaPct={feeDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Receipt className="h-4 w-4" />}
@@ -259,14 +259,14 @@ function L1ProfitCards({
       />
       <KPICard
         title="광고비"
-        value={hasCost ? formatWonCompact(currentCost.total_ads) : "—"}
+        value={hasCost ? formatWonFull(currentCost.total_ads) : "—"}
         deltaPct={adsDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Megaphone className="h-4 w-4" />}
       />
       <KPICard
         title="순이익 (L1)"
-        value={hasCost ? formatWonCompact(currentCost.net_profit_l1) : "—"}
+        value={hasCost ? formatWonFull(currentCost.net_profit_l1) : "—"}
         deltaPct={profitDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<PiggyBank className="h-4 w-4" />}
@@ -336,17 +336,15 @@ function CohortsOverview({
                     </TableCell>
                     <TableCell className="py-2 px-2 text-xs text-muted-foreground">{k.start_date ?? "—"}</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">
-                      <Tooltip><TooltipTrigger asChild><span>{formatWonCompact(k.revenue)}</span></TooltipTrigger>
-                        <TooltipContent><p className="text-xs tabular-nums">{formatWonFull(k.revenue)}</p></TooltipContent>
-                      </Tooltip>
+                      {formatWonFull(k.revenue)}
                     </TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.students)}명</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.leads)}명</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.applied)}명</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{k.conversion.toFixed(1)}%</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonCompact(cost.total_fee) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonCompact(cost.total_ads) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost ? formatWonCompact(cost.net_profit_l1) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_fee) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_ads) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost ? formatWonFull(cost.net_profit_l1) : "—"}</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{cost?.net_margin_l1 != null ? `${cost.net_margin_l1.toFixed(1)}%` : "—"}</TableCell>
                   </TableRow>
                 );

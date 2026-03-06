@@ -17,7 +17,7 @@ import {
 } from "@/lib/rawCohortStore";
 import { makeTargetKey, upsertTarget, loadAllTargets } from "@/lib/targetStore";
 import type { CourseTargets } from "@/lib/types";
-import { formatWonCompact } from "@/lib/format";
+import { formatWonFull } from "@/lib/format";
 
 interface Props {
   open: boolean;
@@ -354,7 +354,7 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                   <div className="rounded-md bg-muted p-2">
                     <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">미리보기</p>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
-                      {directPreview.rev != null && <span>매출 <strong className="tabular-nums">{formatWonCompact(directPreview.rev)}</strong></span>}
+                      {directPreview.rev != null && <span>매출 <strong className="tabular-nums">{formatWonFull(directPreview.rev)}</strong></span>}
                       {directPreview.stu != null && <span>수강생 <strong className="tabular-nums">{directPreview.stu}명</strong></span>}
                       {directPreview.conv != null && <span>전환율 <strong className="tabular-nums">{directPreview.conv}%</strong></span>}
                     </div>
@@ -386,7 +386,7 @@ function TargetPreview({ targets, label }: { targets: CourseTargets | null; labe
     <div className="rounded-md bg-muted p-2">
       <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">{label} →</p>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
-        {targets.revenue_target != null && <span>매출 <strong className="tabular-nums">{formatWonCompact(targets.revenue_target)}</strong></span>}
+        {targets.revenue_target != null && <span>매출 <strong className="tabular-nums">{formatWonFull(targets.revenue_target)}</strong></span>}
         {targets.students_target != null && <span>수강생 <strong className="tabular-nums">{targets.students_target}명</strong></span>}
         {targets.conversion_target != null && <span>전환율 <strong className="tabular-nums">{targets.conversion_target}%</strong></span>}
         {targets.revenue_target == null && targets.students_target == null && targets.conversion_target == null && (

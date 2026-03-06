@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CohortKpi } from "@/lib/types";
-import { formatWonCompact, formatWonFull } from "@/lib/format";
+import { formatNumberFull, formatWonFull } from "@/lib/format";
 
 interface Props {
   kpis: CohortKpi[];
@@ -65,7 +65,7 @@ export function CohortTrendChart({ kpis, loading, baselineKpi, isComparing, netP
                   <defs><linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.12} /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} /></linearGradient></defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={axisTickProps} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={(v: number) => formatWonCompact(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={52} />
+<YAxis tickFormatter={(v: number) => formatNumberFull(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={80} />
                   <Tooltip formatter={(value: number, name: string) => { if (name === "baseRevenue") return [formatWonFull(value), "기준 매출"]; return [formatWonFull(value), "매출"]; }} contentStyle={tooltipStyle} />
                   <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#revenueGrad)" dot={{ fill: 'hsl(var(--primary))', r: 3, strokeWidth: 0 }} />
                   {isComparing && baselineIdx >= 0 && <ReferenceDot x={data[baselineIdx]?.name} y={data[baselineIdx]?.revenue} r={5} fill="hsl(var(--muted-foreground))" stroke="hsl(var(--background))" strokeWidth={2} />}
@@ -113,7 +113,7 @@ export function CohortTrendChart({ kpis, loading, baselineKpi, isComparing, netP
                     <defs><linearGradient id="netProfitGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={0.12} /><stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0} /></linearGradient></defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" tick={axisTickProps} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={(v: number) => formatWonCompact(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={52} />
+                    <YAxis tickFormatter={(v: number) => formatNumberFull(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={80} />
                     <Tooltip
                       formatter={(value: number | null, name: string) => {
                         if (value === null) return ["비용 미입력", "순이익"];

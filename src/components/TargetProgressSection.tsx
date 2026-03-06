@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Target } from "lucide-react";
 import type { CourseTargets } from "@/lib/types";
-import { formatWonCompact, formatWonFull, formatInt } from "@/lib/format";
+import { formatWonFull, formatInt } from "@/lib/format";
 import { calcProgress, calcRemaining, calcDeltaPp } from "@/hooks/useTargets";
 import {
   Tooltip,
@@ -36,9 +36,9 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
       label: "매출",
       current: revenue,
       target: targets.revenue_target,
-      formatCurrent: formatWonCompact(revenue),
-      formatTarget: targets.revenue_target != null ? formatWonCompact(targets.revenue_target) : "—",
-      formatRemaining: targets.revenue_target != null ? formatWonCompact(calcRemaining(targets.revenue_target, revenue) ?? 0) : "—",
+      formatCurrent: formatWonFull(revenue),
+      formatTarget: targets.revenue_target != null ? formatWonFull(targets.revenue_target) : "—",
+      formatRemaining: targets.revenue_target != null ? formatWonFull(calcRemaining(targets.revenue_target, revenue) ?? 0) : "—",
       tooltipCurrent: formatWonFull(revenue),
       tooltipTarget: targets.revenue_target != null ? formatWonFull(targets.revenue_target) : "미설정",
       progress: calcProgress(revenue, targets.revenue_target),

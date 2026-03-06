@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Enrollment } from "@/lib/types";
-import { formatWonCompact, formatWonFull } from "@/lib/format";
+import { formatWonFull } from "@/lib/format";
 import {
   Tooltip,
   TooltipContent,
@@ -62,14 +62,7 @@ export function RecentEnrollmentsTable({ enrollments, loading }: Props) {
                       <TableCell className="py-2 px-2 text-xs">{e.student_name ?? "—"}</TableCell>
                       <TableCell className="py-2 px-2 text-xs text-muted-foreground">{e.student_email ?? "—"}</TableCell>
                       <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span>{formatWonCompact(net)}</span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs tabular-nums">{formatWonFull(net)}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        {formatWonFull(net)}
                       </TableCell>
                       <TableCell className="py-2 px-2 text-xs text-right text-muted-foreground">{e.paid_at ?? "—"}</TableCell>
                     </TableRow>

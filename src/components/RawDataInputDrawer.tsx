@@ -32,7 +32,7 @@ import {
 } from "@/lib/platformCostStore";
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
-import { formatWonCompact } from "@/lib/format";
+import { formatWonFull } from "@/lib/format";
 import { makeTargetKey, loadAllTargets, upsertTarget, deleteTarget } from "@/lib/targetStore";
 import { useTargets } from "@/hooks/useTargets";
 import type { CourseTargets } from "@/lib/types";
@@ -232,7 +232,7 @@ function InlineTargetsSection({ instructorName, courseTitle, cohortNo }: { instr
             value={revenue} onChange={(e) => { setRevenue(e.target.value); markDirty(); }}
             className="h-7 text-xs tabular-nums"
           />
-          {revenueNum > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(revenueNum)}</p>}
+          {revenueNum > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(revenueNum)}</p>}
         </div>
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground">목표 수강생</Label>
@@ -364,7 +364,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
         onBlur={() => form && updateField(key, form[key])}
         className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
       />
-      {suffix && form && <p className="text-[10px] text-muted-foreground break-words">{suffix}: {formatWonCompact(form[key])}</p>}
+      {suffix && form && <p className="text-[10px] text-muted-foreground break-words">{suffix}: {formatWonFull(form[key])}</p>}
     </div>
   );
 
@@ -573,7 +573,7 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
         <DialogHeader>
           <DialogTitle className="text-sm">새 비용 생성</DialogTitle>
           <DialogDescription className="text-xs">
-            {instructor} / {course} {cohortNo}기 · 매출 {formatWonCompact(revenue)}
+            {instructor} / {course} {cohortNo}기 · 매출 {formatWonFull(revenue)}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
@@ -610,7 +610,7 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
               onChange={(e) => setAdCostAmount(e.target.value)}
               className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
             />
-            {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(ad)}</p>}
+            {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(ad)}</p>}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">메모 (선택)</Label>
@@ -618,8 +618,8 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
           </div>
           {totalPreview > 0 && (
             <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
-              합계: <span className="font-medium text-foreground tabular-nums">{formatWonCompact(totalPreview)}</span>
-              <span className="ml-2">(수수료 {formatWonCompact(feeAmount)} + 광고비 {formatWonCompact(ad)})</span>
+              합계: <span className="font-medium text-foreground tabular-nums">{formatWonFull(totalPreview)}</span>
+              <span className="ml-2">(수수료 {formatWonFull(feeAmount)} + 광고비 {formatWonFull(ad)})</span>
             </div>
           )}
         </div>
@@ -785,7 +785,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
                   return (
                     <TableRow key={c.id} data-cost-id={c.id} className={`cursor-pointer border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/30"}`} onClick={() => setSelectedId(c.id)}>
                       <TableCell className="py-1.5 px-2 text-[11px]">{c.platform_name || "(미입력)"}</TableCell>
-                      <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonCompact(c.fee_amount + c.ad_cost_amount)}</TableCell>
+                      <TableCell className="py-1.5 px-2 text-[11px] text-right tabular-nums">{formatWonFull(c.fee_amount + c.ad_cost_amount)}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -796,7 +796,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
           {costsForCohort.length > 0 && (
             <div className="border-t p-2 text-xs flex justify-between">
               <span className="text-muted-foreground">합계</span>
-              <span className="font-medium tabular-nums">{formatWonCompact(costsForCohort.reduce((s, c) => s + c.fee_amount + c.ad_cost_amount, 0))}</span>
+              <span className="font-medium tabular-nums">{formatWonFull(costsForCohort.reduce((s, c) => s + c.fee_amount + c.ad_cost_amount, 0))}</span>
             </div>
           )}
         </div>
@@ -833,7 +833,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
                 />
                 <p className="text-[10px] text-muted-foreground">
                   수수료 금액 = <span className="font-medium text-foreground tabular-nums">{(form.fee_amount ?? 0).toLocaleString("ko-KR")}원</span>
-                  <span className="ml-1">(매출 {formatWonCompact(cohortRevenue)} × {form.fee_rate_pct ?? 0}%)</span>
+                  <span className="ml-1">(매출 {formatWonFull(cohortRevenue)} × {form.fee_rate_pct ?? 0}%)</span>
                 </p>
                 {cohortRevenue === 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
               </div>
@@ -844,7 +844,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
                   onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("ad_cost_amount", n); }}
                   className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
                 />
-                {form.ad_cost_amount > 0 && <p className="text-[10px] text-muted-foreground">표시: {formatWonCompact(form.ad_cost_amount)}</p>}
+                {form.ad_cost_amount > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(form.ad_cost_amount)}</p>}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">메모</Label>

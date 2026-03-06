@@ -7,6 +7,11 @@ export function formatWonFull(value: number): string {
   return koFmt.format(value) + "원";
 }
 
+/** "293,000,000" – full precision, no suffix (for chart axes) */
+export function formatNumberFull(value: number): string {
+  return koFmt.format(value);
+}
+
 /**
  * Compact: "2.93억", "1.5억", "6,500만" – no ₩, no '원'
  * 소수점 자리수: scale>=100 → 0자리, >=10 → 1자리, else → 2자리, trailing 0 제거
