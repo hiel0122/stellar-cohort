@@ -55,7 +55,7 @@ export function CohortTrendChart({ kpis, loading, baselineKpi, isComparing, netP
             <TabsTrigger value="revenue" className="text-xs h-6 px-3">매출</TabsTrigger>
             <TabsTrigger value="students" className="text-xs h-6 px-3">수강생</TabsTrigger>
             <TabsTrigger value="conversion" className="text-xs h-6 px-3">전환율</TabsTrigger>
-            <TabsTrigger value="netprofit" className="text-xs h-6 px-3">순이익</TabsTrigger>
+            <TabsTrigger value="netprofit" className="text-xs h-6 px-3">실지급액</TabsTrigger>
           </TabsList>
 
           <TabsContent value="revenue">
@@ -116,8 +116,8 @@ export function CohortTrendChart({ kpis, loading, baselineKpi, isComparing, netP
                     <YAxis tickFormatter={(v: number) => formatNumberFull(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={80} />
                     <Tooltip
                       formatter={(value: number | null, name: string) => {
-                        if (value === null) return ["비용 미입력", "순이익"];
-                        return [formatWonFull(value), "순이익 (L1)"];
+                        if (value === null) return ["정산 폼 미입력", "실지급액"];
+                        return [formatWonFull(value), "순이익 (실지급액)"];
                       }}
                       contentStyle={tooltipStyle}
                     />
@@ -131,7 +131,7 @@ export function CohortTrendChart({ kpis, loading, baselineKpi, isComparing, netP
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center">
-                  <p className="text-xs text-muted-foreground">비용 데이터를 입력하면 순이익 추이가 표시됩니다</p>
+                  <p className="text-xs text-muted-foreground">플랫폼 정산 폼을 입력하면 실지급액 추이가 표시됩니다</p>
                 </div>
               )}
             </div>

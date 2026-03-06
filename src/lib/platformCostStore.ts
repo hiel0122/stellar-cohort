@@ -25,6 +25,10 @@ export interface CohortCostSummary {
   total_ads: number;
   net_profit_l1: number;
   net_margin_l1: number | null; // null when revenue=0
+  // Payout-based (from platform settlement details)
+  settlement_total: number | null;  // null = no settlement form data
+  payout: number | null;            // final_payout_amount sum
+  payout_margin: number | null;     // payout / revenue %
 }
 
 // ── In-memory cache ──
@@ -79,7 +83,20 @@ export function getCohortCostSummary(
   const total_ads = costs.reduce((s, c) => s + c.ad_cost_amount, 0);
   const net_profit_l1 = revenue - total_fee - total_ads;
   const net_margin_l1 = revenue > 0 ? (net_profit_l1 / revenue) * 100 : null;
-  return { total_fee, total_ads, net_profit_l1, net_margin_l1 };
+
+  // Payout-based: sum from platform settlement details
+  const payoutCosts = costs.filter(
+    (c) => c.details && typeof (c.details as Record<string, unknown>).final_payout_amount === "number"
+  );
+  const settlement_total = payoutCosts.length > 0
+    ? payoutCosts.reduce((s, c) => s + ((c.details as Record<string, unknown>).total_settlement_amount as number ?? 0), 0)
+    : null;
+  const payout = payoutCosts.length > 0
+    ? payoutCosts.reduce((s, c) => s + ((c.details as Record<string, unknown>).final_payout_amount as number), 0)
+    : null;
+  const payout_margin = payout != null && revenue > 0 ? (payout / revenue) * 100 : null;
+
+  return { total_fee, total_ads, net_profit_l1, net_margin_l1, settlement_total, payout, payout_margin };
 }
 
 let idCounter = Date.now();

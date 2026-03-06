@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent, Target, AlertTriangle } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent, Target, AlertTriangle, Calculator, Wallet } from "lucide-react";
 import { Layout, useLayoutActions } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
 import { CohortTrendChart } from "@/components/CohortTrendChart";
@@ -91,19 +91,19 @@ const Index = () => {
   const currentCost = useMemo(() => resolveCostSummary(currentKpi), [currentKpi, platformCosts]);
   const baselineCost = useMemo(() => resolveCostSummary(baselineKpi), [baselineKpi, platformCosts]);
 
-  // Sparkline for net profit across all kpis
-  const netProfitSparkline = useMemo(() => {
+  // Sparkline for payout (실지급액) across all kpis
+  const payoutSparkline = useMemo(() => {
     return kpis.map((k) => {
       const cs = resolveCostSummary(k);
-      return cs ? cs.net_profit_l1 : 0;
+      return cs?.payout ?? 0;
     });
   }, [kpis, platformCosts]);
 
-  // Net profit series for chart
-  const netProfitSeries = useMemo(() => {
+  // Payout series for chart (null = no data)
+  const payoutSeries = useMemo(() => {
     return kpis.map((k) => {
       const cs = resolveCostSummary(k);
-      return cs ? cs.net_profit_l1 : null;
+      return cs?.payout ?? null;
     });
   }, [kpis, platformCosts]);
 
@@ -167,18 +167,18 @@ const Index = () => {
                     icon={<TrendingUp className="h-4 w-4" />} sparklineData={sparklines.conversion} progress={conversionProgress} onClick={() => setSheetMetric("conversion")} />
                 </div>
 
-                {/* L1 Profit KPI Cards */}
-                <L1ProfitCards
+                {/* Settlement / Payout KPI Cards */}
+                <SettlementCards
                   currentCost={currentCost}
                   baselineCost={baselineCost}
                   isComparing={isComparing}
                   deltaLabel={deltaLabel}
-                  netProfitSparkline={netProfitSparkline}
+                  payoutSparkline={payoutSparkline}
                 />
 
                 {/* Charts row */}
                 <div className="grid gap-3 lg:grid-cols-2">
-                  <CohortTrendChart kpis={kpis} baselineKpi={baselineKpi} isComparing={isComparing} netProfitSeries={netProfitSeries} />
+                  <CohortTrendChart kpis={kpis} baselineKpi={baselineKpi} isComparing={isComparing} netProfitSeries={payoutSeries} />
                   <FunnelTable funnel={funnel} loading={isDetailLoading} baselineFunnel={isComparing ? baselineFunnel : null} baselineCohortNo={baselineCohort?.cohort_no ?? null} />
                 </div>
 
@@ -228,34 +228,37 @@ const Index = () => {
   );
 };
 
-// ── L1 Profit Cards ──
-function L1ProfitCards({
-  currentCost, baselineCost, isComparing, deltaLabel, netProfitSparkline,
+// ── Settlement / Payout Cards ──
+function SettlementCards({
+  currentCost, baselineCost, isComparing, deltaLabel, payoutSparkline,
 }: {
   currentCost: CohortCostSummary | null;
   baselineCost: CohortCostSummary | null;
   isComparing: boolean;
   deltaLabel: string;
-  netProfitSparkline: number[];
+  payoutSparkline: number[];
 }) {
   const { openRawData } = useLayoutActions();
   const hasCost = !!currentCost;
+  const hasPayout = currentCost?.payout != null;
 
   const feeDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.total_fee, baselineCost.total_fee) : null;
   const adsDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.total_ads, baselineCost.total_ads) : null;
-  const profitDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.net_profit_l1, baselineCost.net_profit_l1) : null;
-  const marginDelta = hasCost && isComparing && baselineCost && baselineCost.net_margin_l1 != null && currentCost.net_margin_l1 != null
-    ? currentCost.net_margin_l1 - baselineCost.net_margin_l1 : null;
+  const settleDelta = hasPayout && isComparing && baselineCost?.settlement_total != null
+    ? calcDelta(currentCost.settlement_total!, baselineCost.settlement_total) : null;
+  const payoutDelta = hasPayout && isComparing && baselineCost?.payout != null
+    ? calcDelta(currentCost.payout!, baselineCost.payout) : null;
+  const payoutMarginDelta = hasPayout && isComparing && baselineCost?.payout_margin != null && currentCost.payout_margin != null
+    ? currentCost.payout_margin - baselineCost.payout_margin : null;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch mt-3">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 items-stretch mt-3">
       <KPICard
         title="수수료"
         value={hasCost ? formatWonFull(currentCost.total_fee) : "—"}
         deltaPct={feeDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Receipt className="h-4 w-4" />}
-        secondaryText={!hasCost ? undefined : undefined}
       />
       <KPICard
         title="광고비"
@@ -265,21 +268,30 @@ function L1ProfitCards({
         icon={<Megaphone className="h-4 w-4" />}
       />
       <KPICard
-        title="순이익 (L1)"
-        value={hasCost ? formatWonFull(currentCost.net_profit_l1) : "—"}
-        deltaPct={profitDelta}
-        deltaLabel={hasCost ? deltaLabel : undefined}
-        icon={<PiggyBank className="h-4 w-4" />}
-        sparklineData={netProfitSparkline.some((v) => v !== 0) ? netProfitSparkline : undefined}
-        secondaryText={!hasCost ? undefined : undefined}
+        title="정산금 합계"
+        value={hasPayout ? formatWonFull(currentCost.settlement_total!) : "—"}
+        deltaPct={settleDelta}
+        deltaLabel={hasPayout ? deltaLabel : undefined}
+        icon={<Calculator className="h-4 w-4" />}
+        secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
       <KPICard
-          title="순이익률 (L1)"
-          value={hasCost && currentCost.net_margin_l1 != null ? `${currentCost.net_margin_l1.toFixed(1)}%` : "—"}
-          deltaPct={marginDelta}
-          deltaLabel={hasCost ? deltaLabel : undefined}
-          icon={<Percent className="h-4 w-4" />}
-        />
+        title="순이익 (실지급액)"
+        value={hasPayout ? formatWonFull(currentCost.payout!) : "—"}
+        deltaPct={payoutDelta}
+        deltaLabel={hasPayout ? deltaLabel : undefined}
+        icon={<Wallet className="h-4 w-4" />}
+        sparklineData={payoutSparkline.some((v) => v !== 0) ? payoutSparkline : undefined}
+        secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
+      />
+      <KPICard
+        title="순이익률 (실지급률)"
+        value={hasPayout && currentCost.payout_margin != null ? `${currentCost.payout_margin.toFixed(1)}%` : "—"}
+        deltaPct={payoutMarginDelta}
+        deltaLabel={hasPayout ? deltaLabel : undefined}
+        icon={<Percent className="h-4 w-4" />}
+        secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
+      />
     </div>
   );
 }
@@ -312,8 +324,9 @@ function CohortsOverview({
                 <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">전환율</TableHead>
                 <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">수수료</TableHead>
                 <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">광고비</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">순이익</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">순이익률</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">정산금</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">순이익(실지급)</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">실지급률</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -344,8 +357,9 @@ function CohortsOverview({
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{k.conversion.toFixed(1)}%</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_fee) : "—"}</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_ads) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost ? formatWonFull(cost.net_profit_l1) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{cost?.net_margin_l1 != null ? `${cost.net_margin_l1.toFixed(1)}%` : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost?.settlement_total != null ? formatWonFull(cost.settlement_total) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost?.payout != null ? formatWonFull(cost.payout) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{cost?.payout_margin != null ? `${cost.payout_margin.toFixed(1)}%` : "—"}</TableCell>
                   </TableRow>
                 );
               })}
