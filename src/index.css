@@ -146,6 +146,7 @@
   .section-container {
     background: hsla(220, 20%, 94%, 0.45);
     border: 1px solid hsla(220, 15%, 85%, 0.5);
+    border-left: 3px solid hsl(var(--primary) / 0.25);
     border-radius: 1rem;
     padding: 1.25rem;
   }
