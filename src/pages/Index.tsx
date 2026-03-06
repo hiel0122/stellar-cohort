@@ -120,7 +120,7 @@ const Index = () => {
           baselineCohortNo={baselineCohort?.cohort_no ?? null}
         />
 
-        <div className="space-y-6 pt-6">
+        <div className="space-y-7 pt-6">
           {currentCohort && (
             <div className="flex items-center">
               <Badge
