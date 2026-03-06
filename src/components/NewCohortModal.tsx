@@ -354,7 +354,7 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                   <div className="rounded-md bg-muted p-2">
                     <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">미리보기</p>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
-                      {directPreview.rev != null && <span>매출 <strong className="tabular-nums">{formatWonCompact(directPreview.rev)}</strong></span>}
+                      {directPreview.rev != null && <span>매출 <strong className="tabular-nums">{formatWonFull(directPreview.rev)}</strong></span>}
                       {directPreview.stu != null && <span>수강생 <strong className="tabular-nums">{directPreview.stu}명</strong></span>}
                       {directPreview.conv != null && <span>전환율 <strong className="tabular-nums">{directPreview.conv}%</strong></span>}
                     </div>
