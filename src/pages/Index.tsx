@@ -186,6 +186,7 @@ const Index = () => {
 
                 {/* Charts row */}
                 <div className="section-container">
+                  <SectionHeader title="추이 및 퍼널" subtitle={`최근 ${kpis.length}개 기수`} />
                   <div className="grid gap-3 lg:grid-cols-2">
                     <CohortTrendChart kpis={kpis} baselineKpi={baselineKpi} isComparing={isComparing} netProfitSeries={payoutSeries} />
                     <FunnelTable funnel={funnel} loading={isDetailLoading} baselineFunnel={isComparing ? baselineFunnel : null} baselineCohortNo={baselineCohort?.cohort_no ?? null} />
