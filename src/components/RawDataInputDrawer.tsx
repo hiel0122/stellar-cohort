@@ -774,14 +774,15 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
   revenue: number;
   onCreated: (id: string) => void;
 }) {
+  const [selectedPlatformKey, setSelectedPlatformKey] = useState<PlatformKey | null>(null);
   const [platformName, setPlatformName] = useState("");
   const [feeRatePct, setFeeRatePct] = useState("");
   const [adCostAmount, setAdCostAmount] = useState("");
   const [note, setNote] = useState("");
-  const recentPlatforms = getRecentPlatformNames();
 
   useEffect(() => {
     if (open) {
+      setSelectedPlatformKey(null);
       setPlatformName("");
       setFeeRatePct("");
       setAdCostAmount("");
@@ -789,35 +790,49 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
     }
   }, [open]);
 
+  const handleSelectPlatform = (key: PlatformKey) => {
+    setSelectedPlatformKey(key);
+    if (key === "njab") {
+      setPlatformName("N잡연구소");
+    } else {
+      setPlatformName("");
+    }
+  };
+
   const rate = Number(feeRatePct) || 0;
   const feeAmount = Math.round(revenue * (rate / 100));
   const ad = parseNum(adCostAmount);
   const totalPreview = feeAmount + ad;
 
   const handleCreate = () => {
+    if (!selectedPlatformKey) {
+      toast.error("플랫폼을 선택하세요.");
+      return;
+    }
     if (!platformName.trim()) {
       toast.error("플랫폼 이름을 입력하세요.");
       return;
     }
-    if (rate < 0 || rate > 100) {
-      toast.error("수수료율은 0~100% 범위로 입력하세요.");
-      return;
+    if (selectedPlatformKey === "generic") {
+      if (rate < 0 || rate > 100) {
+        toast.error("수수료율은 0~100% 범위로 입력하세요.");
+        return;
+      }
+      if (ad < 0) {
+        toast.error("광고비는 0 이상이어야 합니다.");
+        return;
+      }
     }
-    if (ad < 0) {
-      toast.error("광고비는 0 이상이어야 합니다.");
-      return;
-    }
-    const platformKey: PlatformKey = platformName.trim().includes("N잡연구소") ? "njab" : "generic";
     const newCost: PlatformCost = {
       id: generateCostId(),
       instructor_name: instructor.trim(),
       course_title: course.trim(),
       cohort_no: Number(cohortNo),
       platform_name: platformName.trim(),
-      platform_key: platformKey,
-      fee_rate_pct: platformKey === "njab" ? 0 : rate,
-      fee_amount: platformKey === "njab" ? 0 : feeAmount,
-      ad_cost_amount: platformKey === "njab" ? 0 : ad,
+      platform_key: selectedPlatformKey,
+      fee_rate_pct: selectedPlatformKey === "njab" ? 0 : rate,
+      fee_amount: selectedPlatformKey === "njab" ? 0 : feeAmount,
+      ad_cost_amount: selectedPlatformKey === "njab" ? 0 : ad,
       note: note.trim(),
       updated_at: new Date().toISOString(),
     };
@@ -836,68 +851,119 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
             {instructor} / {course} {cohortNo}기 · 매출 {formatWonFull(revenue)}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 py-2">
-          <div className="space-y-1">
-            <Label className="text-xs">플랫폼 이름 <span className="text-destructive">*</span></Label>
-            <Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} className="h-8 text-xs" placeholder="예: 네이버, 구글, 클래스101" autoFocus />
-            {(() => {
-              const allNames = [...new Set(["N잡연구소", ...recentPlatforms])].slice(0, 6);
-              return (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {allNames.map((name) => (
-                    <Button key={name} variant="outline" size="sm" className="h-5 text-[9px] px-1.5" onClick={() => setPlatformName(name)}>
-                      {name}
-                    </Button>
-                  ))}
-                </div>
-              );
-            })()}
+        <div className="space-y-4 py-2">
+          {/* ── Step 1: Platform Selection ── */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold">플랫폼 선택 <span className="text-destructive">*</span></Label>
+            <div className="grid grid-cols-2 gap-2">
+              {/* N잡연구소 button */}
+              <button
+                type="button"
+                onClick={() => handleSelectPlatform("njab")}
+                className={cn(
+                  "relative flex flex-col items-center gap-1.5 rounded-lg border-2 p-4 transition-all text-left cursor-pointer",
+                  "hover:border-primary/50 hover:bg-accent/50",
+                  selectedPlatformKey === "njab"
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border bg-card"
+                )}
+              >
+                {selectedPlatformKey === "njab" && (
+                  <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-3 w-3" />
+                  </span>
+                )}
+                <span className="text-2xl">🧾</span>
+                <span className="text-sm font-semibold text-foreground">N잡연구소</span>
+                <span className="text-[10px] text-muted-foreground text-center leading-tight">정산 공식 자동 계산 폼</span>
+              </button>
+              {/* Generic button */}
+              <button
+                type="button"
+                onClick={() => handleSelectPlatform("generic")}
+                className={cn(
+                  "relative flex flex-col items-center gap-1.5 rounded-lg border-2 p-4 transition-all text-left cursor-pointer",
+                  "hover:border-primary/50 hover:bg-accent/50",
+                  selectedPlatformKey === "generic"
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border bg-card"
+                )}
+              >
+                {selectedPlatformKey === "generic" && (
+                  <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-3 w-3" />
+                  </span>
+                )}
+                <span className="text-2xl">📋</span>
+                <span className="text-sm font-semibold text-foreground">기타 / 일반</span>
+                <span className="text-[10px] text-muted-foreground text-center leading-tight">수수료율 · 광고비만 입력</span>
+              </button>
+            </div>
           </div>
-          {!platformName.trim().includes("N잡연구소") && (
-            <>
+
+          {/* ── Step 2: Details (shown after platform selection) ── */}
+          {selectedPlatformKey && (
+            <div className="space-y-3 animate-in fade-in-50 slide-in-from-bottom-2 duration-200">
               <div className="space-y-1">
-                <Label className="text-xs">수수료율 (%)</Label>
+                <Label className="text-xs">플랫폼 이름 (상세)</Label>
                 <Input
-                  type="number" step="0.1" min="0" max="100"
-                  value={feeRatePct}
-                  onChange={(e) => setFeeRatePct(e.target.value)}
-                  className="tabular-nums h-8 text-xs" placeholder="예: 7.5"
+                  value={platformName}
+                  onChange={(e) => setPlatformName(e.target.value)}
+                  className="h-8 text-xs"
+                  placeholder={selectedPlatformKey === "njab" ? "N잡연구소" : "예: 네이버, 구글, 클래스101"}
+                  autoFocus
                 />
-                <div className="text-[10px] text-muted-foreground space-y-0.5">
-                  <p>수수료 금액 = 매출 × 수수료율 = <span className="font-medium text-foreground tabular-nums">{feeAmount.toLocaleString("ko-KR")}원</span></p>
-                  {revenue === 0 && <p className="text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
-                </div>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">광고비 (원)</Label>
-                <Input
-                  value={adCostAmount}
-                  onChange={(e) => setAdCostAmount(e.target.value)}
-                  className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
-                />
-                {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(ad)}</p>}
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">메모 (선택)</Label>
-                <Input value={note} onChange={(e) => setNote(e.target.value)} className="h-8 text-xs" placeholder="비고" />
-              </div>
-              {totalPreview > 0 && (
-                <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
-                  합계: <span className="font-medium text-foreground tabular-nums">{formatWonFull(totalPreview)}</span>
-                  <span className="ml-2">(수수료 {formatWonFull(feeAmount)} + 광고비 {formatWonFull(ad)})</span>
+
+              {selectedPlatformKey === "njab" && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium text-foreground">N잡연구소 전용 정산 폼</p>
+                  <p>생성 후 비용 목록에서 선택하면 정산 공식 자동 계산 폼이 표시됩니다.</p>
                 </div>
               )}
-            </>
-          )}
-          {platformName.trim().includes("N잡연구소") && (
-            <div className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
-              N잡연구소 전용 정산 폼은 생성 후 비용 목록에서 선택하면 자동으로 표시됩니다.
+
+              {selectedPlatformKey === "generic" && (
+                <>
+                  <div className="space-y-1">
+                    <Label className="text-xs">수수료율 (%)</Label>
+                    <Input
+                      type="number" step="0.1" min="0" max="100"
+                      value={feeRatePct}
+                      onChange={(e) => setFeeRatePct(e.target.value)}
+                      className="tabular-nums h-8 text-xs" placeholder="예: 7.5"
+                    />
+                    <div className="text-[10px] text-muted-foreground space-y-0.5">
+                      <p>수수료 금액 = 매출 × 수수료율 = <span className="font-medium text-foreground tabular-nums">{feeAmount.toLocaleString("ko-KR")}원</span></p>
+                      {revenue === 0 && <p className="text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">광고비 (원)</Label>
+                    <Input
+                      value={adCostAmount}
+                      onChange={(e) => setAdCostAmount(e.target.value)}
+                      className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
+                    />
+                    {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(ad)}</p>}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">메모 (선택)</Label>
+                    <Input value={note} onChange={(e) => setNote(e.target.value)} className="h-8 text-xs" placeholder="비고" />
+                  </div>
+                  {totalPreview > 0 && (
+                    <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
+                      합계: <span className="font-medium text-foreground tabular-nums">{formatWonFull(totalPreview)}</span>
+                      <span className="ml-2">(수수료 {formatWonFull(feeAmount)} + 광고비 {formatWonFull(ad)})</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => onOpenChange(false)}>취소</Button>
-          <Button size="sm" className="h-8 text-xs" onClick={handleCreate}>생성</Button>
+          <Button size="sm" className="h-8 text-xs" onClick={handleCreate} disabled={!selectedPlatformKey}>생성</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
