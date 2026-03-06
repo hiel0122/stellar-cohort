@@ -178,7 +178,7 @@ const Index = () => {
 
                 {/* Charts row */}
                 <div className="grid gap-3 lg:grid-cols-2">
-                  <CohortTrendChart kpis={kpis} baselineKpi={baselineKpi} isComparing={isComparing} netProfitSeries={netProfitSeries} />
+                  <CohortTrendChart kpis={kpis} baselineKpi={baselineKpi} isComparing={isComparing} netProfitSeries={payoutSeries} />
                   <FunnelTable funnel={funnel} loading={isDetailLoading} baselineFunnel={isComparing ? baselineFunnel : null} baselineCohortNo={baselineCohort?.cohort_no ?? null} />
                 </div>
 
