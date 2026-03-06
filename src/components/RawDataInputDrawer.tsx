@@ -399,8 +399,8 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
         </div>
       </div>
 
-      {/* ═══ Right: Unified Form (65%) ═══ */}
-      <div className="w-1/2 lg:w-[45%] min-w-0 overflow-y-auto overflow-x-hidden">
+      {/* ═══ Right: Unified Form (60%) ═══ */}
+      <div className="w-3/5 min-w-0 overflow-y-auto overflow-x-hidden">
         {form ? (
           <div className="space-y-0">
             {/* Context bar */}
