@@ -26,11 +26,12 @@ import {
   type RawCohort, loadRawCohorts, upsertRawCohort, deleteRawCohort, makeId, getNextCohortNo,
 } from "@/lib/rawCohortStore";
 import {
-  type PlatformCost, loadPlatformCosts, upsertPlatformCost, deletePlatformCost,
+  type PlatformCost, type PlatformKey, loadPlatformCosts, upsertPlatformCost, deletePlatformCost,
   generateCostId, getRecentPlatformNames, getCostsForCohort,
 } from "@/lib/platformCostStore";
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
+import { NjabSettlementForm } from "@/components/NjabSettlementForm";
 import { formatWonFull } from "@/lib/format";
 import { makeTargetKey, loadAllTargets, upsertTarget, deleteTarget } from "@/lib/targetStore";
 import { useTargets } from "@/hooks/useTargets";
@@ -284,7 +285,12 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
   const updateCostField = useCallback(<K extends keyof PlatformCost>(key: K, value: PlatformCost[K]) => {
     setCostForm((prev) => {
       if (!prev) return prev;
-      const updated = { ...prev, [key]: value };
+      let updated = { ...prev, [key]: value };
+      // Auto-detect platform_key when name changes
+      if (key === "platform_name") {
+        const name = String(value);
+        updated.platform_key = name.includes("N잡연구소") ? "njab" : "generic";
+      }
       costAutoSave(updated);
       return updated;
     });
@@ -543,7 +549,11 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
                       </div>
 
                       {/* Cost edit form (inline) */}
-                      {costForm && (
+                      {costForm && costForm.platform_key === "njab" ? (
+                        <div className="rounded-md border border-border/60 p-3">
+                          <NjabSettlementForm costRecord={costForm} cohortRevenue={form?.revenue ?? 0} />
+                        </div>
+                      ) : costForm && (
                         <div className="rounded-md border border-border/60 p-3 space-y-2.5">
                           <p className="text-[9px] uppercase tracking-widest text-muted-foreground">선택된 비용 수정</p>
                           <div className="space-y-1">
@@ -797,15 +807,17 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
       toast.error("광고비는 0 이상이어야 합니다.");
       return;
     }
+    const platformKey: PlatformKey = platformName.trim().includes("N잡연구소") ? "njab" : "generic";
     const newCost: PlatformCost = {
       id: generateCostId(),
       instructor_name: instructor.trim(),
       course_title: course.trim(),
       cohort_no: Number(cohortNo),
       platform_name: platformName.trim(),
-      fee_rate_pct: rate,
-      fee_amount: feeAmount,
-      ad_cost_amount: ad,
+      platform_key: platformKey,
+      fee_rate_pct: platformKey === "njab" ? 0 : rate,
+      fee_amount: platformKey === "njab" ? 0 : feeAmount,
+      ad_cost_amount: platformKey === "njab" ? 0 : ad,
       note: note.trim(),
       updated_at: new Date().toISOString(),
     };
@@ -828,46 +840,58 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
           <div className="space-y-1">
             <Label className="text-xs">플랫폼 이름 <span className="text-destructive">*</span></Label>
             <Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} className="h-8 text-xs" placeholder="예: 네이버, 구글, 클래스101" autoFocus />
-            {recentPlatforms.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1">
-                {recentPlatforms.map((name) => (
-                  <Button key={name} variant="outline" size="sm" className="h-5 text-[9px] px-1.5" onClick={() => setPlatformName(name)}>
-                    {name}
-                  </Button>
-                ))}
+            {(() => {
+              const allNames = [...new Set(["N잡연구소", ...recentPlatforms])].slice(0, 6);
+              return (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {allNames.map((name) => (
+                    <Button key={name} variant="outline" size="sm" className="h-5 text-[9px] px-1.5" onClick={() => setPlatformName(name)}>
+                      {name}
+                    </Button>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+          {!platformName.trim().includes("N잡연구소") && (
+            <>
+              <div className="space-y-1">
+                <Label className="text-xs">수수료율 (%)</Label>
+                <Input
+                  type="number" step="0.1" min="0" max="100"
+                  value={feeRatePct}
+                  onChange={(e) => setFeeRatePct(e.target.value)}
+                  className="tabular-nums h-8 text-xs" placeholder="예: 7.5"
+                />
+                <div className="text-[10px] text-muted-foreground space-y-0.5">
+                  <p>수수료 금액 = 매출 × 수수료율 = <span className="font-medium text-foreground tabular-nums">{feeAmount.toLocaleString("ko-KR")}원</span></p>
+                  {revenue === 0 && <p className="text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
+                </div>
               </div>
-            )}
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">수수료율 (%)</Label>
-            <Input
-              type="number" step="0.1" min="0" max="100"
-              value={feeRatePct}
-              onChange={(e) => setFeeRatePct(e.target.value)}
-              className="tabular-nums h-8 text-xs" placeholder="예: 7.5"
-            />
-            <div className="text-[10px] text-muted-foreground space-y-0.5">
-              <p>수수료 금액 = 매출 × 수수료율 = <span className="font-medium text-foreground tabular-nums">{feeAmount.toLocaleString("ko-KR")}원</span></p>
-              {revenue === 0 && <p className="text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">광고비 (원)</Label>
-            <Input
-              value={adCostAmount}
-              onChange={(e) => setAdCostAmount(e.target.value)}
-              className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
-            />
-            {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(ad)}</p>}
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">메모 (선택)</Label>
-            <Input value={note} onChange={(e) => setNote(e.target.value)} className="h-8 text-xs" placeholder="비고" />
-          </div>
-          {totalPreview > 0 && (
-            <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
-              합계: <span className="font-medium text-foreground tabular-nums">{formatWonFull(totalPreview)}</span>
-              <span className="ml-2">(수수료 {formatWonFull(feeAmount)} + 광고비 {formatWonFull(ad)})</span>
+              <div className="space-y-1">
+                <Label className="text-xs">광고비 (원)</Label>
+                <Input
+                  value={adCostAmount}
+                  onChange={(e) => setAdCostAmount(e.target.value)}
+                  className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
+                />
+                {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(ad)}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">메모 (선택)</Label>
+                <Input value={note} onChange={(e) => setNote(e.target.value)} className="h-8 text-xs" placeholder="비고" />
+              </div>
+              {totalPreview > 0 && (
+                <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
+                  합계: <span className="font-medium text-foreground tabular-nums">{formatWonFull(totalPreview)}</span>
+                  <span className="ml-2">(수수료 {formatWonFull(feeAmount)} + 광고비 {formatWonFull(ad)})</span>
+                </div>
+              )}
+            </>
+          )}
+          {platformName.trim().includes("N잡연구소") && (
+            <div className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
+              N잡연구소 전용 정산 폼은 생성 후 비용 목록에서 선택하면 자동으로 표시됩니다.
             </div>
           )}
         </div>

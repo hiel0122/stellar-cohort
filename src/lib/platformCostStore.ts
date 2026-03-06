@@ -3,17 +3,21 @@
 
 const STORAGE_KEY = "kpi_platform_costs_v1";
 
+export type PlatformKey = "generic" | "njab";
+
 export interface PlatformCost {
   id: string;
   instructor_name: string;
   course_title: string;
   cohort_no: number;
   platform_name: string;
+  platform_key: PlatformKey;
   fee_rate_pct: number;   // e.g. 7.5 means 7.5%
   fee_amount: number;
   ad_cost_amount: number;
   note: string;
   updated_at: string;
+  details?: Record<string, unknown>; // platform-specific detail fields (JSON)
 }
 
 export interface CohortCostSummary {
@@ -30,7 +34,9 @@ function load(): PlatformCost[] {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    cache = raw ? JSON.parse(raw) : [];
+    const parsed: PlatformCost[] = raw ? JSON.parse(raw) : [];
+    // Backfill platform_key for legacy records
+    cache = parsed.map(c => ({ ...c, platform_key: c.platform_key ?? "generic" as PlatformKey }));
   } catch {
     cache = [];
   }
