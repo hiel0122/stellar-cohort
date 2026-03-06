@@ -833,7 +833,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
                 />
                 <p className="text-[10px] text-muted-foreground">
                   수수료 금액 = <span className="font-medium text-foreground tabular-nums">{(form.fee_amount ?? 0).toLocaleString("ko-KR")}원</span>
-                  <span className="ml-1">(매출 {formatWonCompact(cohortRevenue)} × {form.fee_rate_pct ?? 0}%)</span>
+                  <span className="ml-1">(매출 {formatWonFull(cohortRevenue)} × {form.fee_rate_pct ?? 0}%)</span>
                 </p>
                 {cohortRevenue === 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
               </div>
