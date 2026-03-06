@@ -722,6 +722,9 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
   const totalCost = costsForCohort.reduce((sum, c) => sum + c.fee_amount + c.ad_cost_amount, 0);
 
   const selCohort = cohortList.find((c) => c.id === selCohortId);
+  const selRawCohort = rawCohorts.find((c) => c.id === selCohortId);
+  const cohortRevenue = selRawCohort?.revenue ?? 0;
+  const [showDebug, setShowDebug] = useState(false);
 
   return (
     <div className="flex flex-1 overflow-hidden flex-col">
@@ -733,6 +736,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
           instructor={selCohort.instructor}
           course={selCohort.course}
           cohortNo={selCohort.cohortNo}
+          revenue={cohortRevenue}
           onCreated={handleCostCreated}
         />
       )}
