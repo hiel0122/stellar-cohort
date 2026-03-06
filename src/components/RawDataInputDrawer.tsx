@@ -543,7 +543,11 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
                       </div>
 
                       {/* Cost edit form (inline) */}
-                      {costForm && (
+                      {costForm && costForm.platform_key === "njab" ? (
+                        <div className="rounded-md border border-border/60 p-3">
+                          <NjabSettlementForm costRecord={costForm} cohortRevenue={form?.revenue ?? 0} />
+                        </div>
+                      ) : costForm && (
                         <div className="rounded-md border border-border/60 p-3 space-y-2.5">
                           <p className="text-[9px] uppercase tracking-widest text-muted-foreground">선택된 비용 수정</p>
                           <div className="space-y-1">
