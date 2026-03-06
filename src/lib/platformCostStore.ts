@@ -9,6 +9,7 @@ export interface PlatformCost {
   course_title: string;
   cohort_no: number;
   platform_name: string;
+  fee_rate_pct: number;   // e.g. 7.5 means 7.5%
   fee_amount: number;
   ad_cost_amount: number;
   note: string;
