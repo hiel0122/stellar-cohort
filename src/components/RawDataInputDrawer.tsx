@@ -232,7 +232,7 @@ function InlineTargetsSection({ instructorName, courseTitle, cohortNo }: { instr
             value={revenue} onChange={(e) => { setRevenue(e.target.value); markDirty(); }}
             className="h-7 text-xs tabular-nums"
           />
-          {revenueNum > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(revenueNum)}</p>}
+          {revenueNum > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(revenueNum)}</p>}
         </div>
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground">목표 수강생</Label>
