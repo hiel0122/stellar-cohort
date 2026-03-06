@@ -573,7 +573,7 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
         <DialogHeader>
           <DialogTitle className="text-sm">새 비용 생성</DialogTitle>
           <DialogDescription className="text-xs">
-            {instructor} / {course} {cohortNo}기 · 매출 {formatWonCompact(revenue)}
+            {instructor} / {course} {cohortNo}기 · 매출 {formatWonFull(revenue)}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
