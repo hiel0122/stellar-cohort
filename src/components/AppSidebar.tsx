@@ -1,4 +1,4 @@
-import { LayoutDashboard, Pin, PinOff } from "lucide-react";
+import { LayoutDashboard, PanelLeftClose, PanelLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -11,34 +11,39 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const navItems = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
 ];
 
-interface Props {
-  pinned: boolean;
-  onTogglePin: () => void;
-}
+export function AppSidebar() {
+  const { toggleSidebar, state } = useSidebar();
+  const collapsed = state === "collapsed";
 
-export function AppSidebar({ pinned, onTogglePin }: Props) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold tracking-widest uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
-            KPI
-          </span>
+          <div className="flex items-center gap-1.5 group-data-[collapsible=icon]:hidden">
+            <span className="text-xs font-bold tracking-widest uppercase text-muted-foreground">
+              운영 Studio
+            </span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/30">
+              Beta
+            </Badge>
+          </div>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-muted-foreground hover:text-foreground group-data-[collapsible=icon]:hidden"
-            onClick={onTogglePin}
-            title={pinned ? "고정 해제" : "고정"}
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+            onClick={toggleSidebar}
+            title={collapsed ? "메뉴 펼치기" : "메뉴 접기"}
           >
-            {pinned ? <Pin className="h-3 w-3" /> : <PinOff className="h-3 w-3" />}
+            {collapsed ? <PanelLeft className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
           </Button>
         </div>
       </SidebarHeader>

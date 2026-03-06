@@ -40,8 +40,7 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
               <div className="flex items-center gap-3">
                 <SidebarTrigger><Menu className="h-4 w-4" /></SidebarTrigger>
                 <div className="hidden sm:block">
-                  <h1 className="text-sm font-semibold text-foreground">KPI Dashboard</h1>
-                  <p className="text-base text-muted-foreground leading-snug">강사별 강의 KPI를 확인하세요</p>
+                  <h1 className="text-lg font-semibold text-foreground">KPI Dashboard</h1>
                 </div>
               </div>
               <div className="flex items-center gap-1">
