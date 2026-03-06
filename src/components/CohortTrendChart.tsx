@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CohortKpi } from "@/lib/types";
-import { formatWonCompact, formatWonFull } from "@/lib/format";
+import { formatNumberFull, formatWonFull } from "@/lib/format";
 
 interface Props {
   kpis: CohortKpi[];
