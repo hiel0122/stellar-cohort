@@ -167,13 +167,13 @@ const Index = () => {
                     icon={<TrendingUp className="h-4 w-4" />} sparklineData={sparklines.conversion} progress={conversionProgress} onClick={() => setSheetMetric("conversion")} />
                 </div>
 
-                {/* L1 Profit KPI Cards */}
-                <L1ProfitCards
+                {/* Settlement / Payout KPI Cards */}
+                <SettlementCards
                   currentCost={currentCost}
                   baselineCost={baselineCost}
                   isComparing={isComparing}
                   deltaLabel={deltaLabel}
-                  netProfitSparkline={netProfitSparkline}
+                  payoutSparkline={payoutSparkline}
                 />
 
                 {/* Charts row */}
