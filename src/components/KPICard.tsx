@@ -14,6 +14,8 @@ interface KPICardProps {
   onClick?: () => void;
 }
 
+// sparklineData and progress are kept in the interface for backward compatibility but no longer rendered
+
 export function KPICard({ title, value, deltaPct, deltaLabel = "vs 전기수", icon, sparklineData, secondaryText, progress, onClick }: KPICardProps) {
   const deltaDisplay =
     deltaPct === null
