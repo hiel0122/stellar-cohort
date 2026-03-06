@@ -336,9 +336,7 @@ function CohortsOverview({
                     </TableCell>
                     <TableCell className="py-2 px-2 text-xs text-muted-foreground">{k.start_date ?? "—"}</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">
-                      <Tooltip><TooltipTrigger asChild><span>{formatWonCompact(k.revenue)}</span></TooltipTrigger>
-                        <TooltipContent><p className="text-xs tabular-nums">{formatWonFull(k.revenue)}</p></TooltipContent>
-                      </Tooltip>
+                      {formatWonFull(k.revenue)}
                     </TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.students)}명</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.leads)}명</TableCell>
