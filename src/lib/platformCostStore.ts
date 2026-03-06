@@ -84,12 +84,12 @@ export function generateCostId(): string {
 export function upsertPlatformCost(cost: PlatformCost) {
   const list = load();
   const idx = list.findIndex((c) => c.id === cost.id);
+  const updated = { ...cost, updated_at: new Date().toISOString() };
   if (idx >= 0) {
-    list[idx] = { ...cost, updated_at: new Date().toISOString() };
+    cache = [...list.slice(0, idx), updated, ...list.slice(idx + 1)];
   } else {
-    list.push({ ...cost, updated_at: new Date().toISOString() });
+    cache = [...list, updated];
   }
-  cache = list;
   persist();
 }
 
