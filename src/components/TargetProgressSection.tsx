@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Target } from "lucide-react";
 import type { CourseTargets } from "@/lib/types";
-import { formatWonCompact, formatWonFull, formatInt } from "@/lib/format";
+import { formatWonFull, formatInt } from "@/lib/format";
 import { calcProgress, calcRemaining, calcDeltaPp } from "@/hooks/useTargets";
 import {
   Tooltip,
