@@ -226,6 +226,7 @@ const Index = () => {
 
                 {/* Cohorts Overview table */}
                 <div className="section-container">
+                  <SectionHeader title="기수 요약" />
                   <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
                     baselineCohortId={baselineCohortId} isComparing={isComparing} />
                 </div>
