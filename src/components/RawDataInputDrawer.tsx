@@ -797,15 +797,17 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
       toast.error("광고비는 0 이상이어야 합니다.");
       return;
     }
+    const platformKey: PlatformKey = platformName.trim().includes("N잡연구소") ? "njab" : "generic";
     const newCost: PlatformCost = {
       id: generateCostId(),
       instructor_name: instructor.trim(),
       course_title: course.trim(),
       cohort_no: Number(cohortNo),
       platform_name: platformName.trim(),
-      fee_rate_pct: rate,
-      fee_amount: feeAmount,
-      ad_cost_amount: ad,
+      platform_key: platformKey,
+      fee_rate_pct: platformKey === "njab" ? 0 : rate,
+      fee_amount: platformKey === "njab" ? 0 : feeAmount,
+      ad_cost_amount: platformKey === "njab" ? 0 : ad,
       note: note.trim(),
       updated_at: new Date().toISOString(),
     };
