@@ -259,7 +259,7 @@ function L1ProfitCards({
       />
       <KPICard
         title="광고비"
-        value={hasCost ? formatWonCompact(currentCost.total_ads) : "—"}
+        value={hasCost ? formatWonFull(currentCost.total_ads) : "—"}
         deltaPct={adsDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Megaphone className="h-4 w-4" />}
