@@ -590,8 +590,21 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
   const recentPlatforms = getRecentPlatformNames();
   const totalCost = costsForCohort.reduce((sum, c) => sum + c.fee_amount + c.ad_cost_amount, 0);
 
+  const selCohort = cohortList.find((c) => c.id === selCohortId);
+
   return (
     <div className="flex flex-1 overflow-hidden flex-col">
+      {/* New cost modal */}
+      {selCohort && (
+        <NewCostModal
+          open={showNewCostModal}
+          onOpenChange={setShowNewCostModal}
+          instructor={selCohort.instructor}
+          course={selCohort.course}
+          cohortNo={selCohort.cohortNo}
+          onCreated={handleCostCreated}
+        />
+      )}
       {/* Cohort selector */}
       <div className="flex items-center gap-2 p-2 border-b shrink-0">
         <Label className="text-xs text-muted-foreground shrink-0">기수:</Label>
