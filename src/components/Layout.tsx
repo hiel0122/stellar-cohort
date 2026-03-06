@@ -39,7 +39,10 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
             <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4">
               <div className="flex items-center gap-3">
                 <SidebarTrigger><Menu className="h-4 w-4" /></SidebarTrigger>
-                <h1 className="text-sm font-semibold text-foreground hidden sm:block">KPI Dashboard</h1>
+                <div className="hidden sm:block">
+                  <h1 className="text-sm font-semibold text-foreground">KPI Dashboard</h1>
+                  <p className="text-base text-muted-foreground leading-snug">강사별 강의 KPI를 확인하세요</p>
+                </div>
               </div>
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 mr-1" onClick={() => openRawData("cohorts")}>
