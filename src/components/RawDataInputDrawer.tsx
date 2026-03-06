@@ -501,6 +501,127 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
   );
 }
 
+// ═══════════════════════ New Cost Modal ═══════════════════════
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+
+function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, onCreated }: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  instructor: string;
+  course: string;
+  cohortNo: number;
+  onCreated: (id: string) => void;
+}) {
+  const [platformName, setPlatformName] = useState("");
+  const [feeAmount, setFeeAmount] = useState("");
+  const [adCostAmount, setAdCostAmount] = useState("");
+  const [note, setNote] = useState("");
+  const recentPlatforms = getRecentPlatformNames();
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      setPlatformName("");
+      setFeeAmount("");
+      setAdCostAmount("");
+      setNote("");
+    }
+  }, [open]);
+
+  const fee = parseNum(feeAmount);
+  const ad = parseNum(adCostAmount);
+  const totalPreview = fee + ad;
+
+  const handleCreate = () => {
+    if (!platformName.trim()) {
+      toast.error("플랫폼 이름을 입력하세요.");
+      return;
+    }
+    if (fee < 0 || ad < 0) {
+      toast.error("비용은 0 이상이어야 합니다.");
+      return;
+    }
+    const newCost: PlatformCost = {
+      id: generateCostId(),
+      instructor_name: instructor.trim(),
+      course_title: course.trim(),
+      cohort_no: Number(cohortNo),
+      platform_name: platformName.trim(),
+      fee_amount: fee,
+      ad_cost_amount: ad,
+      note: note.trim(),
+      updated_at: new Date().toISOString(),
+    };
+    upsertPlatformCost(newCost);
+    onCreated(newCost.id);
+    onOpenChange(false);
+    toast.success("비용 레코드가 생성되었습니다");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-sm">새 비용 생성</DialogTitle>
+          <DialogDescription className="text-xs">
+            {instructor} / {course} {cohortNo}기
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div className="space-y-1">
+            <Label className="text-xs">플랫폼 이름 <span className="text-destructive">*</span></Label>
+            <Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} className="h-8 text-xs" placeholder="예: 네이버, 구글, 클래스101" autoFocus />
+            {recentPlatforms.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {recentPlatforms.map((name) => (
+                  <Button key={name} variant="outline" size="sm" className="h-5 text-[9px] px-1.5" onClick={() => setPlatformName(name)}>
+                    {name}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">수수료 (원)</Label>
+              <Input
+                value={feeAmount}
+                onChange={(e) => setFeeAmount(e.target.value)}
+                className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
+              />
+              {fee > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(fee)}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">광고비 (원)</Label>
+              <Input
+                value={adCostAmount}
+                onChange={(e) => setAdCostAmount(e.target.value)}
+                className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
+              />
+              {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(ad)}</p>}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">메모 (선택)</Label>
+            <Input value={note} onChange={(e) => setNote(e.target.value)} className="h-8 text-xs" placeholder="비고" />
+          </div>
+          {totalPreview > 0 && (
+            <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
+              합계: <span className="font-medium text-foreground tabular-nums">{formatWonCompact(totalPreview)}</span>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => onOpenChange(false)}>취소</Button>
+          <Button size="sm" className="h-8 text-xs" onClick={handleCreate}>생성</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ═══════════════════════ Cost Tab (레벨1 비용) ═══════════════════════
 function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaultInstructor?: string; defaultCourse?: string; defaultCohortNo?: number }) {
   const rawCohorts = useRawCohortStore();
