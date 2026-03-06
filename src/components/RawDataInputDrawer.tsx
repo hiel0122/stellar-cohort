@@ -610,7 +610,7 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
               onChange={(e) => setAdCostAmount(e.target.value)}
               className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
             />
-            {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonCompact(ad)}</p>}
+            {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(ad)}</p>}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">메모 (선택)</Label>
