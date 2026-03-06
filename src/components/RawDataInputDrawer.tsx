@@ -32,7 +32,7 @@ import {
 } from "@/lib/platformCostStore";
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
-import { formatWonCompact } from "@/lib/format";
+import { formatWonFull } from "@/lib/format";
 import { makeTargetKey, loadAllTargets, upsertTarget, deleteTarget } from "@/lib/targetStore";
 import { useTargets } from "@/hooks/useTargets";
 import type { CourseTargets } from "@/lib/types";
