@@ -121,17 +121,20 @@ const Index = () => {
         />
 
         <div className="space-y-6 pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight">대시보드</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">강사별 강의 KPI를 확인하세요</p>
-            </div>
-            {currentCohort && (
-              <Badge variant={currentCohort.status === "active" ? "default" : currentCohort.status === "closed" ? "secondary" : "outline"} className="text-[10px] h-5">
+          {currentCohort && (
+            <div className="flex items-center">
+              <Badge
+                variant={currentCohort.status === "active" ? "default" : currentCohort.status === "closed" ? "secondary" : "outline"}
+                className={`text-base px-4 py-1.5 h-auto font-semibold ${
+                  currentCohort.status === "active"
+                    ? "bg-[hsl(var(--kpi-positive))]/15 text-[hsl(var(--kpi-positive))] border-[hsl(var(--kpi-positive))]/30"
+                    : ""
+                }`}
+              >
                 {statusLabel}
               </Badge>
-            )}
-          </div>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>
