@@ -55,7 +55,7 @@ export function CohortTrendChart({ kpis, loading, baselineKpi, isComparing, netP
             <TabsTrigger value="revenue" className="text-xs h-6 px-3">매출</TabsTrigger>
             <TabsTrigger value="students" className="text-xs h-6 px-3">수강생</TabsTrigger>
             <TabsTrigger value="conversion" className="text-xs h-6 px-3">전환율</TabsTrigger>
-            <TabsTrigger value="netprofit" className="text-xs h-6 px-3">순이익</TabsTrigger>
+            <TabsTrigger value="netprofit" className="text-xs h-6 px-3">실지급액</TabsTrigger>
           </TabsList>
 
           <TabsContent value="revenue">
