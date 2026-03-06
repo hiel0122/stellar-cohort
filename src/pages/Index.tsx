@@ -14,7 +14,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useTargets, calcProgress } from "@/hooks/useTargets";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
 import { getCohortCostSummary, type CohortCostSummary } from "@/lib/platformCostStore";
-import { formatWonCompact, formatWonFull, formatInt, formatPct } from "@/lib/format";
+import { formatWonFull, formatInt, formatPct } from "@/lib/format";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
