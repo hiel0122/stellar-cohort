@@ -337,8 +337,8 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
         />
       )}
 
-      {/* ═══ Left: Cohort List (35%) ═══ */}
-      <div className="w-1/2 lg:w-[55%] min-w-0 border-r flex flex-col overflow-hidden">
+      {/* ═══ Left: Cohort List (40%) ═══ */}
+      <div className="w-2/5 min-w-0 border-r flex flex-col overflow-hidden">
         <div className="flex items-center gap-1.5 p-2 border-b">
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowNewModal(true)}>
             <Plus className="h-3 w-3" /> 새 기수
@@ -399,8 +399,8 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
         </div>
       </div>
 
-      {/* ═══ Right: Unified Form (65%) ═══ */}
-      <div className="w-1/2 lg:w-[45%] min-w-0 overflow-y-auto overflow-x-hidden">
+      {/* ═══ Right: Unified Form (60%) ═══ */}
+      <div className="w-3/5 min-w-0 overflow-y-auto overflow-x-hidden">
         {form ? (
           <div className="space-y-0">
             {/* Context bar */}
