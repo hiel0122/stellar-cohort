@@ -221,8 +221,10 @@ const Index = () => {
                 )}
 
                 {/* Cohorts Overview table */}
-                <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
-                  baselineCohortId={baselineCohortId} isComparing={isComparing} />
+                <div className="section-container">
+                  <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
+                    baselineCohortId={baselineCohortId} isComparing={isComparing} />
+                </div>
               </>
             </TooltipProvider>
           ) : (

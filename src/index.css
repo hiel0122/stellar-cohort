@@ -143,4 +143,15 @@
   .kpi-neutral-bg {
     background-color: hsl(var(--kpi-neutral-bg));
   }
+  .section-container {
+    background: hsla(220, 20%, 94%, 0.45);
+    border: 1px solid hsla(220, 15%, 85%, 0.5);
+    border-radius: 1rem;
+    padding: 1.25rem;
+  }
+  .dark .section-container {
+    background: transparent;
+    border-color: transparent;
+    padding: 0;
+  }
 }
