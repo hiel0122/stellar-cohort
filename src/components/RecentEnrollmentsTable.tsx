@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Enrollment } from "@/lib/types";
-import { formatWonCompact, formatWonFull } from "@/lib/format";
+import { formatWonFull } from "@/lib/format";
 import {
   Tooltip,
   TooltipContent,
