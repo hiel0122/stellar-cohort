@@ -25,6 +25,10 @@ export interface CohortCostSummary {
   total_ads: number;
   net_profit_l1: number;
   net_margin_l1: number | null; // null when revenue=0
+  // Payout-based (from platform settlement details)
+  settlement_total: number | null;  // null = no settlement form data
+  payout: number | null;            // final_payout_amount sum
+  payout_margin: number | null;     // payout / revenue %
 }
 
 // ── In-memory cache ──
