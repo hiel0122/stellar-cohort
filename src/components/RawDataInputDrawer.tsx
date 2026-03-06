@@ -659,7 +659,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
 
   // Form state
   const [form, setForm] = useState<PlatformCost | null>(null);
-  const [showNewForm, setShowNewForm] = useState(false);
+  
 
   useEffect(() => {
     if (costsForCohort.length > 0 && !selectedId) setSelectedId(costsForCohort[0].id);
