@@ -364,7 +364,7 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
         onBlur={() => form && updateField(key, form[key])}
         className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
       />
-      {suffix && form && <p className="text-[10px] text-muted-foreground break-words">{suffix}: {formatWonCompact(form[key])}</p>}
+      {suffix && form && <p className="text-[10px] text-muted-foreground break-words">{suffix}: {formatWonFull(form[key])}</p>}
     </div>
   );
 
