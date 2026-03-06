@@ -34,7 +34,9 @@ function load(): PlatformCost[] {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    cache = raw ? JSON.parse(raw) : [];
+    const parsed: PlatformCost[] = raw ? JSON.parse(raw) : [];
+    // Backfill platform_key for legacy records
+    cache = parsed.map(c => ({ ...c, platform_key: c.platform_key ?? "generic" as PlatformKey }));
   } catch {
     cache = [];
   }
