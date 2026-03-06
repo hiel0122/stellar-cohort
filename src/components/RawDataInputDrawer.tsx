@@ -502,9 +502,6 @@ function CohortTab({ defaultInstructor, defaultCourse }: { defaultInstructor?: s
 }
 
 // ═══════════════════════ New Cost Modal ═══════════════════════
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
 
 function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, onCreated }: {
   open: boolean;
