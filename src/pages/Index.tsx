@@ -149,7 +149,7 @@ const Index = () => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div>
-                        <KPICard title="매출" value={formatWonCompact(currentKpi.revenue)} deltaPct={getDelta("revenue")} deltaLabel={deltaLabel}
+                        <KPICard title="매출" value={formatWonFull(currentKpi.revenue)} deltaPct={getDelta("revenue")} deltaLabel={deltaLabel}
                           icon={<DollarSign className="h-4 w-4" />} sparklineData={sparklines.revenue} progress={revenueProgress} onClick={() => setSheetMetric("revenue")} />
                       </div>
                     </TooltipTrigger>
