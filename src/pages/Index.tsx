@@ -251,7 +251,7 @@ function L1ProfitCards({
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch mt-3">
       <KPICard
         title="수수료"
-        value={hasCost ? formatWonCompact(currentCost.total_fee) : "—"}
+        value={hasCost ? formatWonFull(currentCost.total_fee) : "—"}
         deltaPct={feeDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Receipt className="h-4 w-4" />}
