@@ -21,7 +21,6 @@ interface Props {
 }
 
 export function Layout({ children, defaultInstructor, defaultCourse, defaultCohortNo }: Props) {
-  const [pinned, setPinned] = useState(true);
   const [rawDataOpen, setRawDataOpen] = useState(false);
   const [rawDataTab, setRawDataTab] = useState<RawDataTabType>("cohorts");
 
@@ -32,9 +31,9 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
 
   return (
     <LayoutContext.Provider value={{ openRawData }}>
-      <SidebarProvider defaultOpen={pinned}>
+      <SidebarProvider>
         <div className="flex min-h-screen w-full">
-          <AppSidebar pinned={pinned} onTogglePin={() => setPinned(!pinned)} />
+          <AppSidebar />
           <div className="flex flex-1 flex-col min-w-0">
             <header className="sticky top-0 z-30 flex min-h-[3.5rem] items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4 py-2">
               <div className="flex items-center gap-3">
