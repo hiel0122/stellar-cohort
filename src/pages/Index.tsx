@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import type { CohortKpi, Cohort } from "@/lib/types";
 import { loadRawCohorts } from "@/lib/rawCohortStore";
+import { SectionHeader } from "@/components/SectionHeader";
 
 type MetricKey = "revenue" | "students" | "leads" | "conversion";
 
@@ -148,8 +149,9 @@ const Index = () => {
             <TooltipProvider delayDuration={300}>
               <>
                 {/* KPI Section Container */}
-                <div className="section-container space-y-3">
-                  {/* Core KPI Cards */}
+                 <div className="section-container space-y-3">
+                   <SectionHeader title="KPI 요약" subtitle={currentCohort ? `${currentCohort.cohort_no}기 기준` : undefined} />
+                   {/* Core KPI Cards */}
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -184,6 +186,7 @@ const Index = () => {
 
                 {/* Charts row */}
                 <div className="section-container">
+                  <SectionHeader title="추이 및 퍼널" subtitle={`최근 ${kpis.length}개 기수`} />
                   <div className="grid gap-3 lg:grid-cols-2">
                     <CohortTrendChart kpis={kpis} baselineKpi={baselineKpi} isComparing={isComparing} netProfitSeries={payoutSeries} />
                     <FunnelTable funnel={funnel} loading={isDetailLoading} baselineFunnel={isComparing ? baselineFunnel : null} baselineCohortNo={baselineCohort?.cohort_no ?? null} />
@@ -193,6 +196,7 @@ const Index = () => {
                 {/* Target Progress */}
                 {currentKpi && (
                   <div className="section-container">
+                    <SectionHeader title="목표 대비" subtitle={currentCohort ? `${currentCohort.cohort_no}기 기준` : undefined} />
                     <TargetProgressSection targets={targets} revenue={currentKpi.revenue} students={currentKpi.students}
                       conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")} />
                   </div>
@@ -222,6 +226,7 @@ const Index = () => {
 
                 {/* Cohorts Overview table */}
                 <div className="section-container">
+                  <SectionHeader title="기수 요약" />
                   <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
                     baselineCohortId={baselineCohortId} isComparing={isComparing} />
                 </div>
