@@ -840,15 +840,18 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
           <div className="space-y-1">
             <Label className="text-xs">플랫폼 이름 <span className="text-destructive">*</span></Label>
             <Input value={platformName} onChange={(e) => setPlatformName(e.target.value)} className="h-8 text-xs" placeholder="예: 네이버, 구글, 클래스101" autoFocus />
-            {recentPlatforms.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1">
-                {recentPlatforms.map((name) => (
-                  <Button key={name} variant="outline" size="sm" className="h-5 text-[9px] px-1.5" onClick={() => setPlatformName(name)}>
-                    {name}
-                  </Button>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const allNames = [...new Set(["N잡연구소", ...recentPlatforms])].slice(0, 6);
+              return (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {allNames.map((name) => (
+                    <Button key={name} variant="outline" size="sm" className="h-5 text-[9px] px-1.5" onClick={() => setPlatformName(name)}>
+                      {name}
+                    </Button>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">수수료율 (%)</Label>
