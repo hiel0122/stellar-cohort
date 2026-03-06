@@ -751,6 +751,18 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
         </Select>
       </div>
 
+      {/* Debug panel */}
+      <div className="px-2 py-1 border-b shrink-0 flex items-center gap-2">
+        <button className="text-[9px] text-muted-foreground underline" onClick={() => setShowDebug((v) => !v)}>
+          {showDebug ? "디버그 닫기" : "디버그"}
+        </button>
+        {showDebug && (
+          <span className="text-[9px] text-muted-foreground tabular-nums">
+            cohortKey={selCohortId?.slice(0,12)} | store={platformCosts.length} | visible={costsForCohort.length} | selected={selectedId?.slice(0,12) ?? "null"} | rev={cohortRevenue}
+          </span>
+        )}
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
         {/* Left: cost list */}
         <div className="w-[45%] min-w-0 border-r flex flex-col overflow-hidden">
@@ -807,13 +819,23 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
                 )}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">수수료 (원)</Label>
+                <Label className="text-xs">수수료율 (%)</Label>
                 <Input
-                  value={form.fee_amount ? fmtInput(form.fee_amount) : ""}
-                  onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("fee_amount", n); }}
-                  className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
+                  type="number" step="0.1" min="0" max="100"
+                  value={form.fee_rate_pct ?? ""}
+                  onChange={(e) => {
+                    const r = Number(e.target.value) || 0;
+                    const calcFee = Math.round(cohortRevenue * (r / 100));
+                    updateField("fee_rate_pct", r);
+                    updateField("fee_amount", calcFee);
+                  }}
+                  className="tabular-nums h-8 text-xs w-full"
                 />
-                {form.fee_amount > 0 && <p className="text-[10px] text-muted-foreground">표시: {formatWonCompact(form.fee_amount)}</p>}
+                <p className="text-[10px] text-muted-foreground">
+                  수수료 금액 = <span className="font-medium text-foreground tabular-nums">{(form.fee_amount ?? 0).toLocaleString("ko-KR")}원</span>
+                  <span className="ml-1">(매출 {formatWonCompact(cohortRevenue)} × {form.fee_rate_pct ?? 0}%)</span>
+                </p>
+                {cohortRevenue === 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">광고비 (원)</Label>
