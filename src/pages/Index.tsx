@@ -324,8 +324,9 @@ function CohortsOverview({
                 <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">전환율</TableHead>
                 <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">수수료</TableHead>
                 <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">광고비</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">순이익</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">순이익률</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">정산금</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">순이익(실지급)</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">실지급률</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
