@@ -15,7 +15,7 @@ import {
   Tooltip,
 } from "recharts";
 import type { CohortKpi } from "@/lib/types";
-import { formatWonCompact, formatWonFull, formatInt } from "@/lib/format";
+import { formatWonFull, formatInt } from "@/lib/format";
 
 interface Props {
   open: boolean;
