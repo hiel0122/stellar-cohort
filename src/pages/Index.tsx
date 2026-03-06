@@ -196,6 +196,7 @@ const Index = () => {
                 {/* Target Progress */}
                 {currentKpi && (
                   <div className="section-container">
+                    <SectionHeader title="목표 대비" subtitle={currentCohort ? `${currentCohort.cohort_no}기 기준` : undefined} />
                     <TargetProgressSection targets={targets} revenue={currentKpi.revenue} students={currentKpi.students}
                       conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")} />
                   </div>
