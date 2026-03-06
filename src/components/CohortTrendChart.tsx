@@ -116,8 +116,8 @@ export function CohortTrendChart({ kpis, loading, baselineKpi, isComparing, netP
                     <YAxis tickFormatter={(v: number) => formatNumberFull(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={80} />
                     <Tooltip
                       formatter={(value: number | null, name: string) => {
-                        if (value === null) return ["비용 미입력", "순이익"];
-                        return [formatWonFull(value), "순이익 (L1)"];
+                        if (value === null) return ["정산 폼 미입력", "실지급액"];
+                        return [formatWonFull(value), "순이익 (실지급액)"];
                       }}
                       contentStyle={tooltipStyle}
                     />
