@@ -149,8 +149,9 @@ const Index = () => {
             <TooltipProvider delayDuration={300}>
               <>
                 {/* KPI Section Container */}
-                <div className="section-container space-y-3">
-                  {/* Core KPI Cards */}
+                 <div className="section-container space-y-3">
+                   <SectionHeader title="KPI 요약" subtitle={currentCohort ? `${currentCohort.cohort_no}기 기준` : undefined} />
+                   {/* Core KPI Cards */}
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
                     <Tooltip>
                       <TooltipTrigger asChild>
