@@ -9,6 +9,7 @@ export interface PlatformCost {
   course_title: string;
   cohort_no: number;
   platform_name: string;
+  fee_rate_pct: number;   // e.g. 7.5 means 7.5%
   fee_amount: number;
   ad_cost_amount: number;
   note: string;
@@ -83,12 +84,12 @@ export function generateCostId(): string {
 export function upsertPlatformCost(cost: PlatformCost) {
   const list = load();
   const idx = list.findIndex((c) => c.id === cost.id);
+  const updated = { ...cost, updated_at: new Date().toISOString() };
   if (idx >= 0) {
-    list[idx] = { ...cost, updated_at: new Date().toISOString() };
+    cache = [...list.slice(0, idx), updated, ...list.slice(idx + 1)];
   } else {
-    list.push({ ...cost, updated_at: new Date().toISOString() });
+    cache = [...list, updated];
   }
-  cache = list;
   persist();
 }
 
