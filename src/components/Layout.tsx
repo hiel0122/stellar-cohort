@@ -36,7 +36,7 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
         <div className="flex min-h-screen w-full">
           <AppSidebar pinned={pinned} onTogglePin={() => setPinned(!pinned)} />
           <div className="flex flex-1 flex-col min-w-0">
-            <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4">
+            <header className="sticky top-0 z-30 flex min-h-[3.5rem] items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4 py-2">
               <div className="flex items-center gap-3">
                 <SidebarTrigger><Menu className="h-4 w-4" /></SidebarTrigger>
                 <div className="hidden sm:block">
