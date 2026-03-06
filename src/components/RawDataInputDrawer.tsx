@@ -844,7 +844,7 @@ function CostTab({ defaultInstructor, defaultCourse, defaultCohortNo }: { defaul
                   onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("ad_cost_amount", n); }}
                   className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
                 />
-                {form.ad_cost_amount > 0 && <p className="text-[10px] text-muted-foreground">표시: {formatWonCompact(form.ad_cost_amount)}</p>}
+                {form.ad_cost_amount > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(form.ad_cost_amount)}</p>}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">메모</Label>

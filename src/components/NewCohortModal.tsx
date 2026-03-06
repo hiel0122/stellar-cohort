@@ -386,7 +386,7 @@ function TargetPreview({ targets, label }: { targets: CourseTargets | null; labe
     <div className="rounded-md bg-muted p-2">
       <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">{label} →</p>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
-        {targets.revenue_target != null && <span>매출 <strong className="tabular-nums">{formatWonCompact(targets.revenue_target)}</strong></span>}
+        {targets.revenue_target != null && <span>매출 <strong className="tabular-nums">{formatWonFull(targets.revenue_target)}</strong></span>}
         {targets.students_target != null && <span>수강생 <strong className="tabular-nums">{targets.students_target}명</strong></span>}
         {targets.conversion_target != null && <span>전환율 <strong className="tabular-nums">{targets.conversion_target}%</strong></span>}
         {targets.revenue_target == null && targets.students_target == null && targets.conversion_target == null && (

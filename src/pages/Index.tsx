@@ -342,9 +342,9 @@ function CohortsOverview({
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.leads)}명</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.applied)}명</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{k.conversion.toFixed(1)}%</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonCompact(cost.total_fee) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonCompact(cost.total_ads) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost ? formatWonCompact(cost.net_profit_l1) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_fee) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_ads) : "—"}</TableCell>
+                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost ? formatWonFull(cost.net_profit_l1) : "—"}</TableCell>
                     <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{cost?.net_margin_l1 != null ? `${cost.net_margin_l1.toFixed(1)}%` : "—"}</TableCell>
                   </TableRow>
                 );

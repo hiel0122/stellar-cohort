@@ -38,7 +38,7 @@ const metricConfig = {
     title: "매출 상세",
     desc: "기수별 매출 추이",
     getValue: (k: CohortKpi) => k.revenue,
-    formatCompact: (v: number) => formatWonCompact(v),
+    formatCompact: (v: number) => formatWonFull(v),
     formatFull: (v: number) => formatWonFull(v),
   },
   students: {

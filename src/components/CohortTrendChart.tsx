@@ -113,7 +113,7 @@ export function CohortTrendChart({ kpis, loading, baselineKpi, isComparing, netP
                     <defs><linearGradient id="netProfitGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={0.12} /><stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0} /></linearGradient></defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" tick={axisTickProps} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={(v: number) => formatWonCompact(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={52} />
+                    <YAxis tickFormatter={(v: number) => formatNumberFull(v)} tick={axisTickProps} axisLine={false} tickLine={false} width={80} />
                     <Tooltip
                       formatter={(value: number | null, name: string) => {
                         if (value === null) return ["비용 미입력", "순이익"];
