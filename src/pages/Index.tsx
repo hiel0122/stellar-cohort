@@ -147,37 +147,40 @@ const Index = () => {
           ) : currentKpi ? (
             <TooltipProvider delayDuration={300}>
               <>
-                {/* Core KPI Cards */}
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <KPICard title="매출" value={formatWonFull(currentKpi.revenue)} deltaPct={getDelta("revenue")} deltaLabel={deltaLabel}
-                          icon={<DollarSign className="h-4 w-4" />} sparklineData={sparklines.revenue} progress={revenueProgress} onClick={() => setSheetMetric("revenue")} />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs tabular-nums">{formatWonFull(currentKpi.revenue)}</p>
-                      {isComparing && baselineKpi && <p className="text-[10px] text-muted-foreground">기준({baselineCohort?.cohort_no}기): {formatWonFull(baselineKpi.revenue)}</p>}
-                    </TooltipContent>
-                  </Tooltip>
-                  <KPICard title="수강생" value={`${formatInt(currentKpi.students)}명`} deltaPct={getDelta("students")} deltaLabel={deltaLabel}
-                    icon={<Users className="h-4 w-4" />} sparklineData={sparklines.students} progress={studentsProgress} onClick={() => setSheetMetric("students")} />
-                  <KPICard title="리드" value={`${formatInt(currentKpi.leads)}명`} deltaPct={getDelta("leads")} deltaLabel={deltaLabel}
-                    icon={<Layers className="h-4 w-4" />} sparklineData={sparklines.leads} onClick={() => setSheetMetric("leads")} />
-                  <KPICard title="전환율" value={`${currentKpi.conversion.toFixed(1)}%`} deltaPct={getDelta("conversion")} deltaLabel={deltaLabel}
-                    secondaryText={`리드 기준 ${currentKpi.conversion_secondary.toFixed(1)}%`}
-                    icon={<TrendingUp className="h-4 w-4" />} sparklineData={sparklines.conversion} progress={conversionProgress} onClick={() => setSheetMetric("conversion")} />
-                </div>
+                {/* KPI Section Container */}
+                <div className="section-container space-y-3">
+                  {/* Core KPI Cards */}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <KPICard title="매출" value={formatWonFull(currentKpi.revenue)} deltaPct={getDelta("revenue")} deltaLabel={deltaLabel}
+                            icon={<DollarSign className="h-4 w-4" />} sparklineData={sparklines.revenue} progress={revenueProgress} onClick={() => setSheetMetric("revenue")} />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs tabular-nums">{formatWonFull(currentKpi.revenue)}</p>
+                        {isComparing && baselineKpi && <p className="text-[10px] text-muted-foreground">기준({baselineCohort?.cohort_no}기): {formatWonFull(baselineKpi.revenue)}</p>}
+                      </TooltipContent>
+                    </Tooltip>
+                    <KPICard title="수강생" value={`${formatInt(currentKpi.students)}명`} deltaPct={getDelta("students")} deltaLabel={deltaLabel}
+                      icon={<Users className="h-4 w-4" />} sparklineData={sparklines.students} progress={studentsProgress} onClick={() => setSheetMetric("students")} />
+                    <KPICard title="리드" value={`${formatInt(currentKpi.leads)}명`} deltaPct={getDelta("leads")} deltaLabel={deltaLabel}
+                      icon={<Layers className="h-4 w-4" />} sparklineData={sparklines.leads} onClick={() => setSheetMetric("leads")} />
+                    <KPICard title="전환율" value={`${currentKpi.conversion.toFixed(1)}%`} deltaPct={getDelta("conversion")} deltaLabel={deltaLabel}
+                      secondaryText={`리드 기준 ${currentKpi.conversion_secondary.toFixed(1)}%`}
+                      icon={<TrendingUp className="h-4 w-4" />} sparklineData={sparklines.conversion} progress={conversionProgress} onClick={() => setSheetMetric("conversion")} />
+                  </div>
 
-                {/* Settlement / Payout KPI Cards */}
-                <SettlementCards
-                  currentCost={currentCost}
-                  baselineCost={baselineCost}
-                  isComparing={isComparing}
-                  deltaLabel={deltaLabel}
-                  payoutSparkline={payoutSparkline}
-                />
+                  {/* Settlement / Payout KPI Cards */}
+                  <SettlementCards
+                    currentCost={currentCost}
+                    baselineCost={baselineCost}
+                    isComparing={isComparing}
+                    deltaLabel={deltaLabel}
+                    payoutSparkline={payoutSparkline}
+                  />
+                </div>
 
                 {/* Charts row */}
                 <div className="grid gap-3 lg:grid-cols-2">
