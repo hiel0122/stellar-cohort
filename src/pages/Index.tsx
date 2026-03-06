@@ -266,7 +266,7 @@ function L1ProfitCards({
       />
       <KPICard
         title="순이익 (L1)"
-        value={hasCost ? formatWonCompact(currentCost.net_profit_l1) : "—"}
+        value={hasCost ? formatWonFull(currentCost.net_profit_l1) : "—"}
         deltaPct={profitDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<PiggyBank className="h-4 w-4" />}
