@@ -285,7 +285,12 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
   const updateCostField = useCallback(<K extends keyof PlatformCost>(key: K, value: PlatformCost[K]) => {
     setCostForm((prev) => {
       if (!prev) return prev;
-      const updated = { ...prev, [key]: value };
+      let updated = { ...prev, [key]: value };
+      // Auto-detect platform_key when name changes
+      if (key === "platform_name") {
+        const name = String(value);
+        updated.platform_key = name.includes("N잡연구소") ? "njab" : "generic";
+      }
       costAutoSave(updated);
       return updated;
     });
