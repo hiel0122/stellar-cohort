@@ -1,7 +1,7 @@
 import { useState, createContext, useContext, useCallback } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Menu, Search, Bell, User, Database } from "lucide-react";
+import { Menu, Bell, User, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RawDataInputDrawer } from "@/components/RawDataInputDrawer";
