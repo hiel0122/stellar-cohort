@@ -853,36 +853,45 @@ function NewCostModal({ open, onOpenChange, instructor, course, cohortNo, revenu
               );
             })()}
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">수수료율 (%)</Label>
-            <Input
-              type="number" step="0.1" min="0" max="100"
-              value={feeRatePct}
-              onChange={(e) => setFeeRatePct(e.target.value)}
-              className="tabular-nums h-8 text-xs" placeholder="예: 7.5"
-            />
-            <div className="text-[10px] text-muted-foreground space-y-0.5">
-              <p>수수료 금액 = 매출 × 수수료율 = <span className="font-medium text-foreground tabular-nums">{feeAmount.toLocaleString("ko-KR")}원</span></p>
-              {revenue === 0 && <p className="text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">광고비 (원)</Label>
-            <Input
-              value={adCostAmount}
-              onChange={(e) => setAdCostAmount(e.target.value)}
-              className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
-            />
-            {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(ad)}</p>}
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">메모 (선택)</Label>
-            <Input value={note} onChange={(e) => setNote(e.target.value)} className="h-8 text-xs" placeholder="비고" />
-          </div>
-          {totalPreview > 0 && (
-            <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
-              합계: <span className="font-medium text-foreground tabular-nums">{formatWonFull(totalPreview)}</span>
-              <span className="ml-2">(수수료 {formatWonFull(feeAmount)} + 광고비 {formatWonFull(ad)})</span>
+          {!platformName.trim().includes("N잡연구소") && (
+            <>
+              <div className="space-y-1">
+                <Label className="text-xs">수수료율 (%)</Label>
+                <Input
+                  type="number" step="0.1" min="0" max="100"
+                  value={feeRatePct}
+                  onChange={(e) => setFeeRatePct(e.target.value)}
+                  className="tabular-nums h-8 text-xs" placeholder="예: 7.5"
+                />
+                <div className="text-[10px] text-muted-foreground space-y-0.5">
+                  <p>수수료 금액 = 매출 × 수수료율 = <span className="font-medium text-foreground tabular-nums">{feeAmount.toLocaleString("ko-KR")}원</span></p>
+                  {revenue === 0 && <p className="text-amber-600 dark:text-amber-400">⚠ 매출이 0이면 수수료가 0으로 계산됩니다</p>}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">광고비 (원)</Label>
+                <Input
+                  value={adCostAmount}
+                  onChange={(e) => setAdCostAmount(e.target.value)}
+                  className="tabular-nums h-8 text-xs" inputMode="numeric" placeholder="0"
+                />
+                {ad > 0 && <p className="text-[10px] text-muted-foreground">{formatWonFull(ad)}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">메모 (선택)</Label>
+                <Input value={note} onChange={(e) => setNote(e.target.value)} className="h-8 text-xs" placeholder="비고" />
+              </div>
+              {totalPreview > 0 && (
+                <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
+                  합계: <span className="font-medium text-foreground tabular-nums">{formatWonFull(totalPreview)}</span>
+                  <span className="ml-2">(수수료 {formatWonFull(feeAmount)} + 광고비 {formatWonFull(ad)})</span>
+                </div>
+              )}
+            </>
+          )}
+          {platformName.trim().includes("N잡연구소") && (
+            <div className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
+              N잡연구소 전용 정산 폼은 생성 후 비용 목록에서 선택하면 자동으로 표시됩니다.
             </div>
           )}
         </div>
