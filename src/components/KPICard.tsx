@@ -1,6 +1,5 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { ResponsiveContainer, AreaChart, Area } from "recharts";
 
 interface KPICardProps {
   title: string;
