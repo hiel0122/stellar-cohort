@@ -329,21 +329,21 @@ function CohortsOverview({
       <CardContent className="px-4 pb-4">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
-              <TableRow className="border-b border-border/50">
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2">기수</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2">상태</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2">시작일</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">매출</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">수강생</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">리드</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">지원</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">전환율</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">수수료</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">광고비</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">정산금</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">순이익(실지급)</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right">실지급률</TableHead>
+            <TableHeader className="sticky top-0 z-10">
+              <TableRow className="border-b border-border/50 bg-muted/40">
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 font-medium text-muted-foreground">기수</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 font-medium text-muted-foreground">상태</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 font-medium text-muted-foreground">시작일</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">매출</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">수강생</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">리드</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">지원</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">전환율</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">수수료</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">광고비</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">정산금</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">순이익(실지급)</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">실지급률</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
