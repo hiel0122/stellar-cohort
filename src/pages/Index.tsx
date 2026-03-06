@@ -125,11 +125,13 @@ const Index = () => {
           {currentCohort && (
             <div className="flex items-center">
               <Badge
-                variant={currentCohort.status === "active" ? "default" : currentCohort.status === "closed" ? "secondary" : "outline"}
+                variant="outline"
                 className={`text-base px-4 py-1.5 h-auto font-semibold ${
                   currentCohort.status === "active"
-                    ? "bg-[hsl(var(--kpi-positive))]/15 text-[hsl(var(--kpi-positive))] border-[hsl(var(--kpi-positive))]/30"
-                    : ""
+                    ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400 dark:bg-emerald-500/15 dark:border-emerald-500/30"
+                    : currentCohort.status === "closed"
+                    ? "bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400 dark:bg-red-500/15 dark:border-red-500/30"
+                    : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/30"
                 }`}
               >
                 {statusLabel}
