@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
+import { format, parseISO } from "date-fns";
+import { ko } from "date-fns/locale";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -9,8 +11,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { AlertTriangle, Target, Plus, Lock, Unlock, ArrowLeft } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { AlertTriangle, Target, Plus, Unlock, ArrowLeft, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   type RawCohort, upsertRawCohort, makeId, getNextCohortNo,
 } from "@/lib/rawCohortStore";
@@ -54,8 +59,8 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const [course, setCourse] = useState(resolveCourse);
 
   // Effective values (resolving new input vs select)
-  const effectiveInstructor = isNewInstructor ? cleanDisplayName(newInstructorInput) : instructor;
-  const effectiveCourse = isNewCourse ? cleanDisplayName(newCourseInput) : course;
+  const effectiveInstructor = addMode ? cleanDisplayName(newInstructorInput) : instructor;
+  const effectiveCourse = addMode ? cleanDisplayName(newCourseInput) : course;
 
   const suggestedNo = useMemo(() => getNextCohortNo(effectiveInstructor, effectiveCourse), [rawCohorts, effectiveInstructor, effectiveCourse]);
   const [cohortNo, setCohortNo] = useState(suggestedNo);
@@ -137,15 +142,20 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     setSpecificCohortNo(null);
   }, [effectiveInstructor, effectiveCourse]);
 
-  // When switching to new instructor, reset course too
+  // When addMode turns on, activate new input fields; when off, reset
   useEffect(() => {
-    if (isNewInstructor) {
+    if (addMode) {
+      setIsNewInstructor(true);
       setIsNewCourse(true);
+      setNewInstructorInput("");
       setNewCourseInput("");
     } else {
+      setIsNewInstructor(false);
       setIsNewCourse(false);
+      setNewInstructorInput("");
+      setNewCourseInput("");
     }
-  }, [isNewInstructor]);
+  }, [addMode]);
 
   // ── Handle "신규 강사 추가" confirm ──
   const handleConfirmNewInstructor = () => {
@@ -194,35 +204,27 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const handleCreate = () => {
     if (!canCreate) return;
 
-    // Final duplicate check via normalization
     const finalInstructor = effectiveInstructor;
     const finalCourse = effectiveCourse;
 
-    // If new instructor, check one more time
-    if (isNewInstructor) {
-      const match = findByNormalizedKey(finalInstructor, instructors);
-      if (match) {
-        setInstructor(match);
-        setIsNewInstructor(false);
-        toast.info(`기존 강사 "${match}"과(와) 일치하여 자동 선택되었습니다. 다시 생성을 눌러주세요.`);
-        return;
-      }
-    }
-    if (isNewCourse) {
-      const instCourses = isNewInstructor ? allCourses : coursesForInst;
-      const match = findByNormalizedKey(finalCourse, instCourses);
-      if (match) {
-        setCourse(match);
-        setIsNewCourse(false);
-        toast.info(`기존 과정 "${match}"과(와) 일치하여 자동 선택되었습니다. 다시 생성을 눌러주세요.`);
-        return;
-      }
+    // Final duplicate check via normalization (add mode)
+    let resolvedInstructor = finalInstructor;
+    let resolvedCourse = finalCourse;
+
+    if (addMode) {
+      const instMatch = findByNormalizedKey(finalInstructor, instructors);
+      if (instMatch) resolvedInstructor = instMatch;
+      const instCourses = instMatch
+        ? [...new Set(rawCohorts.filter((c) => c.instructor_name === instMatch).map((c) => c.course_title))]
+        : allCourses;
+      const courseMatch = findByNormalizedKey(finalCourse, instCourses);
+      if (courseMatch) resolvedCourse = courseMatch;
     }
 
     const newCohort: RawCohort = {
-      id: makeId(finalInstructor, finalCourse, cohortNo),
-      instructor_name: finalInstructor,
-      course_title: finalCourse,
+      id: makeId(resolvedInstructor, resolvedCourse, cohortNo),
+      instructor_name: resolvedInstructor,
+      course_title: resolvedCourse,
       cohort_no: cohortNo,
       status,
       start_date: startDate,
@@ -234,7 +236,7 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     upsertRawCohort(newCohort);
 
     // Save targets
-    const newKey = makeTargetKey(finalInstructor, finalCourse, cohortNo);
+    const newKey = makeTargetKey(resolvedInstructor, resolvedCourse, cohortNo);
 
     if (targetMode === "copy" && sourceTargets) {
       upsertTarget(newKey, { ...sourceTargets });
@@ -262,7 +264,7 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
       toast.success(`${cohortNo}기가 목표 없이 생성되었습니다`);
     }
 
-    if (isNewInstructor || isNewCourse) {
+    if (addMode) {
       toast.info("신규 강사/과정이 목록에 추가되었습니다");
     }
 
@@ -299,28 +301,20 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
               {/* Instructor field */}
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">강사</Label>
-                {addMode && isNewInstructor ? (
+                {addMode ? (
                   <div className="space-y-1.5">
                     <Input
                       value={newInstructorInput}
                       onChange={(e) => setNewInstructorInput(e.target.value)}
                       onBlur={handleConfirmNewInstructor}
                       className="h-8 text-xs w-full border-emerald-500/50 focus-visible:ring-emerald-500/30"
-                      placeholder="강사명 입력"
+                      placeholder="신규 강사명 입력"
                       autoFocus
                     />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs px-2.5"
-                      onClick={() => { setIsNewInstructor(false); setNewInstructorInput(""); }}
-                    >
-                      <ArrowLeft className="h-3 w-3 mr-1" />목록에서 선택
-                    </Button>
+                    <p className="text-[10px] text-muted-foreground">목록에 없는 강사만 입력</p>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
+                  <div>
                     {instructors.length > 0 ? (
                       <Select value={instructor} onValueChange={setInstructor}>
                         <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
@@ -331,17 +325,6 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                     ) : (
                       <Input value={instructor} onChange={(e) => setInstructor(e.target.value)} className="h-8 text-xs w-full" placeholder="강사명" />
                     )}
-                    {addMode && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs px-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-950/30"
-                        onClick={() => setIsNewInstructor(true)}
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> 신규 강사
-                      </Button>
-                    )}
                   </div>
                 )}
               </div>
@@ -349,29 +332,19 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
               {/* Course field */}
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">과정</Label>
-                {addMode && isNewCourse ? (
+                {addMode ? (
                   <div className="space-y-1.5">
                     <Input
                       value={newCourseInput}
                       onChange={(e) => setNewCourseInput(e.target.value)}
                       onBlur={handleConfirmNewCourse}
                       className="h-8 text-xs w-full border-emerald-500/50 focus-visible:ring-emerald-500/30"
-                      placeholder="과정명 입력"
+                      placeholder="신규 과정명 입력"
                     />
-                    {!isNewInstructor && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs px-2.5"
-                        onClick={() => { setIsNewCourse(false); setNewCourseInput(""); }}
-                      >
-                        <ArrowLeft className="h-3 w-3 mr-1" />목록에서 선택
-                      </Button>
-                    )}
+                    <p className="text-[10px] text-muted-foreground">목록에 없는 과정만 입력</p>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
+                  <div>
                     {coursesForInst.length > 0 ? (
                       <Select value={course} onValueChange={setCourse}>
                         <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
@@ -382,27 +355,16 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                     ) : (
                       <Input value={course} onChange={(e) => setCourse(e.target.value)} className="h-8 text-xs w-full" placeholder="과정명" />
                     )}
-                    {addMode && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs px-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-950/30"
-                        onClick={() => setIsNewCourse(true)}
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> 신규 과정
-                      </Button>
-                    )}
                   </div>
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1">
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-2 space-y-1">
                 <Label className="text-[10px] text-muted-foreground">기수</Label>
                 <Input type="number" min={1} value={cohortNo} onChange={(e) => setCohortNo(parseInt(e.target.value) || 1)} className="h-8 text-xs tabular-nums w-full" />
               </div>
-              <div className="space-y-1">
+              <div className="col-span-3 space-y-1">
                 <Label className="text-[10px] text-muted-foreground">상태</Label>
                 <Select value={status} onValueChange={(v) => setStatus(v as RawCohort["status"])}>
                   <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
@@ -413,9 +375,37 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
+              <div className="col-span-7 space-y-1">
                 <Label className="text-[10px] text-muted-foreground">시작일</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 text-xs w-full min-w-0" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "h-8 w-full justify-start text-left text-xs font-normal min-w-0",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5 shrink-0 opacity-50" />
+                      <span className="truncate">
+                        {startDate
+                          ? format(parseISO(startDate), "yyyy. MM. dd. (EEE)", { locale: ko })
+                          : "시작일 선택"}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate ? parseISO(startDate) : undefined}
+                      onSelect={(date) => {
+                        if (date) setStartDate(format(date, "yyyy-MM-dd"));
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
             {duplicateExists && (
