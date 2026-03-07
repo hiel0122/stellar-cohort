@@ -9,8 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Target } from "lucide-react";
+import { AlertTriangle, Target, Plus, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import {
   type RawCohort, upsertRawCohort, makeId, getNextCohortNo,
@@ -18,6 +17,7 @@ import {
 import { makeTargetKey, upsertTarget, loadAllTargets } from "@/lib/targetStore";
 import type { CourseTargets } from "@/lib/types";
 import { formatWonFull } from "@/lib/format";
+import { findByNormalizedKey, cleanDisplayName } from "@/lib/normalize";
 
 interface Props {
   open: boolean;
@@ -37,6 +37,12 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const resolveInst = () => rawCohorts.find((c) => `inst-${c.instructor_name}` === defaultInstructor)?.instructor_name ?? instructors[0] ?? "";
   const [instructor, setInstructor] = useState(resolveInst);
 
+  // ── New instructor/course input mode ──
+  const [isNewInstructor, setIsNewInstructor] = useState(false);
+  const [newInstructorInput, setNewInstructorInput] = useState("");
+  const [isNewCourse, setIsNewCourse] = useState(false);
+  const [newCourseInput, setNewCourseInput] = useState("");
+
   const coursesForInst = useMemo(
     () => [...new Set(rawCohorts.filter((c) => c.instructor_name === instructor).map((c) => c.course_title))].sort(),
     [rawCohorts, instructor]
@@ -44,7 +50,11 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const resolveCourse = () => rawCohorts.find((c) => `course-${c.course_title}` === defaultCourse && c.instructor_name === instructor)?.course_title ?? coursesForInst[0] ?? "";
   const [course, setCourse] = useState(resolveCourse);
 
-  const suggestedNo = useMemo(() => getNextCohortNo(instructor, course), [rawCohorts, instructor, course]);
+  // Effective values (resolving new input vs select)
+  const effectiveInstructor = isNewInstructor ? cleanDisplayName(newInstructorInput) : instructor;
+  const effectiveCourse = isNewCourse ? cleanDisplayName(newCourseInput) : course;
+
+  const suggestedNo = useMemo(() => getNextCohortNo(effectiveInstructor, effectiveCourse), [rawCohorts, effectiveInstructor, effectiveCourse]);
   const [cohortNo, setCohortNo] = useState(suggestedNo);
   const [status, setStatus] = useState<RawCohort["status"]>("active");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
@@ -54,22 +64,20 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const [copySource, setCopySource] = useState<"prev" | "specific">("prev");
   const [specificCohortNo, setSpecificCohortNo] = useState<number | null>(null);
 
-  // Direct input values
   const [directRevenue, setDirectRevenue] = useState<string>("");
   const [directStudents, setDirectStudents] = useState<string>("");
   const [directConversion, setDirectConversion] = useState<string>("");
 
   const cohortsForCourse = useMemo(
-    () => rawCohorts.filter((c) => c.instructor_name === instructor && c.course_title === course).sort((a, b) => a.cohort_no - b.cohort_no),
-    [rawCohorts, instructor, course]
+    () => rawCohorts.filter((c) => c.instructor_name === effectiveInstructor && c.course_title === effectiveCourse).sort((a, b) => a.cohort_no - b.cohort_no),
+    [rawCohorts, effectiveInstructor, effectiveCourse]
   );
   const prevCohort = cohortsForCourse.length > 0 ? cohortsForCourse[cohortsForCourse.length - 1] : null;
 
-  // Load targets from store
   const allTargets = useMemo(() => loadAllTargets(), [open]);
 
   const getTargetForCohort = (cohortNoVal: number): CourseTargets | null => {
-    const key = makeTargetKey(instructor, course, cohortNoVal);
+    const key = makeTargetKey(effectiveInstructor, effectiveCourse, cohortNoVal);
     return allTargets[key] ?? null;
   };
 
@@ -77,11 +85,15 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const specificTargets = specificCohortNo != null ? getTargetForCohort(specificCohortNo) : null;
   const sourceTargets = copySource === "prev" ? prevTargets : specificTargets;
 
-  // ── Reset on open / instructor/course change ──
+  // ── Reset on open ──
   useEffect(() => {
     if (open) {
       const inst = resolveInst();
       setInstructor(inst);
+      setIsNewInstructor(false);
+      setNewInstructorInput("");
+      setIsNewCourse(false);
+      setNewCourseInput("");
       setStatus("active");
       setStartDate(new Date().toISOString().slice(0, 10));
       setCopySource("prev");
@@ -92,7 +104,6 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     }
   }, [open]);
 
-  // Set default target mode based on whether prev targets exist
   useEffect(() => {
     if (open && prevCohort) {
       const pt = getTargetForCohort(prevCohort.cohort_no);
@@ -100,9 +111,8 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     } else if (open) {
       setTargetMode("direct");
     }
-  }, [open, instructor, course, prevCohort?.cohort_no]);
+  }, [open, effectiveInstructor, effectiveCourse, prevCohort?.cohort_no]);
 
-  // Pre-fill direct input from prev targets when switching to direct mode
   useEffect(() => {
     if (targetMode === "direct" && prevTargets) {
       setDirectRevenue(prevTargets.revenue_target != null ? String(prevTargets.revenue_target) : "");
@@ -112,7 +122,7 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   }, [targetMode]);
 
   useEffect(() => {
-    if (!coursesForInst.includes(course)) setCourse(coursesForInst[0] ?? "");
+    if (!isNewCourse && !coursesForInst.includes(course)) setCourse(coursesForInst[0] ?? "");
   }, [instructor, coursesForInst]);
 
   useEffect(() => {
@@ -121,21 +131,94 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
 
   useEffect(() => {
     setSpecificCohortNo(null);
-  }, [instructor, course]);
+  }, [effectiveInstructor, effectiveCourse]);
+
+  // When switching to new instructor, reset course too
+  useEffect(() => {
+    if (isNewInstructor) {
+      setIsNewCourse(true);
+      setNewCourseInput("");
+    } else {
+      setIsNewCourse(false);
+    }
+  }, [isNewInstructor]);
+
+  // ── Handle "신규 강사 추가" confirm ──
+  const handleConfirmNewInstructor = () => {
+    const cleaned = cleanDisplayName(newInstructorInput);
+    if (!cleaned) {
+      toast.error("강사명을 입력해주세요");
+      return;
+    }
+    const match = findByNormalizedKey(cleaned, instructors);
+    if (match) {
+      // Auto-select existing
+      setInstructor(match);
+      setIsNewInstructor(false);
+      setNewInstructorInput("");
+      toast.info(`기존 강사 "${match}"과(와) 일치하여 자동 선택되었습니다`);
+    }
+    // Otherwise keep in new mode with the input
+  };
+
+  // ── Handle "신규 과정 추가" confirm ──
+  const allCourses = useMemo(() => [...new Set(rawCohorts.map((c) => c.course_title))], [rawCohorts]);
+
+  const handleConfirmNewCourse = () => {
+    const cleaned = cleanDisplayName(newCourseInput);
+    if (!cleaned) {
+      toast.error("과정명을 입력해주세요");
+      return;
+    }
+    // Check against courses for current instructor
+    const instCourses = isNewInstructor ? allCourses : coursesForInst;
+    const match = findByNormalizedKey(cleaned, instCourses);
+    if (match) {
+      setCourse(match);
+      setIsNewCourse(false);
+      setNewCourseInput("");
+      toast.info(`기존 과정 "${match}"과(와) 일치하여 자동 선택되었습니다`);
+    }
+  };
 
   // ── Validation ──
   const duplicateExists = rawCohorts.some(
-    (c) => c.instructor_name === instructor && c.course_title === course && c.cohort_no === cohortNo
+    (c) => c.instructor_name === effectiveInstructor && c.course_title === effectiveCourse && c.cohort_no === cohortNo
   );
-  const canCreate = instructor.trim() && course.trim() && cohortNo >= 1 && !duplicateExists;
+  const canCreate = effectiveInstructor.trim() && effectiveCourse.trim() && cohortNo >= 1 && !duplicateExists;
 
   const handleCreate = () => {
     if (!canCreate) return;
-    // A) Create cohort
+
+    // Final duplicate check via normalization
+    const finalInstructor = effectiveInstructor;
+    const finalCourse = effectiveCourse;
+
+    // If new instructor, check one more time
+    if (isNewInstructor) {
+      const match = findByNormalizedKey(finalInstructor, instructors);
+      if (match) {
+        setInstructor(match);
+        setIsNewInstructor(false);
+        toast.info(`기존 강사 "${match}"과(와) 일치하여 자동 선택되었습니다. 다시 생성을 눌러주세요.`);
+        return;
+      }
+    }
+    if (isNewCourse) {
+      const instCourses = isNewInstructor ? allCourses : coursesForInst;
+      const match = findByNormalizedKey(finalCourse, instCourses);
+      if (match) {
+        setCourse(match);
+        setIsNewCourse(false);
+        toast.info(`기존 과정 "${match}"과(와) 일치하여 자동 선택되었습니다. 다시 생성을 눌러주세요.`);
+        return;
+      }
+    }
+
     const newCohort: RawCohort = {
-      id: makeId(instructor.trim(), course.trim(), cohortNo),
-      instructor_name: instructor.trim(),
-      course_title: course.trim(),
+      id: makeId(finalInstructor, finalCourse, cohortNo),
+      instructor_name: finalInstructor,
+      course_title: finalCourse,
       cohort_no: cohortNo,
       status,
       start_date: startDate,
@@ -146,8 +229,8 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     };
     upsertRawCohort(newCohort);
 
-    // B) Save targets
-    const newKey = makeTargetKey(instructor.trim(), course.trim(), cohortNo);
+    // Save targets
+    const newKey = makeTargetKey(finalInstructor, finalCourse, cohortNo);
 
     if (targetMode === "copy" && sourceTargets) {
       upsertTarget(newKey, { ...sourceTargets });
@@ -175,11 +258,14 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
       toast.success(`${cohortNo}기가 목표 없이 생성되었습니다`);
     }
 
+    if (isNewInstructor || isNewCourse) {
+      toast.info("신규 강사/과정이 목록에 추가되었습니다");
+    }
+
     onCreated(newCohort.id);
     onOpenChange(false);
   };
 
-  // Direct input preview
   const directPreview = useMemo(() => {
     const rev = directRevenue ? Number(directRevenue) : null;
     const stu = directStudents ? Number(directStudents) : null;
@@ -200,30 +286,92 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
           <div className="space-y-2">
             <p className="text-xs font-medium">대상</p>
             <div className="grid grid-cols-2 gap-2">
+              {/* Instructor field */}
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">강사</Label>
-                {instructors.length > 0 ? (
-                  <Select value={instructor} onValueChange={setInstructor}>
-                    <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {instructors.map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                {isNewInstructor ? (
+                  <div className="space-y-1">
+                    <Input
+                      value={newInstructorInput}
+                      onChange={(e) => setNewInstructorInput(e.target.value)}
+                      onBlur={handleConfirmNewInstructor}
+                      className="h-8 text-xs w-full"
+                      placeholder="신규 강사명 입력"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setIsNewInstructor(false); setNewInstructorInput(""); }}
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <ArrowLeft className="h-2.5 w-2.5" /> 기존 목록에서 선택
+                    </button>
+                  </div>
                 ) : (
-                  <Input value={instructor} onChange={(e) => setInstructor(e.target.value)} className="h-8 text-xs w-full" placeholder="강사명" />
+                  <div className="space-y-1">
+                    {instructors.length > 0 ? (
+                      <Select value={instructor} onValueChange={setInstructor}>
+                        <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {instructors.map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input value={instructor} onChange={(e) => setInstructor(e.target.value)} className="h-8 text-xs w-full" placeholder="강사명" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsNewInstructor(true)}
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Plus className="h-2.5 w-2.5" /> 신규 강사 추가
+                    </button>
+                  </div>
                 )}
               </div>
+
+              {/* Course field */}
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">과정</Label>
-                {coursesForInst.length > 0 ? (
-                  <Select value={course} onValueChange={setCourse}>
-                    <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {coursesForInst.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                {isNewCourse ? (
+                  <div className="space-y-1">
+                    <Input
+                      value={newCourseInput}
+                      onChange={(e) => setNewCourseInput(e.target.value)}
+                      onBlur={handleConfirmNewCourse}
+                      className="h-8 text-xs w-full"
+                      placeholder="신규 과정명 입력"
+                    />
+                    {!isNewInstructor && (
+                      <button
+                        type="button"
+                        onClick={() => { setIsNewCourse(false); setNewCourseInput(""); }}
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <ArrowLeft className="h-2.5 w-2.5" /> 기존 목록에서 선택
+                      </button>
+                    )}
+                  </div>
                 ) : (
-                  <Input value={course} onChange={(e) => setCourse(e.target.value)} className="h-8 text-xs w-full" placeholder="과정명" />
+                  <div className="space-y-1">
+                    {coursesForInst.length > 0 ? (
+                      <Select value={course} onValueChange={setCourse}>
+                        <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {coursesForInst.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input value={course} onChange={(e) => setCourse(e.target.value)} className="h-8 text-xs w-full" placeholder="과정명" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsNewCourse(true)}
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Plus className="h-2.5 w-2.5" /> 신규 과정 추가
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
