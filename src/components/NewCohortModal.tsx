@@ -222,9 +222,9 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     }
 
     const newCohort: RawCohort = {
-      id: makeId(finalInstructor, finalCourse, cohortNo),
-      instructor_name: finalInstructor,
-      course_title: finalCourse,
+      id: makeId(resolvedInstructor, resolvedCourse, cohortNo),
+      instructor_name: resolvedInstructor,
+      course_title: resolvedCourse,
       cohort_no: cohortNo,
       status,
       start_date: startDate,
@@ -236,7 +236,7 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     upsertRawCohort(newCohort);
 
     // Save targets
-    const newKey = makeTargetKey(finalInstructor, finalCourse, cohortNo);
+    const newKey = makeTargetKey(resolvedInstructor, resolvedCourse, cohortNo);
 
     if (targetMode === "copy" && sourceTargets) {
       upsertTarget(newKey, { ...sourceTargets });
@@ -264,7 +264,7 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
       toast.success(`${cohortNo}기가 목표 없이 생성되었습니다`);
     }
 
-    if (isNewInstructor || isNewCourse) {
+    if (addMode) {
       toast.info("신규 강사/과정이 목록에 추가되었습니다");
     }
 
