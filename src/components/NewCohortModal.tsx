@@ -208,26 +208,23 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     const finalInstructor = effectiveInstructor;
     const finalCourse = effectiveCourse;
 
-    // If new instructor, check one more time
-    if (isNewInstructor) {
-      const match = findByNormalizedKey(finalInstructor, instructors);
-      if (match) {
-        setInstructor(match);
-        setIsNewInstructor(false);
-        toast.info(`기존 강사 "${match}"과(와) 일치하여 자동 선택되었습니다. 다시 생성을 눌러주세요.`);
-        return;
+    // If add mode, check one more time for duplicates
+    if (addMode) {
+      const instMatch = findByNormalizedKey(finalInstructor, instructors);
+      if (instMatch) {
+        // Use existing instructor name but continue (auto-match)
+        Object.assign(newCohortData, { instructor_name: instMatch });
+      }
+      const instCourses = instMatch
+        ? [...new Set(rawCohorts.filter((c) => c.instructor_name === instMatch).map((c) => c.course_title))]
+        : allCourses;
+      const courseMatch = findByNormalizedKey(finalCourse, instCourses);
+      if (courseMatch) {
+        Object.assign(newCohortData, { course_title: courseMatch });
       }
     }
-    if (isNewCourse) {
-      const instCourses = isNewInstructor ? allCourses : coursesForInst;
-      const match = findByNormalizedKey(finalCourse, instCourses);
-      if (match) {
-        setCourse(match);
-        setIsNewCourse(false);
-        toast.info(`기존 과정 "${match}"과(와) 일치하여 자동 선택되었습니다. 다시 생성을 눌러주세요.`);
-        return;
-      }
-    }
+
+    const newCohortData2 = newCohortData as { instructor_name?: string; course_title?: string };
 
     const newCohort: RawCohort = {
       id: makeId(finalInstructor, finalCourse, cohortNo),
