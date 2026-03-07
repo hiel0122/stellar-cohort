@@ -362,12 +362,12 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1">
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-2 space-y-1">
                 <Label className="text-[10px] text-muted-foreground">기수</Label>
                 <Input type="number" min={1} value={cohortNo} onChange={(e) => setCohortNo(parseInt(e.target.value) || 1)} className="h-8 text-xs tabular-nums w-full" />
               </div>
-              <div className="space-y-1">
+              <div className="col-span-3 space-y-1">
                 <Label className="text-[10px] text-muted-foreground">상태</Label>
                 <Select value={status} onValueChange={(v) => setStatus(v as RawCohort["status"])}>
                   <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
@@ -378,9 +378,37 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
+              <div className="col-span-7 space-y-1">
                 <Label className="text-[10px] text-muted-foreground">시작일</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 text-xs w-full min-w-0" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "h-8 w-full justify-start text-left text-xs font-normal min-w-0",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5 shrink-0 opacity-50" />
+                      <span className="truncate">
+                        {startDate
+                          ? format(parseISO(startDate), "yyyy. MM. dd. (EEE)", { locale: ko })
+                          : "시작일 선택"}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate ? parseISO(startDate) : undefined}
+                      onSelect={(date) => {
+                        if (date) setStartDate(format(date, "yyyy-MM-dd"));
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
             {duplicateExists && (
