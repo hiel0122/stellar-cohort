@@ -37,6 +37,9 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const resolveInst = () => rawCohorts.find((c) => `inst-${c.instructor_name}` === defaultInstructor)?.instructor_name ?? instructors[0] ?? "";
   const [instructor, setInstructor] = useState(resolveInst);
 
+  // ── Add mode (unlock) ──
+  const [addMode, setAddMode] = useState(false);
+
   // ── New instructor/course input mode ──
   const [isNewInstructor, setIsNewInstructor] = useState(false);
   const [newInstructorInput, setNewInstructorInput] = useState("");
