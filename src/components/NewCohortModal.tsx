@@ -535,9 +535,34 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => onOpenChange(false)}>취소</Button>
-          <Button size="sm" className="text-xs" onClick={handleCreate} disabled={!canCreate}>생성</Button>
+        <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
+          <Button
+            type="button"
+            size="sm"
+            className={`text-xs gap-1.5 ${addMode
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700"
+              : "bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700"
+            }`}
+            onClick={() => {
+              if (addMode) {
+                // Turn off: reset new inputs
+                setAddMode(false);
+                setIsNewInstructor(false);
+                setNewInstructorInput("");
+                setIsNewCourse(false);
+                setNewCourseInput("");
+              } else {
+                setAddMode(true);
+              }
+            }}
+          >
+            {addMode ? <Unlock className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+            {addMode ? "추가 모드 해제" : "강사/과정 추가"}
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => onOpenChange(false)}>취소</Button>
+            <Button size="sm" className="text-xs" onClick={handleCreate} disabled={!canCreate}>생성</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
