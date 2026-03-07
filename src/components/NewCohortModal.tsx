@@ -59,8 +59,8 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const [course, setCourse] = useState(resolveCourse);
 
   // Effective values (resolving new input vs select)
-  const effectiveInstructor = isNewInstructor ? cleanDisplayName(newInstructorInput) : instructor;
-  const effectiveCourse = isNewCourse ? cleanDisplayName(newCourseInput) : course;
+  const effectiveInstructor = addMode ? cleanDisplayName(newInstructorInput) : instructor;
+  const effectiveCourse = addMode ? cleanDisplayName(newCourseInput) : course;
 
   const suggestedNo = useMemo(() => getNextCohortNo(effectiveInstructor, effectiveCourse), [rawCohorts, effectiveInstructor, effectiveCourse]);
   const [cohortNo, setCohortNo] = useState(suggestedNo);
