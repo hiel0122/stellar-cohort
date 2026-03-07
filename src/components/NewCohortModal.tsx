@@ -289,6 +289,12 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
           {/* ── Target selection ── */}
           <div className="space-y-2">
             <p className="text-xs font-medium">대상</p>
+            {addMode && (
+              <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-3 py-2">
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">추가 모드: 신규 강사/과정을 입력할 수 있습니다</p>
+                <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mt-0.5">중복 이름은 자동으로 기존 항목과 매칭됩니다</p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               {/* Instructor field */}
               <div className="space-y-1">
