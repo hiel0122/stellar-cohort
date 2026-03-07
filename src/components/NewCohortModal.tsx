@@ -204,6 +204,9 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const handleCreate = () => {
     if (!canCreate) return;
 
+    const finalInstructor = effectiveInstructor;
+    const finalCourse = effectiveCourse;
+
     // Final duplicate check via normalization (add mode)
     let resolvedInstructor = finalInstructor;
     let resolvedCourse = finalCourse;
