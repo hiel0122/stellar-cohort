@@ -304,28 +304,20 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
               {/* Instructor field */}
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">강사</Label>
-                {addMode && isNewInstructor ? (
+                {addMode ? (
                   <div className="space-y-1.5">
                     <Input
                       value={newInstructorInput}
                       onChange={(e) => setNewInstructorInput(e.target.value)}
                       onBlur={handleConfirmNewInstructor}
                       className="h-8 text-xs w-full border-emerald-500/50 focus-visible:ring-emerald-500/30"
-                      placeholder="강사명 입력"
+                      placeholder="신규 강사명 입력"
                       autoFocus
                     />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs px-2.5"
-                      onClick={() => { setIsNewInstructor(false); setNewInstructorInput(""); }}
-                    >
-                      <ArrowLeft className="h-3 w-3 mr-1" />목록에서 선택
-                    </Button>
+                    <p className="text-[10px] text-muted-foreground">목록에 없는 강사만 입력</p>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
+                  <div>
                     {instructors.length > 0 ? (
                       <Select value={instructor} onValueChange={setInstructor}>
                         <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
@@ -336,17 +328,6 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                     ) : (
                       <Input value={instructor} onChange={(e) => setInstructor(e.target.value)} className="h-8 text-xs w-full" placeholder="강사명" />
                     )}
-                    {addMode && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs px-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-950/30"
-                        onClick={() => setIsNewInstructor(true)}
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> 신규 강사
-                      </Button>
-                    )}
                   </div>
                 )}
               </div>
@@ -354,29 +335,19 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
               {/* Course field */}
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">과정</Label>
-                {addMode && isNewCourse ? (
+                {addMode ? (
                   <div className="space-y-1.5">
                     <Input
                       value={newCourseInput}
                       onChange={(e) => setNewCourseInput(e.target.value)}
                       onBlur={handleConfirmNewCourse}
                       className="h-8 text-xs w-full border-emerald-500/50 focus-visible:ring-emerald-500/30"
-                      placeholder="과정명 입력"
+                      placeholder="신규 과정명 입력"
                     />
-                    {!isNewInstructor && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs px-2.5"
-                        onClick={() => { setIsNewCourse(false); setNewCourseInput(""); }}
-                      >
-                        <ArrowLeft className="h-3 w-3 mr-1" />목록에서 선택
-                      </Button>
-                    )}
+                    <p className="text-[10px] text-muted-foreground">목록에 없는 과정만 입력</p>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
+                  <div>
                     {coursesForInst.length > 0 ? (
                       <Select value={course} onValueChange={setCourse}>
                         <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
@@ -386,17 +357,6 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                       </Select>
                     ) : (
                       <Input value={course} onChange={(e) => setCourse(e.target.value)} className="h-8 text-xs w-full" placeholder="과정명" />
-                    )}
-                    {addMode && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs px-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-950/30"
-                        onClick={() => setIsNewCourse(true)}
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> 신규 과정
-                      </Button>
                     )}
                   </div>
                 )}
