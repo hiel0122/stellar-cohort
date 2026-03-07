@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
+import { format, parseISO } from "date-fns";
+import { ko } from "date-fns/locale";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -9,8 +11,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { AlertTriangle, Target, Plus, Lock, Unlock, ArrowLeft } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { AlertTriangle, Target, Plus, Unlock, ArrowLeft, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   type RawCohort, upsertRawCohort, makeId, getNextCohortNo,
 } from "@/lib/rawCohortStore";
