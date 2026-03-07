@@ -204,27 +204,19 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
   const handleCreate = () => {
     if (!canCreate) return;
 
-    // Final duplicate check via normalization
-    const finalInstructor = effectiveInstructor;
-    const finalCourse = effectiveCourse;
+    // Final duplicate check via normalization (add mode)
+    let resolvedInstructor = finalInstructor;
+    let resolvedCourse = finalCourse;
 
-    // If add mode, check one more time for duplicates
     if (addMode) {
       const instMatch = findByNormalizedKey(finalInstructor, instructors);
-      if (instMatch) {
-        // Use existing instructor name but continue (auto-match)
-        Object.assign(newCohortData, { instructor_name: instMatch });
-      }
+      if (instMatch) resolvedInstructor = instMatch;
       const instCourses = instMatch
         ? [...new Set(rawCohorts.filter((c) => c.instructor_name === instMatch).map((c) => c.course_title))]
         : allCourses;
       const courseMatch = findByNormalizedKey(finalCourse, instCourses);
-      if (courseMatch) {
-        Object.assign(newCohortData, { course_title: courseMatch });
-      }
+      if (courseMatch) resolvedCourse = courseMatch;
     }
-
-    const newCohortData2 = newCohortData as { instructor_name?: string; course_title?: string };
 
     const newCohort: RawCohort = {
       id: makeId(finalInstructor, finalCourse, cohortNo),
