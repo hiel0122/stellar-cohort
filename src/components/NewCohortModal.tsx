@@ -93,6 +93,7 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     if (open) {
       const inst = resolveInst();
       setInstructor(inst);
+      setAddMode(false);
       setIsNewInstructor(false);
       setNewInstructorInput("");
       setIsNewCourse(false);
