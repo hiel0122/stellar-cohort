@@ -142,15 +142,20 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
     setSpecificCohortNo(null);
   }, [effectiveInstructor, effectiveCourse]);
 
-  // When switching to new instructor, reset course too
+  // When addMode turns on, activate new input fields; when off, reset
   useEffect(() => {
-    if (isNewInstructor) {
+    if (addMode) {
+      setIsNewInstructor(true);
       setIsNewCourse(true);
+      setNewInstructorInput("");
       setNewCourseInput("");
     } else {
+      setIsNewInstructor(false);
       setIsNewCourse(false);
+      setNewInstructorInput("");
+      setNewCourseInput("");
     }
-  }, [isNewInstructor]);
+  }, [addMode]);
 
   // ── Handle "신규 강사 추가" confirm ──
   const handleConfirmNewInstructor = () => {
