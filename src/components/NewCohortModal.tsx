@@ -290,25 +290,30 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">강사</Label>
                 {isNewInstructor ? (
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <Input
                       value={newInstructorInput}
                       onChange={(e) => setNewInstructorInput(e.target.value)}
                       onBlur={handleConfirmNewInstructor}
                       className="h-8 text-xs w-full"
-                      placeholder="신규 강사명 입력"
+                      placeholder="강사명 입력"
                       autoFocus
                     />
-                    <button
-                      type="button"
-                      onClick={() => { setIsNewInstructor(false); setNewInstructorInput(""); }}
-                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <ArrowLeft className="h-2.5 w-2.5" /> 기존 목록에서 선택
-                    </button>
+                    <div className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => { setIsNewInstructor(false); setNewInstructorInput(""); }}
+                      >
+                        <ArrowLeft className="h-3 w-3 mr-1" />취소
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">중복 이름은 자동 매칭됩니다</p>
                   </div>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {instructors.length > 0 ? (
                       <Select value={instructor} onValueChange={setInstructor}>
                         <SelectTrigger className="h-8 text-xs w-full"><SelectValue /></SelectTrigger>
@@ -319,13 +324,15 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
                     ) : (
                       <Input value={instructor} onChange={(e) => setInstructor(e.target.value)} className="h-8 text-xs w-full" placeholder="강사명" />
                     )}
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 text-sm gap-1.5 border-dashed border-border hover:border-primary hover:text-primary transition-colors"
                       onClick={() => setIsNewInstructor(true)}
-                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <Plus className="h-2.5 w-2.5" /> 신규 강사 추가
-                    </button>
+                      <Plus className="h-4 w-4" /> 강사 추가
+                    </Button>
                   </div>
                 )}
               </div>
