@@ -32,11 +32,19 @@ function getOverLevel(rPct: number): OverLevel {
   return { level: 0, label: "", barClass: "", badgeBg: "", badgeText: "" };
 }
 
-function getBaseFill(rPct: number): number { return Math.min(Math.max(rPct, 0), 100); }
-function getOverFill(rPct: number): number {
-  if (rPct >= 200) return 100; // full bar, differentiate by color
-  return Math.min(Math.max(rPct - 100, 0), 100);
+// 5-segment fills (each 0–100)
+function segFill(rPct: number, lo: number): number {
+  return Math.min(Math.max(((rPct - lo) / 100) * 100, 0), 100);
 }
+
+const SEG_COLORS = [
+  "bg-emerald-500",                                        // 0–100
+  "bg-rose-400/80 dark:bg-rose-500/70",                    // Lv1
+  "bg-amber-500/80 dark:bg-amber-400/70",                  // Lv2
+  "bg-blue-500/80 dark:bg-blue-400/70",                    // Lv3
+  "bg-purple-500/80 dark:bg-purple-400/70",                // Lv4
+] as const;
+const SEG_BOUNDS = [0, 100, 200, 300, 400] as const;
 
 function statusBadge(progress: number | null) {
   if (progress == null) return null;
