@@ -166,38 +166,42 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
                   )}
                 </div>
 
-                {/* Progress bar – 3 layers */}
-                <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  {/* B) Green base fill */}
-                  <div
-                    className="absolute inset-y-0 left-0 rounded-full bg-emerald-500 transition-all duration-500 ease-out"
-                    style={{ width: `${greenW}%` }}
-                  />
-                  {/* C) Red overlay on top */}
-                  {redW > 0 && (
+                {/* Progress bar – 2-zone extend style */}
+                <div className="relative flex h-1.5 w-full">
+                  {/* Zone A: 0~100% (left half) */}
+                  <div className="relative h-full w-1/2 overflow-hidden rounded-l-full bg-muted">
                     <div
-                      className="absolute inset-y-0 left-0 rounded-full bg-destructive/80 transition-all duration-500 ease-out"
-                      style={{ width: `${redW}%` }}
+                      className="absolute inset-y-0 left-0 bg-emerald-500 transition-all duration-500 ease-out"
+                      style={{ width: `${greenW}%` }}
                     />
-                  )}
+                  </div>
                   {/* 100% marker */}
                   {hasTarget && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div
-                          className="absolute inset-y-0 w-[2px] bg-foreground/20 cursor-default"
-                          style={{ left: "100%" , transform: "translateX(-2px)" }}
+                          className="relative z-10 h-full w-[2px] -mx-px bg-foreground/25 cursor-default flex-shrink-0"
                           tabIndex={0}
                           aria-label="목표 100% 기준선"
                         />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[200px]">
+                      <TooltipContent side="top" className="max-w-[220px]">
                         <p className="text-xs font-semibold">목표 100% 기준</p>
-                        <p className="text-[10px] text-muted-foreground">초록: 정상 달성 / 빨강: 초과분</p>
+                        <p className="text-[10px] text-muted-foreground">왼쪽(초록) = 목표까지 달성</p>
+                        <p className="text-[10px] text-muted-foreground">오른쪽(빨강) = 초과 달성 구간</p>
                         <p className="text-[10px] tabular-nums mt-0.5">목표: {item.formatTarget}</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
+                  {/* Zone B: 100~200% (right half) */}
+                  <div className="relative h-full w-1/2 overflow-hidden rounded-r-full bg-muted/50">
+                    {redW > 0 && (
+                      <div
+                        className="absolute inset-y-0 left-0 bg-rose-400/80 dark:bg-rose-500/70 transition-all duration-500 ease-out"
+                        style={{ width: `${redW}%` }}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {/* Values */}
