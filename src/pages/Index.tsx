@@ -60,6 +60,10 @@ const Index = () => {
     compareMode, handleCompareModeChange,
     baselineCohortId, handleBaselineChange,
     baselineKpi, baselineCohort, baselineFunnel,
+    crossInstructorId, handleCrossInstructorChange,
+    crossCourseId, handleCrossCourseChange, crossCourses,
+    crossCohortId, handleCrossCohortChange, crossCohorts,
+    crossBaselineLabel, isSameCohort,
     loadState, detailLoadState, error,
   } = useDashboardData();
 
@@ -87,7 +91,9 @@ const Index = () => {
   const statusLabel = currentCohort?.status === "active" ? "운영중" : currentCohort?.status === "closed" ? "종료" : "계획";
   const isLoading = loadState === "loading";
   const isDetailLoading = detailLoadState === "loading";
-  const deltaLabel = isComparing ? `vs ${baselineCohort?.cohort_no}기` : "vs 전기수";
+  const deltaLabel = isComparing
+    ? (compareMode === "cross" && crossBaselineLabel ? `vs ${crossBaselineLabel}` : `vs ${baselineCohort?.cohort_no}기`)
+    : "vs 전기수";
 
   const revenueProgress = currentKpi ? calcProgress(currentKpi.revenue, targets?.revenue_target ?? null) : null;
   const studentsProgress = currentKpi ? calcProgress(currentKpi.students, targets?.students_target ?? null) : null;
@@ -125,9 +131,19 @@ const Index = () => {
           baselineCohortId={baselineCohortId} onBaselineChange={handleBaselineChange}
           cohorts={cohorts} cohortId={cohortId}
           baselineCohortNo={baselineCohort?.cohort_no ?? null}
+          crossInstructorId={crossInstructorId}
+          onCrossInstructorChange={handleCrossInstructorChange}
+          crossCourses={crossCourses}
+          crossCourseId={crossCourseId}
+          onCrossCourseChange={handleCrossCourseChange}
+          crossCohorts={crossCohorts}
+          crossCohortId={crossCohortId}
+          onCrossCohortChange={handleCrossCohortChange}
+          crossBaselineLabel={crossBaselineLabel}
+          isSameCohort={isSameCohort}
         />
 
-        <div className="space-y-7 pt-6">
+        <div className="space-y-7 pt-8">
 
           {error && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>
