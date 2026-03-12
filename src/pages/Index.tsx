@@ -129,6 +129,16 @@ const Index = () => {
           baselineCohortId={baselineCohortId} onBaselineChange={handleBaselineChange}
           cohorts={cohorts} cohortId={cohortId}
           baselineCohortNo={baselineCohort?.cohort_no ?? null}
+          crossInstructorId={crossInstructorId}
+          onCrossInstructorChange={handleCrossInstructorChange}
+          crossCourses={crossCourses}
+          crossCourseId={crossCourseId}
+          onCrossCourseChange={handleCrossCourseChange}
+          crossCohorts={crossCohorts}
+          crossCohortId={crossCohortId}
+          onCrossCohortChange={handleCrossCohortChange}
+          crossBaselineLabel={crossBaselineLabel}
+          isSameCohort={isSameCohort}
         />
 
         <div className="space-y-7 pt-8">
