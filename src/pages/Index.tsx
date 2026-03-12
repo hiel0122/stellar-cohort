@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent, Target, AlertTriangle, Calculator, Wallet } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent, Target, AlertTriangle, Calculator, Wallet, ChevronDown, ChevronRight } from "lucide-react";
 import { Layout, useLayoutActions } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
 import { CohortTrendChart } from "@/components/CohortTrendChart";
@@ -22,8 +22,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { CohortKpi, Cohort } from "@/lib/types";
-import { loadRawCohorts } from "@/lib/rawCohortStore";
+import { loadRawCohorts, type RawCohort } from "@/lib/rawCohortStore";
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { SectionHeader } from "@/components/SectionHeader";
 
