@@ -152,6 +152,14 @@ const Index = () => {
           ) : currentKpi ? (
             <TooltipProvider delayDuration={300}>
               <>
+                {/* Cohorts Overview table — top */}
+                <div className="section-container">
+                  <SectionHeader title="기수 요약" subtitle="행을 클릭하면 해당 기수로 전환됩니다" />
+                  <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
+                    baselineCohortId={baselineCohortId} isComparing={isComparing}
+                    onCohortClick={handleCohortChange} />
+                </div>
+
                 {/* KPI Section Container */}
                  <div className="section-container space-y-3">
                    <SectionHeader title="KPI 요약" subtitle={currentCohort ? `${currentCohort.cohort_no}기 기준` : undefined} />
@@ -207,7 +215,7 @@ const Index = () => {
                   </div>
                 )}
 
-                {/* Target warning / Cohorts Overview */}
+                {/* Target warning */}
                 {!targets && currentKpi && (
                   <Card className="border-yellow-500/30 bg-yellow-500/5">
                     <CardContent className="py-4 px-4 flex items-center gap-3">
@@ -228,13 +236,6 @@ const Index = () => {
                     </CardContent>
                   </Card>
                 )}
-
-                {/* Cohorts Overview table */}
-                <div className="section-container">
-                  <SectionHeader title="기수 요약" />
-                  <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
-                    baselineCohortId={baselineCohortId} isComparing={isComparing} />
-                </div>
               </>
             </TooltipProvider>
           ) : (
@@ -320,9 +321,10 @@ function SettlementCards({
 
 // ── Cohorts Overview Table ──
 function CohortsOverview({
-  kpis, cohorts, currentCohortId, baselineCohortId, isComparing,
+  kpis, cohorts, currentCohortId, baselineCohortId, isComparing, onCohortClick,
 }: {
   kpis: CohortKpi[]; cohorts: Cohort[]; currentCohortId: string; baselineCohortId: string; isComparing: boolean;
+  onCohortClick?: (cohortId: string) => void;
 }) {
   const platformCosts = usePlatformCosts();
 
@@ -330,8 +332,7 @@ function CohortsOverview({
 
   return (
     <Card>
-      <CardHeader className="pb-1 px-4 pt-4"><CardTitle className="text-sm font-semibold">기수 요약</CardTitle></CardHeader>
-      <CardContent className="px-4 pb-4">
+      <CardContent className="px-4 py-4">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="sticky top-0 z-10">
@@ -358,7 +359,8 @@ function CohortsOverview({
                 const cost = resolveCostSummary(k);
                 return (
                   <TableRow key={k.cohort_id}
-                    className={`border-b border-border/30 hover:bg-muted/30 transition-colors ${isCurrent ? "bg-primary/5" : ""} ${isBaseline ? "bg-accent/30" : ""}`}>
+                    onClick={() => onCohortClick?.(k.cohort_id)}
+                    className={`border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer ${isCurrent ? "bg-primary/8 ring-1 ring-inset ring-primary/20" : ""} ${isBaseline ? "bg-accent/30" : ""}`}>
                     <TableCell className="py-2 px-2 text-xs font-medium">
                       {k.cohort_no}기
                       {isBaseline && <span className="ml-1 text-[9px] text-muted-foreground">(기준)</span>}
