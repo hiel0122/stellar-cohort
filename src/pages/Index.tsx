@@ -152,6 +152,14 @@ const Index = () => {
           ) : currentKpi ? (
             <TooltipProvider delayDuration={300}>
               <>
+                {/* Cohorts Overview table — top */}
+                <div className="section-container">
+                  <SectionHeader title="기수 요약" subtitle="행을 클릭하면 해당 기수로 전환됩니다" />
+                  <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
+                    baselineCohortId={baselineCohortId} isComparing={isComparing}
+                    onCohortClick={handleCohortChange} />
+                </div>
+
                 {/* KPI Section Container */}
                  <div className="section-container space-y-3">
                    <SectionHeader title="KPI 요약" subtitle={currentCohort ? `${currentCohort.cohort_no}기 기준` : undefined} />
@@ -207,7 +215,7 @@ const Index = () => {
                   </div>
                 )}
 
-                {/* Target warning / Cohorts Overview */}
+                {/* Target warning */}
                 {!targets && currentKpi && (
                   <Card className="border-yellow-500/30 bg-yellow-500/5">
                     <CardContent className="py-4 px-4 flex items-center gap-3">
@@ -228,13 +236,6 @@ const Index = () => {
                     </CardContent>
                   </Card>
                 )}
-
-                {/* Cohorts Overview table */}
-                <div className="section-container">
-                  <SectionHeader title="기수 요약" />
-                  <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
-                    baselineCohortId={baselineCohortId} isComparing={isComparing} />
-                </div>
               </>
             </TooltipProvider>
           ) : (
