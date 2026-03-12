@@ -111,15 +111,39 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
     <Card>
       <CardContent className="px-4 py-4">
         <div className="flex items-center justify-between mb-4">
-         <div className="flex items-center gap-2">
-79:             <Target className="h-3.5 w-3.5 text-muted-foreground" />
-80:             <p className="text-sm font-semibold">목표 대비</p>
-81:             <span className="text-[10px] text-muted-foreground">현재 기수 기준</span>
-82:           </div>
-          <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground" onClick={onOpenSettings}>
-            목표 관리
-          </Button>
+          <div className="flex items-center gap-2">
+            <Target className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-sm font-semibold">목표 대비</p>
+            <span className="text-[10px] text-muted-foreground">현재 기수 기준</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {debugInfo && (
+              <Button variant="ghost" size="sm" className="h-7 px-1.5 text-[10px] text-muted-foreground" onClick={() => setShowDebug(!showDebug)}>
+                <Bug className="h-3 w-3" />
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground" onClick={onOpenSettings}>
+              목표 관리
+            </Button>
+          </div>
         </div>
+
+        {showDebug && debugInfo && (() => {
+          const currentKey = debugInfo.cohortNo != null
+            ? makeTargetKey(debugInfo.instructorName, debugInfo.courseName, debugInfo.cohortNo)
+            : "(cohortNo 없음)";
+          const allSaved = loadAllTargets();
+          const savedKeys = Object.keys(allSaved).slice(0, 5);
+          const matchFound = debugInfo.cohortNo != null && currentKey in allSaved;
+          return (
+            <div className="text-[10px] font-mono space-y-1 text-muted-foreground bg-muted/50 rounded p-2 mb-3">
+              <p><span className="text-foreground font-semibold">조회 key:</span> {currentKey}</p>
+              <p><span className="text-foreground font-semibold">매칭:</span> <span className={matchFound ? "text-emerald-600" : "text-red-500"}>{matchFound ? "✅ 일치" : "❌ 불일치"}</span></p>
+              <p><span className="text-foreground font-semibold">저장된 keys ({Object.keys(allSaved).length}):</span></p>
+              {savedKeys.map((k) => <p key={k} className="pl-2">{k}</p>)}
+            </div>
+          );
+        })()}
         <div className="grid gap-4 sm:grid-cols-3">
           {items.map((item) => {
             const badge = statusBadge(item.progress);
