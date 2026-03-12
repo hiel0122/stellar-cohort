@@ -21,10 +21,28 @@ interface Props {
   debugInfo?: { instructorName: string; courseName: string; cohortNo: number | null };
 }
 
+// ── Achievement level utilities ──
+type OverLevel = { level: 0 | 1 | 2 | 3 | 4; label: string; barClass: string; badgeBg: string; badgeText: string };
+
+function getOverLevel(rPct: number): OverLevel {
+  if (rPct >= 400) return { level: 4, label: "초과 달성 Lv 4", barClass: "bg-purple-500/80 dark:bg-purple-400/70", badgeBg: "bg-purple-500/10", badgeText: "text-purple-600 dark:text-purple-400" };
+  if (rPct >= 300) return { level: 3, label: "초과 달성 Lv 3", barClass: "bg-blue-500/80 dark:bg-blue-400/70", badgeBg: "bg-blue-500/10", badgeText: "text-blue-600 dark:text-blue-400" };
+  if (rPct >= 200) return { level: 2, label: "초과 달성 Lv 2", barClass: "bg-amber-500/80 dark:bg-amber-400/70", badgeBg: "bg-amber-500/10", badgeText: "text-amber-600 dark:text-amber-400" };
+  if (rPct > 100) return { level: 1, label: "초과 달성 Lv 1", barClass: "bg-rose-400/80 dark:bg-rose-500/70", badgeBg: "bg-rose-500/10", badgeText: "text-rose-600 dark:text-rose-400" };
+  return { level: 0, label: "", barClass: "", badgeBg: "", badgeText: "" };
+}
+
+function getBaseFill(rPct: number): number { return Math.min(Math.max(rPct, 0), 100); }
+function getOverFill(rPct: number): number {
+  if (rPct >= 200) return 100; // full bar, differentiate by color
+  return Math.min(Math.max(rPct - 100, 0), 100);
+}
+
 function statusBadge(progress: number | null) {
   if (progress == null) return null;
   const pct = progress * 100;
-  if (pct > 100) return { label: "초과 달성", className: "bg-kpi-negative-bg text-kpi-negative" };
+  const ol = getOverLevel(pct);
+  if (ol.level > 0) return { label: ol.label, className: `${ol.badgeBg} ${ol.badgeText}` };
   if (pct >= 90) return { label: "순조", className: "bg-kpi-positive-bg text-kpi-positive" };
   if (pct >= 70) return { label: "주의", className: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" };
   return { label: "위험", className: "bg-kpi-negative-bg text-kpi-negative" };
@@ -148,12 +166,13 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
         <div className="grid gap-4 sm:grid-cols-3">
           {items.map((item) => {
             const badge = statusBadge(item.progress);
-            const pctText = item.progress != null ? `${(item.progress * 100).toFixed(1)}%` : "—";
-            const ratio = item.progress ?? 0;
-            const greenW = Math.min(ratio, 1) * 100;  // 0~100%
-            const redW = Math.min(Math.max(ratio - 1, 0), 1) * 100; // overflow 0~100%
+            const rPct = item.progress != null ? item.progress * 100 : 0;
+            const pctText = item.progress != null ? `${rPct.toFixed(1)}%` : "—";
+            const greenW = getBaseFill(rPct);
+            const overW = getOverFill(rPct);
+            const ol = getOverLevel(rPct);
             const hasTarget = item.target != null && item.target !== 0;
-            const exceeded = ratio > 1;
+            const exceeded = rPct > 100;
 
             return (
               <div key={item.label} className="space-y-2">
@@ -185,20 +204,26 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
                           aria-label="목표 100% 기준선"
                         />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[220px]">
+                      <TooltipContent side="top" className="max-w-[260px]">
                         <p className="text-xs font-semibold">목표 100% 기준</p>
                         <p className="text-[10px] text-muted-foreground">왼쪽(초록) = 목표까지 달성</p>
-                        <p className="text-[10px] text-muted-foreground">오른쪽(빨강) = 초과 달성 구간</p>
-                        <p className="text-[10px] tabular-nums mt-0.5">목표: {item.formatTarget}</p>
+                        <p className="text-[10px] text-muted-foreground">오른쪽 = 초과 달성 구간 (Lv 1~4 색상)</p>
+                        <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+                          <p><span className="text-rose-500">■</span> Lv1 (100~199%)</p>
+                          <p><span className="text-amber-500">■</span> Lv2 (200~299%)</p>
+                          <p><span className="text-blue-500">■</span> Lv3 (300~399%)</p>
+                          <p><span className="text-purple-500">■</span> Lv4 (400%+)</p>
+                        </div>
+                        <p className="text-[10px] tabular-nums mt-1">목표: {item.formatTarget}</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
-                  {/* Zone B: 100~200% (right half) */}
+                  {/* Zone B: over-achievement (right half) */}
                   <div className="relative h-full w-1/2 overflow-hidden rounded-r-full bg-muted/50">
-                    {redW > 0 && (
+                    {overW > 0 && (
                       <div
-                        className="absolute inset-y-0 left-0 bg-rose-400/80 dark:bg-rose-500/70 transition-all duration-500 ease-out"
-                        style={{ width: `${redW}%` }}
+                        className={`absolute inset-y-0 left-0 transition-all duration-500 ease-out ${ol.barClass}`}
+                        style={{ width: `${overW}%` }}
                       />
                     )}
                   </div>
