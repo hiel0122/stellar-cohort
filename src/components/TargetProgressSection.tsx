@@ -24,6 +24,7 @@ interface Props {
 function statusBadge(progress: number | null) {
   if (progress == null) return null;
   const pct = progress * 100;
+  if (pct > 100) return { label: "초과 달성", className: "bg-kpi-negative-bg text-kpi-negative" };
   if (pct >= 90) return { label: "순조", className: "bg-kpi-positive-bg text-kpi-positive" };
   if (pct >= 70) return { label: "주의", className: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" };
   return { label: "위험", className: "bg-kpi-negative-bg text-kpi-negative" };
@@ -148,6 +149,12 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
           {items.map((item) => {
             const badge = statusBadge(item.progress);
             const pctText = item.progress != null ? `${(item.progress * 100).toFixed(1)}%` : "—";
+            const ratio = item.progress ?? 0;
+            const greenW = Math.min(ratio, 1) * 100;  // 0~100%
+            const redW = Math.min(Math.max(ratio - 1, 0), 1) * 100; // overflow 0~100%
+            const hasTarget = item.target != null && item.target !== 0;
+            const exceeded = ratio > 1;
+
             return (
               <div key={item.label} className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -159,12 +166,38 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
                   )}
                 </div>
 
-                {/* Progress bar */}
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                {/* Progress bar – 3 layers */}
+                <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  {/* B) Green base fill */}
                   <div
-                    className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-                    style={{ width: `${(item.progress ?? 0) * 100}%` }}
+                    className="absolute inset-y-0 left-0 rounded-full bg-emerald-500 transition-all duration-500 ease-out"
+                    style={{ width: `${greenW}%` }}
                   />
+                  {/* C) Red overlay on top */}
+                  {redW > 0 && (
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full bg-destructive/80 transition-all duration-500 ease-out"
+                      style={{ width: `${redW}%` }}
+                    />
+                  )}
+                  {/* 100% marker */}
+                  {hasTarget && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className="absolute inset-y-0 w-[2px] bg-foreground/20 cursor-default"
+                          style={{ left: "100%" , transform: "translateX(-2px)" }}
+                          tabIndex={0}
+                          aria-label="목표 100% 기준선"
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[200px]">
+                        <p className="text-xs font-semibold">목표 100% 기준</p>
+                        <p className="text-[10px] text-muted-foreground">초록: 정상 달성 / 빨강: 초과분</p>
+                        <p className="text-[10px] tabular-nums mt-0.5">목표: {item.formatTarget}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
 
                 {/* Values */}
@@ -193,7 +226,15 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
 
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span>달성률 {pctText}</span>
-                  {item.isPct && item.deltaPp != null ? (
+                  {exceeded && !item.isPct && item.target != null ? (
+                    <span className="text-kpi-negative">
+                      초과 +{item.label === "매출" ? formatWonFull(item.current - item.target) : `${formatInt(item.current - item.target)}명`}
+                    </span>
+                  ) : exceeded && item.isPct && item.deltaPp != null ? (
+                    <span className="text-kpi-negative">
+                      초과 +{item.deltaPp.toFixed(1)}pp
+                    </span>
+                  ) : item.isPct && item.deltaPp != null ? (
                     <span className={item.deltaPp >= 0 ? "text-kpi-positive" : "text-kpi-negative"}>
                       {item.deltaPp >= 0 ? "+" : ""}{item.deltaPp.toFixed(1)}pp
                     </span>

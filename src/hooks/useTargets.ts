@@ -23,7 +23,7 @@ export function useTargets(instructorName: string, courseTitle: string, cohortNo
 // ── Utility functions ──
 export function calcProgress(current: number, target: number | null): number | null {
   if (target == null || target === 0) return null;
-  return Math.min(Math.max(current / target, 0), 1);
+  return Math.max(current / target, 0); // no upper clamp – allow >1
 }
 
 export function calcRemaining(target: number | null, current: number): number | null {
