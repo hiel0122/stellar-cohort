@@ -7,18 +7,15 @@ import type {
 import { mockProvider } from "@/lib/providers/mockProvider";
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 
-// Switch this single line to swap providers
 const provider: DataProvider = mockProvider;
 
 export type LoadState = "idle" | "loading" | "error" | "success";
-export type CompareMode = "off" | "prev" | "select";
+export type CompareMode = "off" | "prev" | "select" | "cross";
 
 export function useDashboardData() {
-  // Raw store reactivity – triggers re-fetch when raw data changes
   const rawCohorts = useRawCohortStore();
   const rawKey = rawCohorts.length + rawCohorts.reduce((s, c) => s + c.revenue + c.students + c.leads + c.applied + c.cohort_no, 0);
 
-  // Refresh counter – bumped manually if needed
   const [refreshKey, setRefreshKey] = useState(0);
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -30,6 +27,14 @@ export function useDashboardData() {
   // Compare mode
   const [compareMode, setCompareMode] = useState<CompareMode>("off");
   const [baselineCohortId, setBaselineCohortId] = useState<string>("");
+
+  // Cross-instructor compare state
+  const [crossInstructorId, setCrossInstructorId] = useState<string>("");
+  const [crossCourseId, setCrossCourseId] = useState<string>("");
+  const [crossCohortId, setCrossCohortId] = useState<string>("");
+  const [crossCourses, setCrossCourses] = useState<Course[]>([]);
+  const [crossCohorts, setCrossCohorts] = useState<Cohort[]>([]);
+  const [crossKpis, setCrossKpis] = useState<CohortKpi[]>([]);
 
   // Data
   const [instructors, setInstructors] = useState<Instructor[]>([]);
@@ -125,6 +130,43 @@ export function useDashboardData() {
       });
   }, [cohortId, rawKey, refreshKey]);
 
+  // ── Cross-instructor: load courses when crossInstructorId changes ──
+  useEffect(() => {
+    if (!crossInstructorId || compareMode !== "cross") {
+      setCrossCourses([]);
+      setCrossCourseId("");
+      return;
+    }
+    provider.listCourses(crossInstructorId).then((list) => {
+      setCrossCourses(list);
+      setCrossCourseId((prev) => {
+        if (prev && list.some((c) => c.id === prev)) return prev;
+        return list.length > 0 ? list[0].id : "";
+      });
+    });
+  }, [crossInstructorId, compareMode, rawKey]);
+
+  // ── Cross-instructor: load cohorts + kpis when crossCourseId changes ──
+  useEffect(() => {
+    if (!crossInstructorId || !crossCourseId || compareMode !== "cross") {
+      setCrossCohorts([]);
+      setCrossKpis([]);
+      setCrossCohortId("");
+      return;
+    }
+    Promise.all([
+      provider.listCohorts(crossInstructorId, crossCourseId),
+      provider.getCohortKpis(crossInstructorId, crossCourseId),
+    ]).then(([cohortList, kpiList]) => {
+      setCrossCohorts(cohortList);
+      setCrossKpis(kpiList);
+      setCrossCohortId((prev) => {
+        if (prev && cohortList.some((c) => c.id === prev)) return prev;
+        return cohortList.length > 0 ? cohortList[cohortList.length - 1].id : "";
+      });
+    });
+  }, [crossInstructorId, crossCourseId, compareMode, rawKey]);
+
   // Current KPI
   const currentKpi = useMemo(
     () => kpis.find((k) => k.cohort_id === cohortId) ?? null,
@@ -140,22 +182,29 @@ export function useDashboardData() {
   const resolvedBaselineId = useMemo(() => {
     if (compareMode === "off") return "";
     if (compareMode === "select") return baselineCohortId;
+    if (compareMode === "cross") return crossCohortId;
     if (!currentCohort) return "";
     const sorted = [...cohorts]
       .filter((c) => c.cohort_no < currentCohort.cohort_no)
       .sort((a, b) => b.cohort_no - a.cohort_no);
     return sorted[0]?.id ?? "";
-  }, [compareMode, baselineCohortId, currentCohort, cohorts]);
+  }, [compareMode, baselineCohortId, crossCohortId, currentCohort, cohorts]);
 
-  const baselineKpi = useMemo(
-    () => (resolvedBaselineId ? kpis.find((k) => k.cohort_id === resolvedBaselineId) ?? null : null),
-    [kpis, resolvedBaselineId]
-  );
+  const baselineKpi = useMemo(() => {
+    if (!resolvedBaselineId) return null;
+    if (compareMode === "cross") {
+      return crossKpis.find((k) => k.cohort_id === resolvedBaselineId) ?? null;
+    }
+    return kpis.find((k) => k.cohort_id === resolvedBaselineId) ?? null;
+  }, [kpis, crossKpis, resolvedBaselineId, compareMode]);
 
-  const baselineCohort = useMemo(
-    () => (resolvedBaselineId ? cohorts.find((c) => c.id === resolvedBaselineId) ?? null : null),
-    [cohorts, resolvedBaselineId]
-  );
+  const baselineCohort = useMemo(() => {
+    if (!resolvedBaselineId) return null;
+    if (compareMode === "cross") {
+      return crossCohorts.find((c) => c.id === resolvedBaselineId) ?? null;
+    }
+    return cohorts.find((c) => c.id === resolvedBaselineId) ?? null;
+  }, [cohorts, crossCohorts, resolvedBaselineId, compareMode]);
 
   // Baseline funnel
   const [baselineFunnel, setBaselineFunnel] = useState<FunnelData | null>(null);
@@ -166,6 +215,16 @@ export function useDashboardData() {
     }
     provider.getFunnel(resolvedBaselineId).then(setBaselineFunnel);
   }, [resolvedBaselineId, compareMode]);
+
+  // Cross compare label
+  const crossBaselineLabel = useMemo(() => {
+    if (compareMode !== "cross" || !crossCohortId) return null;
+    const inst = instructors.find((i) => i.id === crossInstructorId);
+    const course = crossCourses.find((c) => c.id === crossCourseId);
+    const cohort = crossCohorts.find((c) => c.id === crossCohortId);
+    if (!inst || !course || !cohort) return null;
+    return `${inst.name}/${course.title}/${cohort.cohort_no}기`;
+  }, [compareMode, crossCohortId, crossInstructorId, crossCourseId, instructors, crossCourses, crossCohorts]);
 
   // Sparkline arrays
   const sparklines = useMemo(() => ({
@@ -194,22 +253,48 @@ export function useDashboardData() {
     }
     setCompareMode("off");
     setBaselineCohortId("");
+    setCrossInstructorId("");
+    setCrossCourseId("");
+    setCrossCohortId("");
   }, [instructors]);
 
   const handleCompareModeChange = useCallback((mode: CompareMode) => {
     setCompareMode(mode);
     if (mode !== "select") setBaselineCohortId("");
+    if (mode !== "cross") {
+      setCrossInstructorId("");
+      setCrossCourseId("");
+      setCrossCohortId("");
+    }
   }, []);
 
   const handleBaselineChange = useCallback((id: string) => {
     setBaselineCohortId(id);
   }, []);
 
-  // Direct cohort selection (sets course + cohort simultaneously)
+  const handleCrossInstructorChange = useCallback((id: string) => {
+    setCrossInstructorId(id);
+    setCrossCourseId("");
+    setCrossCohortId("");
+  }, []);
+
+  const handleCrossCourseChange = useCallback((id: string) => {
+    setCrossCourseId(id);
+    setCrossCohortId("");
+  }, []);
+
+  const handleCrossCohortChange = useCallback((id: string) => {
+    setCrossCohortId(id);
+  }, []);
+
+  // Direct cohort selection
   const handleCohortSelect = useCallback((targetCourseId: string, targetCohortId: string) => {
     setCourseId(targetCourseId);
     setCohortId(targetCohortId);
   }, []);
+
+  // Same-cohort warning
+  const isSameCohort = compareMode === "cross" && crossCohortId === cohortId;
 
   return {
     instructorId, courseId, cohortId,
@@ -220,6 +305,11 @@ export function useDashboardData() {
     compareMode, handleCompareModeChange,
     baselineCohortId: resolvedBaselineId, handleBaselineChange,
     baselineKpi, baselineCohort, baselineFunnel,
+    // Cross-instructor compare
+    crossInstructorId, handleCrossInstructorChange,
+    crossCourseId, handleCrossCourseChange, crossCourses,
+    crossCohortId, handleCrossCohortChange, crossCohorts,
+    crossBaselineLabel, isSameCohort,
     funnel, checklist, enrollments,
     loadState, detailLoadState, error,
     triggerRefresh,

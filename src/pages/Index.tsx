@@ -127,7 +127,7 @@ const Index = () => {
           baselineCohortNo={baselineCohort?.cohort_no ?? null}
         />
 
-        <div className="space-y-7 pt-6">
+        <div className="space-y-7 pt-8">
 
           {error && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>
