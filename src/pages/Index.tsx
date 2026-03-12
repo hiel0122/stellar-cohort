@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import type { CohortKpi, Cohort } from "@/lib/types";
 import { loadRawCohorts } from "@/lib/rawCohortStore";
+import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { SectionHeader } from "@/components/SectionHeader";
 
 type MetricKey = "revenue" | "students" | "leads" | "conversion";

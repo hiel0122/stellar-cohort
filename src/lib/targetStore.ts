@@ -56,6 +56,11 @@ export function deleteTarget(key: string) {
   notify();
 }
 
-export function makeTargetKey(instructorName: string, courseTitle: string, cohortNo: number): string {
-  return `${instructorName.trim()}::${courseTitle.trim()}::${cohortNo}`;
+export function normalizeCohortNo(value: number | string): number {
+  const n = typeof value === "string" ? parseInt(value.replace(/[^0-9]/g, ""), 10) : value;
+  return isNaN(n) ? 0 : n;
+}
+
+export function makeTargetKey(instructorName: string, courseTitle: string, cohortNo: number | string): string {
+  return `${normalizeWeak(instructorName)}::${normalizeWeak(courseTitle)}::${normalizeCohortNo(cohortNo)}`;
 }
