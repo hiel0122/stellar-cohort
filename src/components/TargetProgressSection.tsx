@@ -21,10 +21,28 @@ interface Props {
   debugInfo?: { instructorName: string; courseName: string; cohortNo: number | null };
 }
 
+// ── Achievement level utilities ──
+type OverLevel = { level: 0 | 1 | 2 | 3 | 4; label: string; barClass: string; badgeBg: string; badgeText: string };
+
+function getOverLevel(rPct: number): OverLevel {
+  if (rPct >= 400) return { level: 4, label: "초과 달성 Lv 4", barClass: "bg-purple-500/80 dark:bg-purple-400/70", badgeBg: "bg-purple-500/10", badgeText: "text-purple-600 dark:text-purple-400" };
+  if (rPct >= 300) return { level: 3, label: "초과 달성 Lv 3", barClass: "bg-blue-500/80 dark:bg-blue-400/70", badgeBg: "bg-blue-500/10", badgeText: "text-blue-600 dark:text-blue-400" };
+  if (rPct >= 200) return { level: 2, label: "초과 달성 Lv 2", barClass: "bg-amber-500/80 dark:bg-amber-400/70", badgeBg: "bg-amber-500/10", badgeText: "text-amber-600 dark:text-amber-400" };
+  if (rPct > 100) return { level: 1, label: "초과 달성 Lv 1", barClass: "bg-rose-400/80 dark:bg-rose-500/70", badgeBg: "bg-rose-500/10", badgeText: "text-rose-600 dark:text-rose-400" };
+  return { level: 0, label: "", barClass: "", badgeBg: "", badgeText: "" };
+}
+
+function getBaseFill(rPct: number): number { return Math.min(Math.max(rPct, 0), 100); }
+function getOverFill(rPct: number): number {
+  if (rPct >= 200) return 100; // full bar, differentiate by color
+  return Math.min(Math.max(rPct - 100, 0), 100);
+}
+
 function statusBadge(progress: number | null) {
   if (progress == null) return null;
   const pct = progress * 100;
-  if (pct > 100) return { label: "초과 달성", className: "bg-kpi-negative-bg text-kpi-negative" };
+  const ol = getOverLevel(pct);
+  if (ol.level > 0) return { label: ol.label, className: `${ol.badgeBg} ${ol.badgeText}` };
   if (pct >= 90) return { label: "순조", className: "bg-kpi-positive-bg text-kpi-positive" };
   if (pct >= 70) return { label: "주의", className: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" };
   return { label: "위험", className: "bg-kpi-negative-bg text-kpi-negative" };
