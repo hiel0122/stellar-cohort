@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target } from "lucide-react";
+import { Target, Bug } from "lucide-react";
 import type { CourseTargets } from "@/lib/types";
 import { formatWonFull, formatInt } from "@/lib/format";
 import { calcProgress, calcRemaining, calcDeltaPp } from "@/hooks/useTargets";
+import { makeTargetKey, loadAllTargets } from "@/lib/targetStore";
 import {
   Tooltip,
   TooltipContent,
@@ -16,6 +18,7 @@ interface Props {
   students: number;
   conversion: number; // current conversion %
   onOpenSettings: () => void;
+  debugInfo?: { instructorName: string; courseName: string; cohortNo: number | null };
 }
 
 function statusBadge(progress: number | null) {
@@ -26,9 +29,42 @@ function statusBadge(progress: number | null) {
   return { label: "위험", className: "bg-kpi-negative-bg text-kpi-negative" };
 }
 
-export function TargetProgressSection({ targets, revenue, students, conversion, onOpenSettings }: Props) {
+export function TargetProgressSection({ targets, revenue, students, conversion, onOpenSettings, debugInfo }: Props) {
+  const [showDebug, setShowDebug] = useState(false);
+
   if (!targets) {
-    return null;
+    // Still show debug even when no targets
+    if (debugInfo && showDebug) {
+      const currentKey = debugInfo.cohortNo != null
+        ? makeTargetKey(debugInfo.instructorName, debugInfo.courseName, debugInfo.cohortNo)
+        : "(cohortNo 없음)";
+      const allSaved = loadAllTargets();
+      const savedKeys = Object.keys(allSaved).slice(0, 5);
+      const matchFound = debugInfo.cohortNo != null && currentKey in allSaved;
+
+      return (
+        <Card>
+          <CardContent className="px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-muted-foreground">🔍 디버그 (목표 없음)</p>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => setShowDebug(false)}>닫기</Button>
+            </div>
+            <div className="text-[10px] font-mono space-y-1 text-muted-foreground bg-muted/50 rounded p-2">
+              <p><span className="text-foreground font-semibold">조회 key:</span> {currentKey}</p>
+              <p><span className="text-foreground font-semibold">매칭:</span> <span className={matchFound ? "text-emerald-600" : "text-red-500"}>{matchFound ? "✅ 일치" : "❌ 불일치"}</span></p>
+              <p><span className="text-foreground font-semibold">저장된 keys ({Object.keys(allSaved).length}):</span></p>
+              {savedKeys.map((k) => <p key={k} className="pl-2">{k}</p>)}
+              {Object.keys(allSaved).length > 5 && <p className="pl-2 text-muted-foreground/60">...외 {Object.keys(allSaved).length - 5}개</p>}
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    return debugInfo ? (
+      <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground" onClick={() => setShowDebug(true)}>
+        <Bug className="h-3 w-3 mr-1" /> 디버그
+      </Button>
+    ) : null;
   }
 
   const items = [
@@ -80,10 +116,34 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
             <p className="text-sm font-semibold">목표 대비</p>
             <span className="text-[10px] text-muted-foreground">현재 기수 기준</span>
           </div>
-          <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground" onClick={onOpenSettings}>
-            목표 관리
-          </Button>
+          <div className="flex items-center gap-1">
+            {debugInfo && (
+              <Button variant="ghost" size="sm" className="h-7 px-1.5 text-[10px] text-muted-foreground" onClick={() => setShowDebug(!showDebug)}>
+                <Bug className="h-3 w-3" />
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground" onClick={onOpenSettings}>
+              목표 관리
+            </Button>
+          </div>
         </div>
+
+        {showDebug && debugInfo && (() => {
+          const currentKey = debugInfo.cohortNo != null
+            ? makeTargetKey(debugInfo.instructorName, debugInfo.courseName, debugInfo.cohortNo)
+            : "(cohortNo 없음)";
+          const allSaved = loadAllTargets();
+          const savedKeys = Object.keys(allSaved).slice(0, 5);
+          const matchFound = debugInfo.cohortNo != null && currentKey in allSaved;
+          return (
+            <div className="text-[10px] font-mono space-y-1 text-muted-foreground bg-muted/50 rounded p-2 mb-3">
+              <p><span className="text-foreground font-semibold">조회 key:</span> {currentKey}</p>
+              <p><span className="text-foreground font-semibold">매칭:</span> <span className={matchFound ? "text-emerald-600" : "text-red-500"}>{matchFound ? "✅ 일치" : "❌ 불일치"}</span></p>
+              <p><span className="text-foreground font-semibold">저장된 keys ({Object.keys(allSaved).length}):</span></p>
+              {savedKeys.map((k) => <p key={k} className="pl-2">{k}</p>)}
+            </div>
+          );
+        })()}
         <div className="grid gap-4 sm:grid-cols-3">
           {items.map((item) => {
             const badge = statusBadge(item.progress);

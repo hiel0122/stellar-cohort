@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import type { CohortKpi, Cohort } from "@/lib/types";
 import { loadRawCohorts } from "@/lib/rawCohortStore";
+import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { SectionHeader } from "@/components/SectionHeader";
 
 type MetricKey = "revenue" | "students" | "leads" | "conversion";
@@ -60,7 +61,8 @@ const Index = () => {
   } = useDashboardData();
 
   // Resolve instructor/course names from raw cohorts for target key
-  const rawCohortsAll = useMemo(() => loadRawCohorts(), []);
+  const rawStoreSnapshot = useRawCohortStore();
+  const rawCohortsAll = useMemo(() => loadRawCohorts(), [rawStoreSnapshot]);
   const currentInstName = rawCohortsAll.find((c) => `inst-${c.instructor_name}` === instructorId)?.instructor_name ?? "";
   const currentCourseName = rawCohortsAll.find((c) => `course-${c.course_title}` === courseId)?.course_title ?? "";
   const currentCohortNo = currentCohort?.cohort_no ?? null;
@@ -200,7 +202,8 @@ const Index = () => {
                   <div className="section-container">
                     <SectionHeader title="목표 대비" subtitle={currentCohort ? `${currentCohort.cohort_no}기 기준` : undefined} />
                     <TargetProgressSection targets={targets} revenue={currentKpi.revenue} students={currentKpi.students}
-                      conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")} />
+                      conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")}
+                      debugInfo={{ instructorName: currentInstName, courseName: currentCourseName, cohortNo: currentCohortNo }} />
                   </div>
                 )}
 
