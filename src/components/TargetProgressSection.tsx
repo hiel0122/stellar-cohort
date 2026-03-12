@@ -166,12 +166,13 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
         <div className="grid gap-4 sm:grid-cols-3">
           {items.map((item) => {
             const badge = statusBadge(item.progress);
-            const pctText = item.progress != null ? `${(item.progress * 100).toFixed(1)}%` : "—";
-            const ratio = item.progress ?? 0;
-            const greenW = Math.min(ratio, 1) * 100;  // 0~100%
-            const redW = Math.min(Math.max(ratio - 1, 0), 1) * 100; // overflow 0~100%
+            const rPct = item.progress != null ? item.progress * 100 : 0;
+            const pctText = item.progress != null ? `${rPct.toFixed(1)}%` : "—";
+            const greenW = getBaseFill(rPct);
+            const overW = getOverFill(rPct);
+            const ol = getOverLevel(rPct);
             const hasTarget = item.target != null && item.target !== 0;
-            const exceeded = ratio > 1;
+            const exceeded = rPct > 100;
 
             return (
               <div key={item.label} className="space-y-2">
@@ -203,20 +204,26 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
                           aria-label="목표 100% 기준선"
                         />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[220px]">
+                      <TooltipContent side="top" className="max-w-[260px]">
                         <p className="text-xs font-semibold">목표 100% 기준</p>
                         <p className="text-[10px] text-muted-foreground">왼쪽(초록) = 목표까지 달성</p>
-                        <p className="text-[10px] text-muted-foreground">오른쪽(빨강) = 초과 달성 구간</p>
-                        <p className="text-[10px] tabular-nums mt-0.5">목표: {item.formatTarget}</p>
+                        <p className="text-[10px] text-muted-foreground">오른쪽 = 초과 달성 구간 (Lv 1~4 색상)</p>
+                        <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+                          <p><span className="text-rose-500">■</span> Lv1 (100~199%)</p>
+                          <p><span className="text-amber-500">■</span> Lv2 (200~299%)</p>
+                          <p><span className="text-blue-500">■</span> Lv3 (300~399%)</p>
+                          <p><span className="text-purple-500">■</span> Lv4 (400%+)</p>
+                        </div>
+                        <p className="text-[10px] tabular-nums mt-1">목표: {item.formatTarget}</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
-                  {/* Zone B: 100~200% (right half) */}
+                  {/* Zone B: over-achievement (right half) */}
                   <div className="relative h-full w-1/2 overflow-hidden rounded-r-full bg-muted/50">
-                    {redW > 0 && (
+                    {overW > 0 && (
                       <div
-                        className="absolute inset-y-0 left-0 bg-rose-400/80 dark:bg-rose-500/70 transition-all duration-500 ease-out"
-                        style={{ width: `${redW}%` }}
+                        className={`absolute inset-y-0 left-0 transition-all duration-500 ease-out ${ol.barClass}`}
+                        style={{ width: `${overW}%` }}
                       />
                     )}
                   </div>
