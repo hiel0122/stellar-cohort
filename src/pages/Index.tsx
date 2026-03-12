@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent, Target, AlertTriangle, Calculator, Wallet } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent, Target, AlertTriangle, Calculator, Wallet, ChevronDown, ChevronRight } from "lucide-react";
 import { Layout, useLayoutActions } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
 import { CohortTrendChart } from "@/components/CohortTrendChart";
@@ -22,8 +22,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { CohortKpi, Cohort } from "@/lib/types";
-import { loadRawCohorts } from "@/lib/rawCohortStore";
+import { loadRawCohorts, type RawCohort } from "@/lib/rawCohortStore";
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { SectionHeader } from "@/components/SectionHeader";
 
@@ -49,7 +52,7 @@ const Index = () => {
 
   const {
     instructorId, courseId, cohortId,
-    handleInstructorChange, handleCourseChange, handleCohortChange, handleReset,
+    handleInstructorChange, handleCourseChange, handleCohortChange, handleCohortSelect, handleReset,
     instructors, courses, cohorts, kpis,
     currentKpi, currentCohort,
     sparklines,
@@ -114,12 +117,13 @@ const Index = () => {
     <Layout defaultInstructor={instructorId} defaultCourse={courseId} defaultCohortNo={currentCohortNo}>
       <div className="space-y-0">
         <DashboardFilters
-          instructorId={instructorId} courseId={courseId} cohortId={cohortId}
-          instructors={instructors} courses={courses} cohorts={cohorts}
-          onInstructorChange={handleInstructorChange} onCourseChange={handleCourseChange}
-          onCohortChange={handleCohortChange} onReset={handleReset}
+          instructorId={instructorId}
+          instructors={instructors}
+          onInstructorChange={handleInstructorChange}
+          onReset={handleReset}
           compareMode={compareMode} onCompareModeChange={handleCompareModeChange}
           baselineCohortId={baselineCohortId} onBaselineChange={handleBaselineChange}
+          cohorts={cohorts} cohortId={cohortId}
           baselineCohortNo={baselineCohort?.cohort_no ?? null}
         />
 
@@ -152,12 +156,16 @@ const Index = () => {
           ) : currentKpi ? (
             <TooltipProvider delayDuration={300}>
               <>
-                {/* Cohorts Overview table — top */}
+                {/* Cohorts Overview — grouped by course */}
                 <div className="section-container">
                   <SectionHeader title="기수 요약" subtitle="행을 클릭하면 해당 기수로 전환됩니다" />
-                  <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
-                    baselineCohortId={baselineCohortId} isComparing={isComparing}
-                    onCohortClick={handleCohortChange} />
+                  <GroupedCohortsOverview
+                    instructorId={instructorId}
+                    currentCohortId={cohortId}
+                    baselineCohortId={baselineCohortId}
+                    isComparing={isComparing}
+                    onCohortClick={handleCohortSelect}
+                  />
                 </div>
 
                 {/* KPI Section Container */}
@@ -319,84 +327,168 @@ function SettlementCards({
   );
 }
 
-// ── Cohorts Overview Table ──
-function CohortsOverview({
-  kpis, cohorts, currentCohortId, baselineCohortId, isComparing, onCohortClick,
+// ── Grouped Cohorts Overview (by course, with accordion) ──
+interface CourseGroup {
+  courseId: string;
+  courseTitle: string;
+  cohorts: RawCohort[];
+  activeCount: number;
+  totalCount: number;
+}
+
+function GroupedCohortsOverview({
+  instructorId, currentCohortId, baselineCohortId, isComparing, onCohortClick,
 }: {
-  kpis: CohortKpi[]; cohorts: Cohort[]; currentCohortId: string; baselineCohortId: string; isComparing: boolean;
-  onCohortClick?: (cohortId: string) => void;
+  instructorId: string;
+  currentCohortId: string;
+  baselineCohortId: string;
+  isComparing: boolean;
+  onCohortClick: (courseId: string, cohortId: string) => void;
 }) {
+  const rawStoreSnapshot = useRawCohortStore();
   const platformCosts = usePlatformCosts();
 
-  if (!kpis || kpis.length === 0) return null;
+  const groups = useMemo(() => {
+    const rawAll = loadRawCohorts();
+    const instName = instructorId.replace("inst-", "");
+    const filtered = rawAll.filter((r) => r.instructor_name === instName);
+    const courseMap = new Map<string, RawCohort[]>();
+    for (const r of filtered) {
+      const list = courseMap.get(r.course_title) || [];
+      list.push(r);
+      courseMap.set(r.course_title, list);
+    }
+    const result: CourseGroup[] = [];
+    for (const [title, cohorts] of courseMap) {
+      const sorted = [...cohorts].sort((a, b) => a.cohort_no - b.cohort_no);
+      result.push({
+        courseId: `course-${title}`,
+        courseTitle: title,
+        cohorts: sorted,
+        activeCount: sorted.filter((c) => c.status === "active" || c.status === "planned").length,
+        totalCount: sorted.length,
+      });
+    }
+    return result;
+  }, [instructorId, rawStoreSnapshot]);
+
+  // Default open: groups with active/planned cohorts
+  const defaultOpen = useMemo(() => {
+    return groups.filter((g) => g.activeCount > 0).map((g) => g.courseId);
+  }, [groups]);
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(defaultOpen));
+
+  // Sync default open when groups change
+  useMemo(() => {
+    setOpenGroups(new Set(defaultOpen));
+  }, [defaultOpen]);
+
+  const toggleGroup = (courseId: string) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) next.delete(courseId);
+      else next.add(courseId);
+      return next;
+    });
+  };
+
+  if (groups.length === 0) return null;
 
   return (
-    <Card>
-      <CardContent className="px-4 py-4">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="sticky top-0 z-10">
-              <TableRow className="border-b border-border/50 bg-muted/40">
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 font-medium text-muted-foreground">기수</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 font-medium text-muted-foreground">상태</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 font-medium text-muted-foreground">시작일</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">매출</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">수강생</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">리드</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">지원</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">전환율</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">수수료</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">광고비</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">정산금</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">순이익(실지급)</TableHead>
-                <TableHead className="h-8 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">실지급률</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {kpis.map((k) => {
-                const isCurrent = k.cohort_id === currentCohortId;
-                const isBaseline = isComparing && k.cohort_id === baselineCohortId;
-                const cost = resolveCostSummary(k);
-                return (
-                  <TableRow key={k.cohort_id}
-                    onClick={() => onCohortClick?.(k.cohort_id)}
-                    className={`border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer ${isCurrent ? "bg-primary/8 ring-1 ring-inset ring-primary/20" : ""} ${isBaseline ? "bg-accent/30" : ""}`}>
-                    <TableCell className="py-2 px-2 text-xs font-medium">
-                      {k.cohort_no}기
-                      {isBaseline && <span className="ml-1 text-[9px] text-muted-foreground">(기준)</span>}
-                    </TableCell>
-                    <TableCell className="py-2 px-2 text-xs">
-                      <Badge variant="outline" className={`text-[9px] h-4 px-1.5 ${
-                        k.status === "active"
-                          ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
-                          : k.status === "closed"
-                          ? "bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400"
-                          : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"
-                      }`}>
-                        {k.status === "active" ? "운영중" : k.status === "closed" ? "종료" : "계획"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-muted-foreground">{k.start_date ?? "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">
-                      {formatWonFull(k.revenue)}
-                    </TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.students)}명</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.leads)}명</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(k.applied)}명</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{k.conversion.toFixed(1)}%</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_fee) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost ? formatWonFull(cost.total_ads) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums text-muted-foreground">{cost?.settlement_total != null ? formatWonFull(cost.settlement_total) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost?.payout != null ? formatWonFull(cost.payout) : "—"}</TableCell>
-                    <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{cost?.payout_margin != null ? `${cost.payout_margin.toFixed(1)}%` : "—"}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-2">
+      {groups.map((group) => {
+        const isOpen = openGroups.has(group.courseId);
+        return (
+          <Card key={group.courseId} className="overflow-hidden">
+            {/* Group header */}
+            <button
+              onClick={() => toggleGroup(group.courseId)}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+            >
+              {isOpen ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+              <span className="text-sm font-semibold text-foreground flex-1 truncate">
+                {group.courseTitle}
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                {group.activeCount > 0 && (
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400">
+                    운영중 {group.activeCount}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  총 {group.totalCount}개 기수
+                </span>
+              </div>
+            </button>
+
+            {/* Cohort rows */}
+            {isOpen && (
+              <CardContent className="px-0 py-0 border-t border-border/40">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border/30 bg-muted/20">
+                        <TableHead className="h-7 text-[10px] uppercase tracking-widest px-3 font-medium text-muted-foreground">기수</TableHead>
+                        <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 font-medium text-muted-foreground">상태</TableHead>
+                        <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 font-medium text-muted-foreground">시작일</TableHead>
+                        <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">매출</TableHead>
+                        <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">수강생</TableHead>
+                        <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">전환율</TableHead>
+                        <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">순이익(실지급)</TableHead>
+                        <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">실지급률</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.cohorts.map((raw) => {
+                        const cohortId = raw.id;
+                        const isCurrent = cohortId === currentCohortId;
+                        const isBaseline = isComparing && cohortId === baselineCohortId;
+                        const conv = raw.applied > 0 ? (raw.students / raw.applied) * 100 : 0;
+                        const cost = getCohortCostSummary(raw.instructor_name, raw.course_title, raw.cohort_no, raw.revenue);
+                        return (
+                          <TableRow
+                            key={cohortId}
+                            onClick={() => onCohortClick(group.courseId, cohortId)}
+                            className={`border-b border-border/20 hover:bg-muted/30 transition-colors cursor-pointer ${isCurrent ? "bg-primary/8 ring-1 ring-inset ring-primary/20" : ""} ${isBaseline ? "bg-accent/30" : ""}`}
+                          >
+                            <TableCell className="py-2 px-3 text-xs font-medium">
+                              {raw.cohort_no}기
+                              {isBaseline && <span className="ml-1 text-[9px] text-muted-foreground">(기준)</span>}
+                            </TableCell>
+                            <TableCell className="py-2 px-2 text-xs">
+                              <Badge variant="outline" className={`text-[9px] h-4 px-1.5 ${
+                                raw.status === "active"
+                                  ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
+                                  : raw.status === "closed"
+                                  ? "bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400"
+                                  : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"
+                              }`}>
+                                {raw.status === "active" ? "운영중" : raw.status === "closed" ? "종료" : "계획"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="py-2 px-2 text-xs text-muted-foreground">{raw.start_date ?? "—"}</TableCell>
+                            <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{formatWonFull(raw.revenue)}</TableCell>
+                            <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{formatInt(raw.students)}명</TableCell>
+                            <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{conv.toFixed(1)}%</TableCell>
+                            <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost?.payout != null ? formatWonFull(cost.payout) : "—"}</TableCell>
+                            <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{cost?.payout_margin != null ? `${cost.payout_margin.toFixed(1)}%` : "—"}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        );
+      })}
+    </div>
   );
 }
 

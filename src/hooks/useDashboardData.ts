@@ -205,9 +205,15 @@ export function useDashboardData() {
     setBaselineCohortId(id);
   }, []);
 
+  // Direct cohort selection (sets course + cohort simultaneously)
+  const handleCohortSelect = useCallback((targetCourseId: string, targetCohortId: string) => {
+    setCourseId(targetCourseId);
+    setCohortId(targetCohortId);
+  }, []);
+
   return {
     instructorId, courseId, cohortId,
-    handleInstructorChange, handleCourseChange, handleCohortChange, handleReset,
+    handleInstructorChange, handleCourseChange, handleCohortChange, handleCohortSelect, handleReset,
     instructors, courses, cohorts, kpis,
     currentKpi, currentCohort,
     sparklines,
