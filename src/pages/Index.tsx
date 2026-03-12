@@ -361,7 +361,6 @@ function CohortsOverview({
                     className={`border-b border-border/30 hover:bg-muted/30 transition-colors ${isCurrent ? "bg-primary/5" : ""} ${isBaseline ? "bg-accent/30" : ""}`}>
                     <TableCell className="py-2 px-2 text-xs font-medium">
                       {k.cohort_no}기
-                      {isCurrent && <span className="ml-1 text-[9px] text-primary">(현재)</span>}
                       {isBaseline && <span className="ml-1 text-[9px] text-muted-foreground">(기준)</span>}
                     </TableCell>
                     <TableCell className="py-2 px-2 text-xs">
