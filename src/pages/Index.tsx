@@ -156,12 +156,16 @@ const Index = () => {
           ) : currentKpi ? (
             <TooltipProvider delayDuration={300}>
               <>
-                {/* Cohorts Overview table — top */}
+                {/* Cohorts Overview — grouped by course */}
                 <div className="section-container">
                   <SectionHeader title="기수 요약" subtitle="행을 클릭하면 해당 기수로 전환됩니다" />
-                  <CohortsOverview kpis={kpis} cohorts={cohorts} currentCohortId={cohortId}
-                    baselineCohortId={baselineCohortId} isComparing={isComparing}
-                    onCohortClick={handleCohortChange} />
+                  <GroupedCohortsOverview
+                    instructorId={instructorId}
+                    currentCohortId={cohortId}
+                    baselineCohortId={baselineCohortId}
+                    isComparing={isComparing}
+                    onCohortClick={handleCohortSelect}
+                  />
                 </div>
 
                 {/* KPI Section Container */}
