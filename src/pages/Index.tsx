@@ -202,7 +202,8 @@ const Index = () => {
                   <div className="section-container">
                     <SectionHeader title="목표 대비" subtitle={currentCohort ? `${currentCohort.cohort_no}기 기준` : undefined} />
                     <TargetProgressSection targets={targets} revenue={currentKpi.revenue} students={currentKpi.students}
-                      conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")} />
+                      conversion={currentKpi.conversion} onOpenSettings={() => openRawData("targets")}
+                      debugInfo={{ instructorName: currentInstName, courseName: currentCourseName, cohortNo: currentCohortNo }} />
                   </div>
                 )}
 
