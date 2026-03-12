@@ -111,11 +111,11 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
     <Card>
       <CardContent className="px-4 py-4">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Target className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-sm font-semibold">목표 대비</p>
-            <span className="text-[10px] text-muted-foreground">현재 기수 기준</span>
-          </div>
+         <div className="flex items-center gap-2">
+79:             <Target className="h-3.5 w-3.5 text-muted-foreground" />
+80:             <p className="text-sm font-semibold">목표 대비</p>
+81:             <span className="text-[10px] text-muted-foreground">현재 기수 기준</span>
+82:           </div>
           <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground" onClick={onOpenSettings}>
             목표 관리
           </Button>
