@@ -128,22 +128,6 @@ const Index = () => {
         />
 
         <div className="space-y-7 pt-6">
-          {currentCohort && (
-            <div className="flex items-center">
-              <Badge
-                variant="outline"
-                className={`text-base px-4 py-1.5 h-auto font-semibold ${
-                  currentCohort.status === "active"
-                    ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400 dark:bg-emerald-500/15 dark:border-emerald-500/30"
-                    : currentCohort.status === "closed"
-                    ? "bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400 dark:bg-red-500/15 dark:border-red-500/30"
-                    : "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/30"
-                }`}
-              >
-                {statusLabel}
-              </Badge>
-            </div>
-          )}
 
           {error && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>
