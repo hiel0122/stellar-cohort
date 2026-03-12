@@ -188,11 +188,10 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
             const badge = statusBadge(item.progress);
             const rPct = item.progress != null ? item.progress * 100 : 0;
             const pctText = item.progress != null ? `${rPct.toFixed(1)}%` : "—";
-            const greenW = getBaseFill(rPct);
-            const overW = getOverFill(rPct);
             const ol = getOverLevel(rPct);
             const hasTarget = item.target != null && item.target !== 0;
             const exceeded = rPct > 100;
+            const fills = SEG_BOUNDS.map((lo) => segFill(rPct, lo));
 
             return (
               <div key={item.label} className="space-y-2">
@@ -205,21 +204,31 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
                   )}
                 </div>
 
-                {/* Progress bar – 2-zone extend style */}
+                {/* Progress bar – 5-segment cumulative */}
                 <div className="relative flex h-1.5 w-full">
-                  {/* Zone A: 0~100% (left half) */}
-                  <div className="relative h-full w-1/2 overflow-hidden rounded-l-full bg-muted">
-                    <div
-                      className="absolute inset-y-0 left-0 bg-emerald-500 transition-all duration-500 ease-out"
-                      style={{ width: `${greenW}%` }}
-                    />
-                  </div>
-                  {/* 100% marker */}
+                  {fills.map((f, i) => {
+                    const isFirst = i === 0;
+                    const isLast = i === 4;
+                    const roundL = isFirst ? "rounded-l-full" : "";
+                    const roundR = isLast ? "rounded-r-full" : "";
+                    return (
+                      <div key={i} className={`relative h-full flex-1 overflow-hidden ${roundL} ${roundR} bg-muted/40`}>
+                        {f > 0 && (
+                          <div
+                            className={`absolute inset-y-0 left-0 transition-all duration-500 ease-out ${SEG_COLORS[i]}`}
+                            style={{ width: `${f}%` }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* 100% marker at 20% position (boundary of seg0/seg1) */}
                   {hasTarget && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div
-                          className="relative z-10 h-full w-[2px] -mx-px bg-foreground/25 cursor-default flex-shrink-0"
+                          className="absolute z-10 top-0 h-full w-[2px] bg-foreground/25 cursor-default"
+                          style={{ left: "20%" }}
                           tabIndex={0}
                           aria-label="목표 100% 기준선"
                         />
@@ -227,7 +236,7 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
                       <TooltipContent side="top" className="max-w-[260px]">
                         <p className="text-xs font-semibold">목표 100% 기준</p>
                         <p className="text-[10px] text-muted-foreground">왼쪽(초록) = 목표까지 달성</p>
-                        <p className="text-[10px] text-muted-foreground">오른쪽 = 초과 달성 구간 (Lv 1~4 색상)</p>
+                        <p className="text-[10px] text-muted-foreground">오른쪽 = 초과 달성 구간 (Lv 1~4)</p>
                         <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
                           <p><span className="text-rose-500">■</span> Lv1 (100~199%)</p>
                           <p><span className="text-amber-500">■</span> Lv2 (200~299%)</p>
@@ -238,15 +247,6 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
                       </TooltipContent>
                     </Tooltip>
                   )}
-                  {/* Zone B: over-achievement (right half) */}
-                  <div className="relative h-full w-1/2 overflow-hidden rounded-r-full bg-muted/50">
-                    {overW > 0 && (
-                      <div
-                        className={`absolute inset-y-0 left-0 transition-all duration-500 ease-out ${ol.barClass}`}
-                        style={{ width: `${overW}%` }}
-                      />
-                    )}
-                  </div>
                 </div>
 
                 {/* Values */}
