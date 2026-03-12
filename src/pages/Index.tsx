@@ -91,7 +91,9 @@ const Index = () => {
   const statusLabel = currentCohort?.status === "active" ? "운영중" : currentCohort?.status === "closed" ? "종료" : "계획";
   const isLoading = loadState === "loading";
   const isDetailLoading = detailLoadState === "loading";
-  const deltaLabel = isComparing ? `vs ${baselineCohort?.cohort_no}기` : "vs 전기수";
+  const deltaLabel = isComparing
+    ? (compareMode === "cross" && crossBaselineLabel ? `vs ${crossBaselineLabel}` : `vs ${baselineCohort?.cohort_no}기`)
+    : "vs 전기수";
 
   const revenueProgress = currentKpi ? calcProgress(currentKpi.revenue, targets?.revenue_target ?? null) : null;
   const studentsProgress = currentKpi ? calcProgress(currentKpi.students, targets?.students_target ?? null) : null;
