@@ -332,8 +332,7 @@ function CohortsOverview({
 
   return (
     <Card>
-      <CardHeader className="pb-1 px-4 pt-4"><CardTitle className="text-sm font-semibold">기수 요약</CardTitle></CardHeader>
-      <CardContent className="px-4 pb-4">
+      <CardContent className="px-4 py-4">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="sticky top-0 z-10">
