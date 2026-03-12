@@ -213,7 +213,7 @@ export function useDashboardData() {
 
   return {
     instructorId, courseId, cohortId,
-    handleInstructorChange, handleCourseChange, handleCohortChange, handleReset,
+    handleInstructorChange, handleCourseChange, handleCohortChange, handleCohortSelect, handleReset,
     instructors, courses, cohorts, kpis,
     currentKpi, currentCohort,
     sparklines,
