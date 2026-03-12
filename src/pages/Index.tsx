@@ -359,7 +359,8 @@ function CohortsOverview({
                 const cost = resolveCostSummary(k);
                 return (
                   <TableRow key={k.cohort_id}
-                    className={`border-b border-border/30 hover:bg-muted/30 transition-colors ${isCurrent ? "bg-primary/5" : ""} ${isBaseline ? "bg-accent/30" : ""}`}>
+                    onClick={() => onCohortClick?.(k.cohort_id)}
+                    className={`border-b border-border/30 hover:bg-muted/30 transition-colors cursor-pointer ${isCurrent ? "bg-primary/8 ring-1 ring-inset ring-primary/20" : ""} ${isBaseline ? "bg-accent/30" : ""}`}>
                     <TableCell className="py-2 px-2 text-xs font-medium">
                       {k.cohort_no}기
                       {isBaseline && <span className="ml-1 text-[9px] text-muted-foreground">(기준)</span>}
