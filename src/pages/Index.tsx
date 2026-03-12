@@ -117,12 +117,13 @@ const Index = () => {
     <Layout defaultInstructor={instructorId} defaultCourse={courseId} defaultCohortNo={currentCohortNo}>
       <div className="space-y-0">
         <DashboardFilters
-          instructorId={instructorId} courseId={courseId} cohortId={cohortId}
-          instructors={instructors} courses={courses} cohorts={cohorts}
-          onInstructorChange={handleInstructorChange} onCourseChange={handleCourseChange}
-          onCohortChange={handleCohortChange} onReset={handleReset}
+          instructorId={instructorId}
+          instructors={instructors}
+          onInstructorChange={handleInstructorChange}
+          onReset={handleReset}
           compareMode={compareMode} onCompareModeChange={handleCompareModeChange}
           baselineCohortId={baselineCohortId} onBaselineChange={handleBaselineChange}
+          cohorts={cohorts} cohortId={cohortId}
           baselineCohortNo={baselineCohort?.cohort_no ?? null}
         />
 
