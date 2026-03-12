@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target } from "lucide-react";
+import { Target, Bug } from "lucide-react";
 import type { CourseTargets } from "@/lib/types";
 import { formatWonFull, formatInt } from "@/lib/format";
 import { calcProgress, calcRemaining, calcDeltaPp } from "@/hooks/useTargets";
+import { makeTargetKey, loadAllTargets } from "@/lib/targetStore";
 import {
   Tooltip,
   TooltipContent,
@@ -16,6 +18,7 @@ interface Props {
   students: number;
   conversion: number; // current conversion %
   onOpenSettings: () => void;
+  debugInfo?: { instructorName: string; courseName: string; cohortNo: number | null };
 }
 
 function statusBadge(progress: number | null) {
