@@ -1,4 +1,5 @@
 import type { CourseTargets } from "@/lib/types";
+import { normalizeWeak } from "@/lib/normalize";
 
 const STORAGE_KEY = "kpi_targets_v2";
 
