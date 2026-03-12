@@ -171,6 +171,18 @@ export function TargetProgressSection({ targets, revenue, students, conversion, 
             </div>
           );
         })()}
+
+        {/* Level legend */}
+        <p className="text-[10px] text-muted-foreground mb-3">
+          <span className="text-rose-500">■</span> Lv1 100~199%
+          <span className="mx-1">·</span>
+          <span className="text-amber-500">■</span> Lv2 200~299%
+          <span className="mx-1">·</span>
+          <span className="text-blue-500">■</span> Lv3 300~399%
+          <span className="mx-1">·</span>
+          <span className="text-purple-500">■</span> Lv4 400%+
+        </p>
+
         <div className="grid gap-4 sm:grid-cols-3">
           {items.map((item) => {
             const badge = statusBadge(item.progress);
