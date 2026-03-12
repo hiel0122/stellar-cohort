@@ -60,6 +60,10 @@ const Index = () => {
     compareMode, handleCompareModeChange,
     baselineCohortId, handleBaselineChange,
     baselineKpi, baselineCohort, baselineFunnel,
+    crossInstructorId, handleCrossInstructorChange,
+    crossCourseId, handleCrossCourseChange, crossCourses,
+    crossCohortId, handleCrossCohortChange, crossCohorts,
+    crossBaselineLabel, isSameCohort,
     loadState, detailLoadState, error,
   } = useDashboardData();
 
