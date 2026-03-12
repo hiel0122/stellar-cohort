@@ -24,6 +24,7 @@ interface Props {
 function statusBadge(progress: number | null) {
   if (progress == null) return null;
   const pct = progress * 100;
+  if (pct > 100) return { label: "초과 달성", className: "bg-kpi-negative-bg text-kpi-negative" };
   if (pct >= 90) return { label: "순조", className: "bg-kpi-positive-bg text-kpi-positive" };
   if (pct >= 70) return { label: "주의", className: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" };
   return { label: "위험", className: "bg-kpi-negative-bg text-kpi-negative" };
