@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
-import type { Instructor, Cohort } from "@/lib/types";
+import type { Instructor, Cohort, Course } from "@/lib/types";
 import type { CompareMode } from "@/hooks/useDashboardData";
 import { CompareToggle } from "./CompareToggle";
 
@@ -24,6 +24,17 @@ interface Props {
   cohorts: Cohort[];
   cohortId: string;
   baselineCohortNo: number | null;
+  // Cross
+  crossInstructorId: string;
+  onCrossInstructorChange: (id: string) => void;
+  crossCourses: Course[];
+  crossCourseId: string;
+  onCrossCourseChange: (id: string) => void;
+  crossCohorts: Cohort[];
+  crossCohortId: string;
+  onCrossCohortChange: (id: string) => void;
+  crossBaselineLabel: string | null;
+  isSameCohort: boolean;
 }
 
 export function DashboardFilters({
@@ -32,6 +43,10 @@ export function DashboardFilters({
   onInstructorChange, onReset,
   compareMode, onCompareModeChange, baselineCohortId, onBaselineChange,
   cohorts, cohortId, baselineCohortNo,
+  crossInstructorId, onCrossInstructorChange,
+  crossCourses, crossCourseId, onCrossCourseChange,
+  crossCohorts, crossCohortId, onCrossCohortChange,
+  crossBaselineLabel, isSameCohort,
 }: Props) {
   return (
     <div className="sticky top-12 z-20 -mx-4 md:-mx-8 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8 py-3">
@@ -59,6 +74,17 @@ export function DashboardFilters({
           cohorts={cohorts}
           currentCohortId={cohortId}
           baselineCohortNo={baselineCohortNo}
+          instructors={instructors}
+          crossInstructorId={crossInstructorId}
+          onCrossInstructorChange={onCrossInstructorChange}
+          crossCourses={crossCourses}
+          crossCourseId={crossCourseId}
+          onCrossCourseChange={onCrossCourseChange}
+          crossCohorts={crossCohorts}
+          crossCohortId={crossCohortId}
+          onCrossCohortChange={onCrossCohortChange}
+          crossBaselineLabel={crossBaselineLabel}
+          isSameCohort={isSameCohort}
         />
 
         <Button
