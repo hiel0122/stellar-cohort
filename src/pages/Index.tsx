@@ -60,7 +60,8 @@ const Index = () => {
   } = useDashboardData();
 
   // Resolve instructor/course names from raw cohorts for target key
-  const rawCohortsAll = useMemo(() => loadRawCohorts(), []);
+  const rawStoreSnapshot = useRawCohortStore();
+  const rawCohortsAll = useMemo(() => loadRawCohorts(), [rawStoreSnapshot]);
   const currentInstName = rawCohortsAll.find((c) => `inst-${c.instructor_name}` === instructorId)?.instructor_name ?? "";
   const currentCourseName = rawCohortsAll.find((c) => `course-${c.course_title}` === courseId)?.course_title ?? "";
   const currentCohortNo = currentCohort?.cohort_no ?? null;
