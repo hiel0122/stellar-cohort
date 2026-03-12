@@ -7,34 +7,31 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
-import type { Instructor, Course, Cohort } from "@/lib/types";
+import type { Instructor, Cohort } from "@/lib/types";
 import type { CompareMode } from "@/hooks/useDashboardData";
 import { CompareToggle } from "./CompareToggle";
 
 interface Props {
   instructorId: string;
-  courseId: string;
-  cohortId: string;
   instructors: Instructor[];
-  courses: Course[];
-  cohorts: Cohort[];
   onInstructorChange: (v: string) => void;
-  onCourseChange: (v: string) => void;
-  onCohortChange: (v: string) => void;
   onReset: () => void;
   // Compare
   compareMode: CompareMode;
   onCompareModeChange: (mode: CompareMode) => void;
   baselineCohortId: string;
   onBaselineChange: (id: string) => void;
+  cohorts: Cohort[];
+  cohortId: string;
   baselineCohortNo: number | null;
 }
 
 export function DashboardFilters({
-  instructorId, courseId, cohortId,
-  instructors = [], courses = [], cohorts = [],
-  onInstructorChange, onCourseChange, onCohortChange, onReset,
-  compareMode, onCompareModeChange, baselineCohortId, onBaselineChange, baselineCohortNo,
+  instructorId,
+  instructors = [],
+  onInstructorChange, onReset,
+  compareMode, onCompareModeChange, baselineCohortId, onBaselineChange,
+  cohorts, cohortId, baselineCohortNo,
 }: Props) {
   return (
     <div className="sticky top-12 z-20 -mx-4 md:-mx-8 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8 py-3">
@@ -47,32 +44,6 @@ export function DashboardFilters({
             {instructors.map((inst) => (
               <SelectItem key={inst.id} value={inst.id} className="text-xs">
                 {inst.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={courseId} onValueChange={onCourseChange} disabled={!instructorId}>
-          <SelectTrigger className="h-8 w-[200px] text-xs bg-card border-border">
-            <SelectValue placeholder="강의 선택" />
-          </SelectTrigger>
-          <SelectContent>
-            {courses.map((c) => (
-              <SelectItem key={c.id} value={c.id} className="text-xs">
-                {c.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={cohortId} onValueChange={onCohortChange} disabled={!courseId}>
-          <SelectTrigger className="h-8 w-[120px] text-xs bg-card border-border">
-            <SelectValue placeholder="기수" />
-          </SelectTrigger>
-          <SelectContent>
-            {cohorts.map((c) => (
-              <SelectItem key={c.id} value={c.id} className="text-xs">
-                {c.cohort_no}기
               </SelectItem>
             ))}
           </SelectContent>
