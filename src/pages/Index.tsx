@@ -321,9 +321,10 @@ function SettlementCards({
 
 // ── Cohorts Overview Table ──
 function CohortsOverview({
-  kpis, cohorts, currentCohortId, baselineCohortId, isComparing,
+  kpis, cohorts, currentCohortId, baselineCohortId, isComparing, onCohortClick,
 }: {
   kpis: CohortKpi[]; cohorts: Cohort[]; currentCohortId: string; baselineCohortId: string; isComparing: boolean;
+  onCohortClick?: (cohortId: string) => void;
 }) {
   const platformCosts = usePlatformCosts();
 
