@@ -478,6 +478,27 @@ function GroupedCohortsOverview({
                             <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{conv.toFixed(1)}%</TableCell>
                             <TableCell className="py-2 px-2 text-xs text-right tabular-nums font-medium">{cost?.payout != null ? formatWonFull(cost.payout) : "—"}</TableCell>
                             <TableCell className="py-2 px-2 text-xs text-right tabular-nums">{cost?.payout_margin != null ? `${cost.payout_margin.toFixed(1)}%` : "—"}</TableCell>
+                            <TableCell className="py-2 px-2 text-xs">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className={`text-[9px] h-4 px-1.5 cursor-default ${
+                                    raw.settlement_status === "지급완료"
+                                      ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
+                                      : raw.settlement_status === "결재중"
+                                      ? "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"
+                                      : "bg-muted text-muted-foreground border-border"
+                                  }`}>
+                                    {raw.settlement_status ?? "미정산"}
+                                  </Badge>
+                                </TooltipTrigger>
+                                {raw.settlement_status === "지급완료" && (raw.settled_at || raw.settled_amount != null) && (
+                                  <TooltipContent side="left" className="text-xs space-y-0.5">
+                                    {raw.settled_at && <p>입금일: {raw.settled_at}</p>}
+                                    {raw.settled_amount != null && <p>입금액: {formatWonFull(raw.settled_amount)}</p>}
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TableCell>
                           </TableRow>
                         );
                       })}
