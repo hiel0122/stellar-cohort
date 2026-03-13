@@ -499,6 +499,61 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
               </div>
             </div>
 
+            {/* ── Settlement Status Section ── */}
+            <div className="p-4 space-y-2 border-b">
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">정산 상태</p>
+              <Select value={form.settlement_status ?? "미정산"} onValueChange={(v) => updateField("settlement_status", v as SettlementStatus)}>
+                <SelectTrigger className="h-8 text-xs w-full [&>span]:flex [&>span]:items-center">
+                  <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium", SETTLEMENT_COLORS[form.settlement_status ?? "미정산"])}>
+                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", SETTLEMENT_DOT[form.settlement_status ?? "미정산"])} />
+                    {form.settlement_status ?? "미정산"}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {(["미정산", "결재중", "지급완료"] as SettlementStatus[]).map((s) => (
+                    <SelectItem key={s} value={s}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className={cn("h-2 w-2 rounded-full", SETTLEMENT_DOT[s])} />
+                        {s}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {form.settlement_status === "지급완료" && (
+                <div className="space-y-2 rounded-md border border-border/60 p-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">지급완료일 (입금일)</Label>
+                    <DatePickerField value={form.settled_at ?? ""} onChange={(v) => updateField("settled_at", v)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">실제 입금액 (원)</Label>
+                    <Input
+                      value={form.settled_amount != null ? fmtInput(form.settled_amount) : ""}
+                      onChange={(e) => { const n = parseNum(e.target.value); if (n >= 0) updateField("settled_amount", n); }}
+                      className="tabular-nums h-8 text-xs w-full" inputMode="numeric"
+                    />
+                    {form.settled_amount != null && form.settled_amount > 0 && (
+                      <p className="text-[10px] text-muted-foreground">표시: {formatWonFull(form.settled_amount)}</p>
+                    )}
+                  </div>
+                  {(() => {
+                    const cost = getCohortCostSummary(form.instructor_name, form.course_title, form.cohort_no, form.revenue);
+                    if (cost?.payout != null && form.settled_amount != null && form.settled_amount > 0) {
+                      const diff = form.settled_amount - cost.payout;
+                      return (
+                        <p className={cn("text-[10px]", diff === 0 ? "text-muted-foreground" : diff > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
+                          예상 실지급액 대비: {diff > 0 ? "+" : ""}{formatWonFull(diff)}
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
+            </div>
+
             {/* ── Section 2: 비용 (L1) ── */}
             <div ref={costSectionRef} className="border-b">
               <button
