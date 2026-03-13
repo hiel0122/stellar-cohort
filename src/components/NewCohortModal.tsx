@@ -232,6 +232,9 @@ export function NewCohortModal({ open, onOpenChange, rawCohorts, defaultInstruct
       leads: 0,
       applied: 0,
       students: 0,
+      settlement_status: "미정산",
+      settled_at: null,
+      settled_amount: null,
     };
     upsertRawCohort(newCohort);
 
