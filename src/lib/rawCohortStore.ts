@@ -36,7 +36,14 @@ function load(): RawCohort[] {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    cache = raw ? JSON.parse(raw) : [...seedData];
+    const parsed: RawCohort[] = raw ? JSON.parse(raw) : [...seedData];
+    // Migrate older records missing settlement fields
+    cache = parsed.map((c) => ({
+      ...c,
+      settlement_status: c.settlement_status ?? "미정산",
+      settled_at: c.settled_at ?? null,
+      settled_amount: c.settled_amount ?? null,
+    }));
   } catch {
     cache = [...seedData];
   }
