@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { NewCohortModal } from "@/components/NewCohortModal";
 import { toast } from "sonner";
 import {
-  type RawCohort, loadRawCohorts, upsertRawCohort, deleteRawCohort, makeId, getNextCohortNo,
+  type RawCohort, type SettlementStatus, loadRawCohorts, upsertRawCohort, deleteRawCohort, makeId, getNextCohortNo,
 } from "@/lib/rawCohortStore";
 import {
   type PlatformCost, type PlatformKey, loadPlatformCosts, upsertPlatformCost, deletePlatformCost,
