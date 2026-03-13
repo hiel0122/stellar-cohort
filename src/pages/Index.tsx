@@ -441,6 +441,7 @@ function GroupedCohortsOverview({
                         <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">전환율</TableHead>
                         <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">순이익(실지급)</TableHead>
                         <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 text-right font-medium text-muted-foreground">실지급률</TableHead>
+                        <TableHead className="h-7 text-[10px] uppercase tracking-widest px-2 font-medium text-muted-foreground">정산</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
