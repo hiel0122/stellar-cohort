@@ -27,7 +27,7 @@ import {
 } from "@/lib/rawCohortStore";
 import {
   type PlatformCost, type PlatformKey, loadPlatformCosts, upsertPlatformCost, deletePlatformCost,
-  generateCostId, getRecentPlatformNames, getCostsForCohort,
+  generateCostId, getRecentPlatformNames, getCostsForCohort, getCohortCostSummary,
 } from "@/lib/platformCostStore";
 import { useRawCohortStore } from "@/hooks/useRawCohortStore";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
