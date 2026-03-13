@@ -73,6 +73,18 @@ const STATUS_LABEL: Record<string, string> = {
   closed: "종료",
 };
 
+const SETTLEMENT_COLORS: Record<string, string> = {
+  "미정산": "bg-muted text-muted-foreground border-border",
+  "결재중": "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+  "지급완료": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+};
+
+const SETTLEMENT_DOT: Record<string, string> = {
+  "미정산": "bg-muted-foreground",
+  "결재중": "bg-amber-500",
+  "지급완료": "bg-emerald-500",
+};
+
 export function RawDataInputDrawer({ open, onOpenChange, defaultInstructor, defaultCourse, defaultCohortNo, defaultTab }: Props) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
