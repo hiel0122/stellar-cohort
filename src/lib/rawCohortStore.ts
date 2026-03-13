@@ -3,6 +3,8 @@
 
 const STORAGE_KEY = "kpi_raw_cohorts_v1";
 
+export type SettlementStatus = "미정산" | "결재중" | "지급완료";
+
 export interface RawCohort {
   id: string;
   instructor_name: string;
@@ -14,6 +16,9 @@ export interface RawCohort {
   leads: number;
   applied: number;
   students: number;
+  settlement_status: SettlementStatus;
+  settled_at: string | null;
+  settled_amount: number | null;
 }
 
 // ── Seed data (used when localStorage is empty) ──
