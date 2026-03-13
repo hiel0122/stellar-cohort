@@ -228,6 +228,9 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
     if (form.students < 0) errs.push("수강생은 0 이상");
     if (form.leads < 0) errs.push("리드는 0 이상");
     if (form.applied < 0) errs.push("지원은 0 이상");
+    if (form.settlement_status === "지급완료" && !form.settled_at) errs.push("지급완료 시 입금일을 입력하세요");
+    if (form.settlement_status === "지급완료" && (form.settled_amount == null || form.settled_amount <= 0)) errs.push("지급완료 시 입금액을 입력하세요");
+    if (form.settled_amount != null && form.settled_amount < 0) errs.push("입금액은 0 이상");
     return errs;
   }, [form]);
 
