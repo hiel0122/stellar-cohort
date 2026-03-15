@@ -152,12 +152,6 @@ export function NjabSettlementForm({ costRecord, cohortRevenue, onSaved }: Props
     setD(recalc(loadDetails(costRecord, cohortRevenue)));
   }, [costRecord.id]);
 
-  // Sync total_sales with cohort revenue when not manual
-  useEffect(() => {
-    if (!d.manual_total_sales) {
-      update({ total_sales: cohortRevenue });
-    }
-  }, [cohortRevenue]);
 
   const save = useCallback((updated: NjabDetails) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
