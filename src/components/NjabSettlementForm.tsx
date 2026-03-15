@@ -335,14 +335,18 @@ export function NjabSettlementForm({ costRecord, cohortRevenue, onSaved }: Props
         <div className="rounded-md bg-muted p-2 space-y-0.5">
           <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-0.5">자동 계산</p>
           <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">차인지급액</span>
+            <span className="text-muted-foreground">차인지급액 (VAT 포함)</span>
             <span className={cn("font-semibold tabular-nums", d.final_payout_amount >= 0 ? "text-foreground" : "text-destructive")}>{formatWonFull(d.final_payout_amount)}</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">VAT 포함 지급액</span>
-            <span className="font-medium tabular-nums">{formatWonFull(d.vat_included_amount)}</span>
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>공급가액</span>
+            <span className="tabular-nums">{formatWonFull(d.supply_amount)}</span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1">※ VAT 포함 지급, 세금계산서 과세 발행</p>
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>VAT (10%)</span>
+            <span className="tabular-nums">{formatWonFull(d.vat_amount)}</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">※ 차인지급액은 VAT 포함, 세금계산서 과세 발행</p>
         </div>
       </div>
 
