@@ -197,25 +197,15 @@ export function NjabSettlementForm({ costRecord, cohortRevenue, onSaved }: Props
         <p className="text-[9px] uppercase tracking-widest text-muted-foreground">① 매출 / 수수료</p>
 
         <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">총 결제액 (세전, 원)</Label>
-            <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer">
-              직접 입력
-              <Switch
-                checked={d.manual_total_sales}
-                onCheckedChange={(v) => update({ manual_total_sales: v, total_sales: v ? d.total_sales : cohortRevenue })}
-                className="h-4 w-7 [&>span]:h-3 [&>span]:w-3"
-              />
-            </label>
-          </div>
+          <Label className="text-xs">총 결제액 (세전, 원)</Label>
           <Input
             value={fmtInput(d.total_sales)}
             onChange={(e) => update({ total_sales: parseNum(e.target.value) })}
-            readOnly={!d.manual_total_sales}
-            className={cn("tabular-nums h-8 text-xs w-full", !d.manual_total_sales && "bg-muted/50")}
+            className="tabular-nums h-8 text-xs w-full"
             inputMode="numeric"
+            placeholder="정산서의 총 결제액을 입력"
           />
-          {!d.manual_total_sales && <p className="text-[10px] text-muted-foreground">기수 매출에서 자동 주입</p>}
+          <p className="text-[10px] text-muted-foreground">정산서의 '총 결제액'을 그대로 입력하세요.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
