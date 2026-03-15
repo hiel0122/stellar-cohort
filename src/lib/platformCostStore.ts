@@ -94,7 +94,15 @@ export function getCohortCostSummary(
   const payout = payoutCosts.length > 0
     ? payoutCosts.reduce((s, c) => s + ((c.details as Record<string, unknown>).final_payout_amount as number), 0)
     : null;
-  const payout_margin = payout != null && revenue > 0 ? (payout / revenue) * 100 : null;
+
+  // Use total_sales from njab details as denominator if available, else revenue
+  const njabCost = costs.find(c => c.platform_key === "njab" && c.details && typeof (c.details as Record<string, unknown>).total_sales === "number");
+  const marginDenom = njabCost ? ((njabCost.details as Record<string, unknown>).total_sales as number) : revenue;
+  const payout_margin = payout != null && marginDenom > 0 ? (payout / marginDenom) * 100 : null;
+
+  // net_profit_l1 now equals payout when available, else falls back to simple calc
+  const net_profit_l1 = payout != null ? payout : revenue - total_fee - total_ads;
+  const net_margin_l1 = marginDenom > 0 ? (net_profit_l1 / marginDenom) * 100 : null;
 
   return { total_fee, total_ads, net_profit_l1, net_margin_l1, settlement_total, payout, payout_margin };
 }
