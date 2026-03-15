@@ -324,8 +324,16 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
 
   const totalFee = costsForCohort.reduce((s, c) => s + c.fee_amount, 0);
   const totalAds = costsForCohort.reduce((s, c) => s + c.ad_cost_amount, 0);
-  const totalCost = totalFee + totalAds;
-  const netProfit = form ? form.revenue - totalCost : 0;
+  const costSummary = form ? getCohortCostSummary(form.instructor_name, form.course_title, form.cohort_no, form.revenue) : null;
+  const hasPayout = costSummary?.payout != null;
+  const netProfit = hasPayout ? costSummary.payout! : 0;
+  // For 순이익률: use total_sales from njab details if available, else revenue
+  const njabTotalSales = (() => {
+    if (!form) return 0;
+    const njabCost = costsForCohort.find(c => c.platform_key === "njab" && c.details);
+    const ts = njabCost?.details?.total_sales;
+    return typeof ts === "number" && ts > 0 ? ts : form.revenue;
+  })();
   const recentPlatforms = getRecentPlatformNames();
 
   // Section collapse state
