@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { AlertTriangle, Check } from "lucide-react";
 import { AlertTriangle, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatWonFull } from "@/lib/format";
