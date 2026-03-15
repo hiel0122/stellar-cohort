@@ -21,7 +21,7 @@ function fmtInput(v: number): string {
   return v === 0 ? "" : v.toLocaleString("ko-KR");
 }
 
-interface NjabDetails {
+export interface NjabDetails {
   total_sales: number;
   card_sales: number;
   bank_sales: number;
@@ -42,7 +42,8 @@ interface NjabDetails {
   total_settlement_amount: number;
   ad_cost_amount: number;
   final_payout_amount: number;
-  vat_included_amount: number;
+  supply_amount: number;
+  vat_amount: number;
   note: string;
   manual_total_sales: boolean;
 }
@@ -70,32 +71,65 @@ function loadDetails(cost: PlatformCost, cohortRevenue: number): NjabDetails {
     total_settlement_amount: d.total_settlement_amount ?? 0,
     ad_cost_amount: d.ad_cost_amount ?? cost.ad_cost_amount ?? 0,
     final_payout_amount: d.final_payout_amount ?? 0,
-    vat_included_amount: d.vat_included_amount ?? 0,
+    supply_amount: d.supply_amount ?? 0,
+    vat_amount: d.vat_amount ?? 0,
     note: d.note ?? cost.note ?? "",
     manual_total_sales: d.manual_total_sales ?? false,
   };
 }
 
-function recalc(d: NjabDetails): NjabDetails {
+/** BigInt-based round-half-up: round(numer / denom) */
+function bigRound(numer: bigint, denom: bigint): number {
+  if (denom === 0n) return 0;
+  const sign = (numer < 0n) !== (denom < 0n) ? -1n : 1n;
+  const absN = numer < 0n ? -numer : numer;
+  const absD = denom < 0n ? -denom : denom;
+  return Number(sign * ((absN + absD / 2n) / absD));
+}
+
+export function recalc(d: NjabDetails): NjabDetails {
+  // 1) Fee
   const fee = Math.round(d.card_sales * (d.card_fee_rate_pct / 100) + d.bank_sales * (d.bank_fee_rate_pct / 100));
   const net = d.total_sales - fee;
-  const ownedRatio = d.total_sales > 0 ? d.owned_media_sales / d.total_sales : 0;
-  const paidRatio = 1 - ownedRatio;
-  const ownedSales = Math.round(d.total_sales * ownedRatio);
+
+  // 2) Ratios (raw fraction, no rounding for calculation)
+  const ownedRatioRaw = d.total_sales > 0 ? d.owned_media_sales / d.total_sales : 0;
+  const paidRatioRaw = 1 - ownedRatioRaw;
+  const ownedSales = d.total_sales > 0 ? Math.round(d.total_sales * ownedRatioRaw) : 0;
   const paidSales = d.total_sales - ownedSales;
+
   const rsFactor = 1 - d.rs_exclusion_pct / 100;
-  const instrRate = d.instructor_rate_pct / 100;
-  const ownedPart = Math.round(net * ownedRatio * rsFactor * instrRate);
-  const paidPart = Math.round(net * paidRatio * instrRate);
+
+  // 3) BigInt settlement calc for 1-won precision
+  const bNet = BigInt(net);
+  const bOwned = BigInt(d.owned_media_sales);
+  const bTotal = BigInt(d.total_sales || 1); // avoid /0
+  const bRsExcl = BigInt(Math.round(d.rs_exclusion_pct));
+  const bInstr = BigInt(Math.round(d.instructor_rate_pct));
+
+  // owned_part = round(net * owned_media_sales * (100 - rs_exclusion) * instructor_rate / (total_sales * 100 * 100))
+  const ownedPart = d.total_sales > 0
+    ? bigRound(bNet * bOwned * (100n - bRsExcl) * bInstr, bTotal * 100n * 100n)
+    : 0;
+
+  // paid_part = round(net * (total_sales - owned_media_sales) * instructor_rate / (total_sales * 100))
+  const paidPart = d.total_sales > 0
+    ? bigRound(bNet * (bTotal - bOwned) * bInstr, bTotal * 100n)
+    : 0;
+
   const totalSettlement = ownedPart + paidPart;
   const finalPayout = totalSettlement - d.ad_cost_amount;
-  const vatIncluded = Math.round(finalPayout * 1.1);
+
+  // 4) VAT decomposition (final_payout IS vat-inclusive)
+  const supplyAmount = Math.round(finalPayout * 100 / 110);
+  const vatAmount = finalPayout - supplyAmount;
+
   return {
     ...d,
     fee_amount: fee,
     net_after_fee: net,
-    owned_ratio: ownedRatio,
-    paid_ratio: paidRatio,
+    owned_ratio: ownedRatioRaw,
+    paid_ratio: paidRatioRaw,
     owned_sales: ownedSales,
     paid_sales: paidSales,
     rs_factor: rsFactor,
@@ -103,7 +137,8 @@ function recalc(d: NjabDetails): NjabDetails {
     paid_part_settlement: paidPart,
     total_settlement_amount: totalSettlement,
     final_payout_amount: finalPayout,
-    vat_included_amount: vatIncluded,
+    supply_amount: supplyAmount,
+    vat_amount: vatAmount,
   };
 }
 
@@ -300,14 +335,18 @@ export function NjabSettlementForm({ costRecord, cohortRevenue, onSaved }: Props
         <div className="rounded-md bg-muted p-2 space-y-0.5">
           <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-0.5">자동 계산</p>
           <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">차인지급액</span>
+            <span className="text-muted-foreground">차인지급액 (VAT 포함)</span>
             <span className={cn("font-semibold tabular-nums", d.final_payout_amount >= 0 ? "text-foreground" : "text-destructive")}>{formatWonFull(d.final_payout_amount)}</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">VAT 포함 지급액</span>
-            <span className="font-medium tabular-nums">{formatWonFull(d.vat_included_amount)}</span>
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>공급가액</span>
+            <span className="tabular-nums">{formatWonFull(d.supply_amount)}</span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1">※ VAT 포함 지급, 세금계산서 과세 발행</p>
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>VAT (10%)</span>
+            <span className="tabular-nums">{formatWonFull(d.vat_amount)}</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">※ 차인지급액은 VAT 포함, 세금계산서 과세 발행</p>
         </div>
       </div>
 
