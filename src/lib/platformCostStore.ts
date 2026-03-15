@@ -81,8 +81,6 @@ export function getCohortCostSummary(
   if (costs.length === 0) return null;
   const total_fee = costs.reduce((s, c) => s + c.fee_amount, 0);
   const total_ads = costs.reduce((s, c) => s + c.ad_cost_amount, 0);
-  const net_profit_l1 = revenue - total_fee - total_ads;
-  const net_margin_l1 = revenue > 0 ? (net_profit_l1 / revenue) * 100 : null;
 
   // Payout-based: sum from platform settlement details
   const payoutCosts = costs.filter(
