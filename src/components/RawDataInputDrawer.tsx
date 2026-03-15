@@ -687,12 +687,15 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
                         <div className="flex justify-between text-xs"><span className="text-muted-foreground">광고비 합계</span><span className="font-medium tabular-nums">{formatWonFull(totalAds)}</span></div>
                         <div className="flex justify-between text-xs border-t border-border/50 pt-1 mt-1">
                           <span className="text-muted-foreground font-medium">순이익 (L1)</span>
-                          <span className={cn("font-semibold tabular-nums", netProfit >= 0 ? "text-foreground" : "text-destructive")}>{formatWonFull(netProfit)}</span>
+                          <span className={cn("font-semibold tabular-nums", hasPayout ? (netProfit >= 0 ? "text-foreground" : "text-destructive") : "text-muted-foreground")}>
+                            {hasPayout ? formatWonFull(netProfit) : "—"}
+                          </span>
                         </div>
-                        {form.revenue > 0 && (
+                        <p className="text-[9px] text-muted-foreground">실지급액 = 차인지급액</p>
+                        {hasPayout && njabTotalSales > 0 && (
                           <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">순이익률</span>
-                            <span className="font-medium tabular-nums">{((netProfit / form.revenue) * 100).toFixed(1)}%</span>
+                            <span className="text-muted-foreground">순이익률 <span className="text-[9px]">(차인지급액/총매출)</span></span>
+                            <span className="font-medium tabular-nums">{((netProfit / njabTotalSales) * 100).toFixed(1)}%</span>
                           </div>
                         )}
                       </div>
