@@ -71,7 +71,8 @@ function loadDetails(cost: PlatformCost, cohortRevenue: number): NjabDetails {
     total_settlement_amount: d.total_settlement_amount ?? 0,
     ad_cost_amount: d.ad_cost_amount ?? cost.ad_cost_amount ?? 0,
     final_payout_amount: d.final_payout_amount ?? 0,
-    vat_included_amount: d.vat_included_amount ?? 0,
+    supply_amount: d.supply_amount ?? 0,
+    vat_amount: d.vat_amount ?? 0,
     note: d.note ?? cost.note ?? "",
     manual_total_sales: d.manual_total_sales ?? false,
   };
