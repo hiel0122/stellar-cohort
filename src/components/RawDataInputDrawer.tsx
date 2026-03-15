@@ -324,8 +324,16 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
 
   const totalFee = costsForCohort.reduce((s, c) => s + c.fee_amount, 0);
   const totalAds = costsForCohort.reduce((s, c) => s + c.ad_cost_amount, 0);
-  const totalCost = totalFee + totalAds;
-  const netProfit = form ? form.revenue - totalCost : 0;
+  const costSummary = form ? getCohortCostSummary(form.instructor_name, form.course_title, form.cohort_no, form.revenue) : null;
+  const hasPayout = costSummary?.payout != null;
+  const netProfit = hasPayout ? costSummary.payout! : 0;
+  // For 순이익률: use total_sales from njab details if available, else revenue
+  const njabTotalSales = (() => {
+    if (!form) return 0;
+    const njabCost = costsForCohort.find(c => c.platform_key === "njab" && c.details);
+    const ts = njabCost?.details?.total_sales;
+    return typeof ts === "number" && ts > 0 ? ts : form.revenue;
+  })();
   const recentPlatforms = getRecentPlatformNames();
 
   // Section collapse state
@@ -679,12 +687,15 @@ function UnifiedPanel({ defaultInstructor, defaultCourse }: { defaultInstructor?
                         <div className="flex justify-between text-xs"><span className="text-muted-foreground">광고비 합계</span><span className="font-medium tabular-nums">{formatWonFull(totalAds)}</span></div>
                         <div className="flex justify-between text-xs border-t border-border/50 pt-1 mt-1">
                           <span className="text-muted-foreground font-medium">순이익 (L1)</span>
-                          <span className={cn("font-semibold tabular-nums", netProfit >= 0 ? "text-foreground" : "text-destructive")}>{formatWonFull(netProfit)}</span>
+                          <span className={cn("font-semibold tabular-nums", hasPayout ? (netProfit >= 0 ? "text-foreground" : "text-destructive") : "text-muted-foreground")}>
+                            {hasPayout ? formatWonFull(netProfit) : "—"}
+                          </span>
                         </div>
-                        {form.revenue > 0 && (
+                        <p className="text-[9px] text-muted-foreground">실지급액 = 차인지급액</p>
+                        {hasPayout && njabTotalSales > 0 && (
                           <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">순이익률</span>
-                            <span className="font-medium tabular-nums">{((netProfit / form.revenue) * 100).toFixed(1)}%</span>
+                            <span className="text-muted-foreground">순이익률 <span className="text-[9px]">(차인지급액/총매출)</span></span>
+                            <span className="font-medium tabular-nums">{((netProfit / njabTotalSales) * 100).toFixed(1)}%</span>
                           </div>
                         )}
                       </div>
