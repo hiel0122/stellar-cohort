@@ -21,7 +21,7 @@ function fmtInput(v: number): string {
   return v === 0 ? "" : v.toLocaleString("ko-KR");
 }
 
-interface NjabDetails {
+export interface NjabDetails {
   total_sales: number;
   card_sales: number;
   bank_sales: number;
@@ -42,7 +42,8 @@ interface NjabDetails {
   total_settlement_amount: number;
   ad_cost_amount: number;
   final_payout_amount: number;
-  vat_included_amount: number;
+  supply_amount: number;
+  vat_amount: number;
   note: string;
   manual_total_sales: boolean;
 }
