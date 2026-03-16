@@ -148,8 +148,12 @@ export function buildReport(
     }
   }
 
-  // Score columns analysis
-  const scoreColumns = parsed.columns.filter((c) => c.kind === "score");
+  // Filter columns by group if specified
+  const targetGroup = group ?? "satisfaction";
+  const groupColumns = parsed.columns.filter((c) => c.group === targetGroup);
+
+  // Score columns analysis (within group)
+  const scoreColumns = groupColumns.filter((c) => c.kind === "score");
   const questions = scoreColumns.map((col) =>
     analyzeScoreColumn(
       col.header,
@@ -159,8 +163,8 @@ export function buildReport(
     )
   );
 
-  // Freetext columns analysis
-  const freetextColumns = parsed.columns.filter((c) => c.kind === "freetext");
+  // Freetext columns analysis (within group)
+  const freetextColumns = groupColumns.filter((c) => c.kind === "freetext");
   const freetexts = freetextColumns.map((col) =>
     analyzeFreetextColumn(col.header, col.index, filteredRows)
   );
