@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useTargets, calcProgress } from "@/hooks/useTargets";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
-import { getCohortCostSummary, type CohortCostSummary } from "@/lib/platformCostStore";
+import { getCohortCostSummary, getCostsForCohort, type CohortCostSummary } from "@/lib/platformCostStore";
 import { formatWonFull, formatInt, formatPct } from "@/lib/format";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
