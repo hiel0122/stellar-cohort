@@ -32,6 +32,10 @@ interface Props {
 export function Layout({ children, defaultInstructor, defaultCourse, defaultCohortNo }: Props) {
   const [rawDataOpen, setRawDataOpen] = useState(false);
   const [rawDataTab, setRawDataTab] = useState<RawDataTabType>("cohorts");
+  const { pathname } = useLocation();
+
+  const pageTitle = TITLE_MAP[pathname] ?? "운영 Studio";
+  const showRawData = RAW_DATA_ROUTES.has(pathname);
 
   const openRawData = useCallback((tab: RawDataTabType = "cohorts") => {
     setRawDataTab(tab);
@@ -47,13 +51,15 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
             <header className="sticky top-0 z-30 flex min-h-[3.5rem] items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4 py-2">
               <div className="flex items-center gap-3">
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-semibold text-foreground">매출 대시보드</h1>
+                  <h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 mr-1" onClick={() => openRawData("cohorts")}>
-                  <Database className="h-3 w-3" /> 원데이터 입력
-                </Button>
+                {showRawData && (
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 mr-1" onClick={() => openRawData("cohorts")}>
+                    <Database className="h-3 w-3" /> 원데이터 입력
+                  </Button>
+                )}
                 
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><Bell className="h-4 w-4" /></Button>
                 <ThemeToggle />
