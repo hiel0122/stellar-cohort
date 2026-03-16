@@ -4,6 +4,7 @@ import type {
   QuestionAnalysis,
   FreetextAnalysis,
   ScoreDistribution,
+  ColumnGroup,
 } from "./types";
 import { parseScoreValue } from "./csvParser";
 
