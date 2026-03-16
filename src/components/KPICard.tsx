@@ -11,11 +11,15 @@ interface KPICardProps {
   secondaryText?: string;
   progress?: number | null; // 0~1
   onClick?: () => void;
+  /** Extra element rendered next to title (e.g. tooltip icon) */
+  titleExtra?: React.ReactNode;
+  /** Inline element rendered next to value (e.g. conversion rate) */
+  inlineExtra?: React.ReactNode;
 }
 
 // sparklineData and progress are kept in the interface for backward compatibility but no longer rendered
 
-export function KPICard({ title, value, deltaPct, deltaLabel = "vs 전기수", icon, sparklineData, secondaryText, progress, onClick }: KPICardProps) {
+export function KPICard({ title, value, deltaPct, deltaLabel = "vs 전기수", icon, sparklineData, secondaryText, progress, onClick, titleExtra, inlineExtra }: KPICardProps) {
   const deltaDisplay =
     deltaPct === null
       ? { text: "—", color: "text-kpi-neutral", bg: "bg-kpi-neutral-bg", Icon: Minus }
@@ -31,8 +35,14 @@ export function KPICard({ title, value, deltaPct, deltaLabel = "vs 전기수", i
       <CardContent className="p-4 h-full flex flex-col justify-between min-h-[100px]">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 space-y-1">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider leading-none">{title}</p>
-            <p className="text-lg font-semibold tracking-tight text-foreground tabular-nums leading-tight break-all">{value}</p>
+            <div className="flex items-center gap-1">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider leading-none">{title}</p>
+              {titleExtra}
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <p className="text-lg font-semibold tracking-tight text-foreground tabular-nums leading-tight break-all">{value}</p>
+              {inlineExtra}
+            </div>
             <div className="flex items-center gap-1.5 pt-0.5 min-h-[20px]">
               <span className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium ${deltaDisplay.bg} ${deltaDisplay.color}`}>
                 <deltaDisplay.Icon className="h-2.5 w-2.5" />

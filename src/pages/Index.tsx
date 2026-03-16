@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent, Target, AlertTriangle, Calculator, Wallet, ChevronDown, ChevronRight, BanknoteIcon } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, Percent, Target, AlertTriangle, Wallet, ChevronDown, ChevronRight, Info, Radio, CreditCard } from "lucide-react";
 import { Layout, useLayoutActions } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
 import { CohortTrendChart } from "@/components/CohortTrendChart";
@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useTargets, calcProgress } from "@/hooks/useTargets";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
-import { getCohortCostSummary, type CohortCostSummary } from "@/lib/platformCostStore";
+import { getCohortCostSummary, getCostsForCohort, type CohortCostSummary } from "@/lib/platformCostStore";
 import { formatWonFull, formatInt, formatPct } from "@/lib/format";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
@@ -44,6 +44,22 @@ function resolveCostSummary(kpi: CohortKpi | null): CohortCostSummary | null {
   );
   if (!raw) return null;
   return getCohortCostSummary(raw.instructor_name, raw.course_title, raw.cohort_no, kpi.revenue);
+}
+
+/** Get total_sales from njab details if available */
+function resolveNjabTotalSales(kpi: CohortKpi | null): number | null {
+  if (!kpi) return null;
+  const raw = loadRawCohorts().find(
+    (r) => `inst-${r.instructor_name}` === kpi.instructor_id && `course-${r.course_title}` === kpi.course_id && r.cohort_no === kpi.cohort_no
+  );
+  if (!raw) return null;
+  const costs = getCostsForCohort(raw.instructor_name, raw.course_title, raw.cohort_no);
+  for (const c of costs) {
+    if (c.platform_key === "njab" && c.details && typeof c.details.total_sales === "number") {
+      return c.details.total_sales as number;
+    }
+  }
+  return null;
 }
 
 const Index = () => {
@@ -102,6 +118,10 @@ const Index = () => {
   // L1 cost data
   const currentCost = useMemo(() => resolveCostSummary(currentKpi), [currentKpi, platformCosts]);
   const baselineCost = useMemo(() => resolveCostSummary(baselineKpi), [baselineKpi, platformCosts]);
+
+  // Resolve total_sales from njab details (for 총매출 KPI)
+  const njabTotalSales = useMemo(() => resolveNjabTotalSales(currentKpi), [currentKpi, platformCosts]);
+  const displayRevenue = njabTotalSales ?? currentKpi?.revenue ?? 0;
 
   // Sparkline for payout (실지급액) across all kpis
   const payoutSparkline = useMemo(() => {
@@ -171,37 +191,75 @@ const Index = () => {
                 {/* KPI Section Container */}
                  <div className="section-container space-y-3">
                    <SectionHeader title="KPI 요약" subtitle={currentCohort ? `${currentCohort.cohort_no}기 기준` : undefined} />
-                   {/* Core KPI Cards */}
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <KPICard title="매출" value={formatWonFull(currentKpi.revenue)} deltaPct={getDelta("revenue")} deltaLabel={deltaLabel}
-                            icon={<DollarSign className="h-4 w-4" />} sparklineData={sparklines.revenue} progress={revenueProgress} onClick={() => setSheetMetric("revenue")} />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs tabular-nums">{formatWonFull(currentKpi.revenue)}</p>
-                        {isComparing && baselineKpi && <p className="text-[10px] text-muted-foreground">기준({baselineCohort?.cohort_no}기): {formatWonFull(baselineKpi.revenue)}</p>}
-                      </TooltipContent>
-                    </Tooltip>
-                    <KPICard title="수강생" value={`${formatInt(currentKpi.students)}명`} deltaPct={getDelta("students")} deltaLabel={deltaLabel}
-                      icon={<Users className="h-4 w-4" />} sparklineData={sparklines.students} progress={studentsProgress} onClick={() => setSheetMetric("students")} />
-                    <KPICard title="리드" value={`${formatInt(currentKpi.leads)}명`} deltaPct={getDelta("leads")} deltaLabel={deltaLabel}
-                      icon={<Layers className="h-4 w-4" />} sparklineData={sparklines.leads} onClick={() => setSheetMetric("leads")} />
-                    <KPICard title="전환율" value={`${currentKpi.conversion.toFixed(1)}%`} deltaPct={getDelta("conversion")} deltaLabel={deltaLabel}
-                      secondaryText={`리드 기준 ${currentKpi.conversion_secondary.toFixed(1)}%`}
-                      icon={<TrendingUp className="h-4 w-4" />} sparklineData={sparklines.conversion} progress={conversionProgress} onClick={() => setSheetMetric("conversion")} />
-                  </div>
+                   {/* Row 1: Funnel KPIs — 총매출 / 리드 / 라이브 / 결제 */}
+                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
+                     <KPICard title="총매출" value={formatWonFull(displayRevenue)} deltaPct={getDelta("revenue")} deltaLabel={deltaLabel}
+                       icon={<DollarSign className="h-4 w-4" />}
+                       secondaryText={njabTotalSales != null ? "정산서 총 결제액 기준" : undefined}
+                       onClick={() => setSheetMetric("revenue")} />
+                     <KPICard title="리드" value={`${formatInt(currentKpi.leads)}명`} deltaPct={getDelta("leads")} deltaLabel={deltaLabel}
+                       icon={<Layers className="h-4 w-4" />} onClick={() => setSheetMetric("leads")} />
+                     {/* 라이브: applied count + applied/leads rate */}
+                     <KPICard
+                       title="라이브"
+                       value={`${formatInt(currentKpi.applied)}명`}
+                       deltaPct={null}
+                       deltaLabel={deltaLabel}
+                       icon={<Radio className="h-4 w-4" />}
+                       titleExtra={
+                         <Tooltip>
+                           <TooltipTrigger asChild>
+                             <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                           </TooltipTrigger>
+                           <TooltipContent side="bottom" className="max-w-[220px] space-y-1">
+                             <p className="text-xs font-medium">라이브 전환 기준</p>
+                             <p className="text-[10px] text-muted-foreground">라이브 전환수 = 지원(applied)<br/>라이브 전환율 = 지원 ÷ 리드 (applied/leads)</p>
+                             <p className="text-[10px] text-muted-foreground">현재: {formatInt(currentKpi.applied)} / {formatInt(currentKpi.leads)}</p>
+                           </TooltipContent>
+                         </Tooltip>
+                       }
+                       inlineExtra={
+                         <span className="text-sm text-muted-foreground tabular-nums">
+                           {currentKpi.leads > 0 ? `${(currentKpi.applied / currentKpi.leads * 100).toFixed(1)}%` : "—"}
+                         </span>
+                       }
+                     />
+                     {/* 결제: students count + students/applied rate */}
+                     <KPICard
+                       title="결제"
+                       value={`${formatInt(currentKpi.students)}명`}
+                       deltaPct={getDelta("students")}
+                       deltaLabel={deltaLabel}
+                       icon={<CreditCard className="h-4 w-4" />}
+                       titleExtra={
+                         <Tooltip>
+                           <TooltipTrigger asChild>
+                             <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                           </TooltipTrigger>
+                           <TooltipContent side="bottom" className="max-w-[220px] space-y-1">
+                             <p className="text-xs font-medium">결제 전환 기준</p>
+                             <p className="text-[10px] text-muted-foreground">결제 전환수 = 결제(students)<br/>결제 전환율 = 결제 ÷ 지원 (students/applied)</p>
+                             <p className="text-[10px] text-muted-foreground">현재: {formatInt(currentKpi.students)} / {formatInt(currentKpi.applied)}</p>
+                           </TooltipContent>
+                         </Tooltip>
+                       }
+                       inlineExtra={
+                         <span className="text-sm text-muted-foreground tabular-nums">
+                           {currentKpi.applied > 0 ? `${(currentKpi.students / currentKpi.applied * 100).toFixed(1)}%` : "—"}
+                         </span>
+                       }
+                     />
+                   </div>
 
-                  {/* Settlement / Payout KPI Cards */}
-                  <SettlementCards
-                    currentCost={currentCost}
-                    baselineCost={baselineCost}
-                    isComparing={isComparing}
-                    deltaLabel={deltaLabel}
-                    payoutSparkline={payoutSparkline}
-                  />
+                   {/* Row 2: Settlement KPIs — 수수료 / 광고비 / 순이익(실지급액) / 순이익률 */}
+                   <SettlementCards
+                     currentCost={currentCost}
+                     baselineCost={baselineCost}
+                     isComparing={isComparing}
+                     deltaLabel={deltaLabel}
+                     payoutSparkline={payoutSparkline}
+                     displayRevenue={displayRevenue}
+                   />
                 </div>
 
                 {/* Charts row */}
@@ -259,37 +317,42 @@ const Index = () => {
   );
 };
 
-// ── Settlement / Payout Cards ──
+// ── Settlement / Payout Cards (Row 2: 수수료 / 광고비 / 순이익 / 순이익률) ──
 function SettlementCards({
-  currentCost, baselineCost, isComparing, deltaLabel, payoutSparkline,
+  currentCost, baselineCost, isComparing, deltaLabel, payoutSparkline, displayRevenue,
 }: {
   currentCost: CohortCostSummary | null;
   baselineCost: CohortCostSummary | null;
   isComparing: boolean;
   deltaLabel: string;
   payoutSparkline: number[];
+  displayRevenue: number;
 }) {
-  const { openRawData } = useLayoutActions();
   const hasCost = !!currentCost;
   const hasPayout = currentCost?.payout != null;
 
   const feeDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.total_fee, baselineCost.total_fee) : null;
   const adsDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.total_ads, baselineCost.total_ads) : null;
-  const settleDelta = hasPayout && isComparing && baselineCost?.settlement_total != null
-    ? calcDelta(currentCost.settlement_total!, baselineCost.settlement_total) : null;
   const payoutDelta = hasPayout && isComparing && baselineCost?.payout != null
     ? calcDelta(currentCost.payout!, baselineCost.payout) : null;
-  const payoutMarginDelta = hasPayout && isComparing && baselineCost?.payout_margin != null && currentCost.payout_margin != null
-    ? currentCost.payout_margin - baselineCost.payout_margin : null;
+
+  // 순이익률 = 실지급액 / 총매출 * 100
+  const profitMargin = hasPayout && displayRevenue > 0
+    ? (currentCost.payout! / displayRevenue) * 100
+    : null;
+  const baselineProfitMargin = baselineCost?.payout != null && baselineCost.payout != null
+    ? null // simplified: no baseline margin delta for now
+    : null;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 items-stretch mt-3">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch mt-3">
       <KPICard
         title="수수료"
         value={hasCost ? formatWonFull(currentCost.total_fee) : "—"}
         deltaPct={feeDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Receipt className="h-4 w-4" />}
+        secondaryText={!hasCost ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
       <KPICard
         title="광고비"
@@ -297,29 +360,21 @@ function SettlementCards({
         deltaPct={adsDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Megaphone className="h-4 w-4" />}
+        secondaryText={!hasCost ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
       <KPICard
-        title="정산금 합계"
-        value={hasPayout ? formatWonFull(currentCost.settlement_total!) : "—"}
-        deltaPct={settleDelta}
-        deltaLabel={hasPayout ? deltaLabel : undefined}
-        icon={<Calculator className="h-4 w-4" />}
-        secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
-      />
-      <KPICard
-        title="순이익 (실지급액)"
+        title="순이익(실지급액)"
         value={hasPayout ? formatWonFull(currentCost.payout!) : "—"}
         deltaPct={payoutDelta}
         deltaLabel={hasPayout ? deltaLabel : undefined}
         icon={<Wallet className="h-4 w-4" />}
-        sparklineData={payoutSparkline.some((v) => v !== 0) ? payoutSparkline : undefined}
         secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
       <KPICard
-        title="순이익률 (실지급률)"
-        value={hasPayout && currentCost.payout_margin != null ? `${currentCost.payout_margin.toFixed(1)}%` : "—"}
-        deltaPct={payoutMarginDelta}
-        deltaLabel={hasPayout ? deltaLabel : undefined}
+        title="순이익률"
+        value={profitMargin != null ? `${profitMargin.toFixed(1)}%` : "—"}
+        deltaPct={null}
+        deltaLabel={hasPayout ? "차인지급액/총매출" : undefined}
         icon={<Percent className="h-4 w-4" />}
         secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
