@@ -46,6 +46,23 @@ function resolveCostSummary(kpi: CohortKpi | null): CohortCostSummary | null {
   return getCohortCostSummary(raw.instructor_name, raw.course_title, raw.cohort_no, kpi.revenue);
 }
 
+/** Get total_sales from njab details if available */
+function resolveNjabTotalSales(kpi: CohortKpi | null): number | null {
+  if (!kpi) return null;
+  const raw = loadRawCohorts().find(
+    (r) => `inst-${r.instructor_name}` === kpi.instructor_id && `course-${r.course_title}` === kpi.course_id && r.cohort_no === kpi.cohort_no
+  );
+  if (!raw) return null;
+  const { getCostsForCohort } = require("@/lib/platformCostStore");
+  const costs = getCostsForCohort(raw.instructor_name, raw.course_title, raw.cohort_no);
+  for (const c of costs) {
+    if (c.platform_key === "njab" && c.details && typeof c.details.total_sales === "number") {
+      return c.details.total_sales as number;
+    }
+  }
+  return null;
+}
+
 const Index = () => {
   const { openRawData } = useLayoutActions();
   const [sheetMetric, setSheetMetric] = useState<MetricKey | null>(null);
