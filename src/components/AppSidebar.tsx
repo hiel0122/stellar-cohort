@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 
 const navItems = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
+  { title: "만족도 분석", url: "/satisfaction", icon: SmilePlus },
 ];
 
 export function AppSidebar() {
