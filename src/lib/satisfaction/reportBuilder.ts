@@ -132,7 +132,8 @@ function analyzeFreetextColumn(
 
 export function buildReport(
   parsed: ParsedCsv,
-  activeFilters?: Record<number, string[]>
+  activeFilters?: Record<number, string[]>,
+  group?: ColumnGroup
 ): SatisfactionReport {
   // Apply filters
   let filteredRows = parsed.rows;
