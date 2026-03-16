@@ -14,6 +14,8 @@ export interface ColumnClassification {
   scoreRange?: { min: number; max: number };
   /** Whether this column is a PII candidate */
   isPii: boolean;
+  /** Logical group for tab-based separation */
+  group: ColumnGroup;
 }
 
 export interface ParsedCsv {
