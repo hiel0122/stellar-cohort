@@ -317,37 +317,42 @@ const Index = () => {
   );
 };
 
-// ── Settlement / Payout Cards ──
+// ── Settlement / Payout Cards (Row 2: 수수료 / 광고비 / 순이익 / 순이익률) ──
 function SettlementCards({
-  currentCost, baselineCost, isComparing, deltaLabel, payoutSparkline,
+  currentCost, baselineCost, isComparing, deltaLabel, payoutSparkline, displayRevenue,
 }: {
   currentCost: CohortCostSummary | null;
   baselineCost: CohortCostSummary | null;
   isComparing: boolean;
   deltaLabel: string;
   payoutSparkline: number[];
+  displayRevenue: number;
 }) {
-  const { openRawData } = useLayoutActions();
   const hasCost = !!currentCost;
   const hasPayout = currentCost?.payout != null;
 
   const feeDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.total_fee, baselineCost.total_fee) : null;
   const adsDelta = hasCost && isComparing && baselineCost ? calcDelta(currentCost.total_ads, baselineCost.total_ads) : null;
-  const settleDelta = hasPayout && isComparing && baselineCost?.settlement_total != null
-    ? calcDelta(currentCost.settlement_total!, baselineCost.settlement_total) : null;
   const payoutDelta = hasPayout && isComparing && baselineCost?.payout != null
     ? calcDelta(currentCost.payout!, baselineCost.payout) : null;
-  const payoutMarginDelta = hasPayout && isComparing && baselineCost?.payout_margin != null && currentCost.payout_margin != null
-    ? currentCost.payout_margin - baselineCost.payout_margin : null;
+
+  // 순이익률 = 실지급액 / 총매출 * 100
+  const profitMargin = hasPayout && displayRevenue > 0
+    ? (currentCost.payout! / displayRevenue) * 100
+    : null;
+  const baselineProfitMargin = baselineCost?.payout != null && baselineCost.payout != null
+    ? null // simplified: no baseline margin delta for now
+    : null;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 items-stretch mt-3">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch mt-3">
       <KPICard
         title="수수료"
         value={hasCost ? formatWonFull(currentCost.total_fee) : "—"}
         deltaPct={feeDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Receipt className="h-4 w-4" />}
+        secondaryText={!hasCost ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
       <KPICard
         title="광고비"
@@ -355,29 +360,21 @@ function SettlementCards({
         deltaPct={adsDelta}
         deltaLabel={hasCost ? deltaLabel : undefined}
         icon={<Megaphone className="h-4 w-4" />}
+        secondaryText={!hasCost ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
       <KPICard
-        title="정산금 합계"
-        value={hasPayout ? formatWonFull(currentCost.settlement_total!) : "—"}
-        deltaPct={settleDelta}
-        deltaLabel={hasPayout ? deltaLabel : undefined}
-        icon={<Calculator className="h-4 w-4" />}
-        secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
-      />
-      <KPICard
-        title="순이익 (실지급액)"
+        title="순이익(실지급액)"
         value={hasPayout ? formatWonFull(currentCost.payout!) : "—"}
         deltaPct={payoutDelta}
         deltaLabel={hasPayout ? deltaLabel : undefined}
         icon={<Wallet className="h-4 w-4" />}
-        sparklineData={payoutSparkline.some((v) => v !== 0) ? payoutSparkline : undefined}
         secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
       <KPICard
-        title="순이익률 (실지급률)"
-        value={hasPayout && currentCost.payout_margin != null ? `${currentCost.payout_margin.toFixed(1)}%` : "—"}
-        deltaPct={payoutMarginDelta}
-        deltaLabel={hasPayout ? deltaLabel : undefined}
+        title="순이익률"
+        value={profitMargin != null ? `${profitMargin.toFixed(1)}%` : "—"}
+        deltaPct={null}
+        deltaLabel={hasPayout ? "차인지급액/총매출" : undefined}
         icon={<Percent className="h-4 w-4" />}
         secondaryText={!hasPayout ? "플랫폼 정산 폼 입력 필요" : undefined}
       />
