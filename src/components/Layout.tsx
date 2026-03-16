@@ -1,10 +1,19 @@
 import { useState, createContext, useContext, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Menu, Bell, User, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RawDataInputDrawer } from "@/components/RawDataInputDrawer";
+
+const TITLE_MAP: Record<string, string> = {
+  "/": "매출 대시보드",
+  "/dashboard": "매출 대시보드",
+  "/satisfaction": "만족도 분석",
+};
+
+const RAW_DATA_ROUTES = new Set(["/", "/dashboard"]);
 
 type RawDataTabType = "cohorts" | "costs" | "targets";
 interface LayoutContextType {
