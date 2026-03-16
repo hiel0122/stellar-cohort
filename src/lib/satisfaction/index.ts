@@ -5,5 +5,6 @@ export type {
   QuestionAnalysis,
   FreetextAnalysis,
   ColumnClassification,
+  ColumnGroup,
   SatisfactionDataService,
 } from "./types";

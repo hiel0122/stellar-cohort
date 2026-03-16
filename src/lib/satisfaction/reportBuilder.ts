@@ -169,8 +169,10 @@ export function buildReport(
     analyzeFreetextColumn(col.header, col.index, filteredRows)
   );
 
-  // Filter options
-  const choiceColumns = parsed.columns.filter((c) => c.kind === "choice");
+  // Filter options: choice columns NOT in pii/meta, regardless of group (cross-cutting filters)
+  const choiceColumns = parsed.columns.filter(
+    (c) => c.kind === "choice" && c.group !== "pii" && c.group !== "meta"
+  );
   const filters = choiceColumns.map((col) => {
     const values = [
       ...new Set(
