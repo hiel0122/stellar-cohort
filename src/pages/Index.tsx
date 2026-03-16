@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, PiggyBank, Percent, Target, AlertTriangle, Calculator, Wallet, ChevronDown, ChevronRight, BanknoteIcon } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Layers, Receipt, Megaphone, Percent, Target, AlertTriangle, Wallet, ChevronDown, ChevronRight, Info, Radio, CreditCard } from "lucide-react";
 import { Layout, useLayoutActions } from "@/components/Layout";
 import { KPICard } from "@/components/KPICard";
 import { CohortTrendChart } from "@/components/CohortTrendChart";
