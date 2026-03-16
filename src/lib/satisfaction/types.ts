@@ -68,7 +68,7 @@ export interface SatisfactionReport {
 
 export interface SatisfactionDataService {
   loadCsv(file: File): Promise<ParsedCsv>;
-  buildReport(parsed: ParsedCsv, activeFilters?: Record<number, string[]>): SatisfactionReport;
+  buildReport(parsed: ParsedCsv, activeFilters?: Record<number, string[]>, group?: ColumnGroup): SatisfactionReport;
   saveSnapshot(parsed: ParsedCsv): void;
   loadLastSnapshot(): ParsedCsv | null;
   clearSnapshot(): void;

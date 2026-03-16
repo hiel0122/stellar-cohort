@@ -1,15 +1,14 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Upload, FileText, RotateCcw, BarChart3, Users, ThumbsUp, ThumbsDown, Minus, Info, Eye, EyeOff, X } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Upload, FileText, RotateCcw, BarChart3, Users, ThumbsUp, Minus, Eye, EyeOff, X } from "lucide-react";
 import { satisfactionService } from "@/lib/satisfaction";
-import type { ParsedCsv, SatisfactionReport } from "@/lib/satisfaction";
+import type { ParsedCsv, SatisfactionReport, ColumnGroup } from "@/lib/satisfaction";
 import { toast } from "@/hooks/use-toast";
 import { SatisfactionScoreChart } from "@/components/satisfaction/ScoreChart";
 import { SatisfactionKeywords } from "@/components/satisfaction/Keywords";
@@ -17,18 +16,20 @@ import { SatisfactionFreetextList } from "@/components/satisfaction/FreetextList
 
 export default function SatisfactionPage() {
   const [parsed, setParsed] = useState<ParsedCsv | null>(null);
-  const [report, setReport] = useState<SatisfactionReport | null>(null);
+  const [satReport, setSatReport] = useState<SatisfactionReport | null>(null);
+  const [ftReport, setFtReport] = useState<SatisfactionReport | null>(null);
   const [maskPii, setMaskPii] = useState(true);
   const [showRawText, setShowRawText] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Record<number, string[]>>({});
   const [isDragOver, setIsDragOver] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("satisfaction");
 
-  // Load last snapshot on mount
   useEffect(() => {
     const last = satisfactionService.loadLastSnapshot();
     if (last) {
       setParsed(last);
-      setReport(satisfactionService.buildReport(last));
+      setSatReport(satisfactionService.buildReport(last, {}, "satisfaction"));
+      setFtReport(satisfactionService.buildReport(last, {}, "fieldtrip"));
     }
   }, []);
 
@@ -41,7 +42,8 @@ export default function SatisfactionPage() {
       const result = await satisfactionService.loadCsv(file);
       setParsed(result);
       satisfactionService.saveSnapshot(result);
-      setReport(null);
+      setSatReport(null);
+      setFtReport(null);
       setActiveFilters({});
       toast({ title: `"${file.name}" 업로드 완료`, description: `${result.rowCount}개 응답 감지` });
     } catch (e: any) {
@@ -64,13 +66,14 @@ export default function SatisfactionPage() {
 
   const generateReport = useCallback(() => {
     if (!parsed) return;
-    const r = satisfactionService.buildReport(parsed, activeFilters);
-    setReport(r);
+    setSatReport(satisfactionService.buildReport(parsed, activeFilters, "satisfaction"));
+    setFtReport(satisfactionService.buildReport(parsed, activeFilters, "fieldtrip"));
   }, [parsed, activeFilters]);
 
   const handleReset = useCallback(() => {
     setParsed(null);
-    setReport(null);
+    setSatReport(null);
+    setFtReport(null);
     setActiveFilters({});
     satisfactionService.clearSnapshot();
   }, []);
@@ -87,13 +90,17 @@ export default function SatisfactionPage() {
     });
   }, []);
 
-  // Re-generate report when filters change (if report exists)
+  // Re-generate reports when filters change
   useEffect(() => {
-    if (parsed && report) {
-      setReport(satisfactionService.buildReport(parsed, activeFilters));
+    if (parsed && satReport) {
+      setSatReport(satisfactionService.buildReport(parsed, activeFilters, "satisfaction"));
+      setFtReport(satisfactionService.buildReport(parsed, activeFilters, "fieldtrip"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilters]);
+
+  const currentReport = activeTab === "satisfaction" ? satReport : ftReport;
+  const hasFieldtrip = parsed?.columns.some((c) => c.group === "fieldtrip") ?? false;
 
   return (
     <Layout>
@@ -107,7 +114,6 @@ export default function SatisfactionPage() {
         {/* Upload & Controls */}
         <Card>
           <CardContent className="pt-5 space-y-4">
-            {/* Upload zone */}
             <label
               className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors ${
                 isDragOver
@@ -125,7 +131,6 @@ export default function SatisfactionPage() {
               <input type="file" accept=".csv" className="hidden" onChange={handleInputChange} />
             </label>
 
-            {/* File info + actions */}
             {parsed && (
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2 text-sm">
@@ -147,7 +152,6 @@ export default function SatisfactionPage() {
               </div>
             )}
 
-            {/* Privacy + controls */}
             {parsed && (
               <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-border">
                 <div className="flex items-center gap-2">
@@ -160,7 +164,7 @@ export default function SatisfactionPage() {
                 <div className="flex items-center gap-2">
                   <Switch checked={showRawText} onCheckedChange={setShowRawText} id="raw-toggle" />
                   <label htmlFor="raw-toggle" className="text-xs text-muted-foreground cursor-pointer">
-                    원문 보기
+                    원문 보기 (PII 제외)
                   </label>
                 </div>
               </div>
@@ -168,136 +172,194 @@ export default function SatisfactionPage() {
           </CardContent>
         </Card>
 
-        {/* Filters */}
-        {report && report.filters.length > 0 && (
-          <Card>
-            <CardContent className="pt-5">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs font-medium text-muted-foreground">필터:</span>
-                {report.filters.map((f) => (
-                  <Select
-                    key={f.columnIndex}
-                    value={activeFilters[f.columnIndex]?.[0] ?? "__all__"}
-                    onValueChange={(v) => handleFilterChange(f.columnIndex, v)}
-                  >
-                    <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs">
-                      <SelectValue placeholder={f.header} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__all__">전체 ({f.header})</SelectItem>
-                      {f.values.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ))}
-                {Object.keys(activeFilters).length > 0 && (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setActiveFilters({})}>
-                    <X className="h-3 w-3" /> 초기화
-                  </Button>
+        {/* Tabs + Report */}
+        {satReport && (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="satisfaction">강의 만족도</TabsTrigger>
+              {hasFieldtrip && <TabsTrigger value="fieldtrip">견학 수요</TabsTrigger>}
+            </TabsList>
+
+            {/* Filters */}
+            {currentReport && currentReport.filters.length > 0 && (
+              <Card className="mt-4">
+                <CardContent className="pt-5">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-xs font-medium text-muted-foreground">필터:</span>
+                    {currentReport.filters.map((f) => (
+                      <Select
+                        key={f.columnIndex}
+                        value={activeFilters[f.columnIndex]?.[0] ?? "__all__"}
+                        onValueChange={(v) => handleFilterChange(f.columnIndex, v)}
+                      >
+                        <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs">
+                          <SelectValue placeholder={f.header} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">전체 ({f.header})</SelectItem>
+                          {f.values.map((v) => (
+                            <SelectItem key={v} value={v}>{v}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ))}
+                    {Object.keys(activeFilters).length > 0 && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setActiveFilters({})}>
+                        <X className="h-3 w-3" /> 초기화
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <TabsContent value="satisfaction">
+              <ReportView
+                report={satReport}
+                parsed={parsed}
+                showRawText={showRawText}
+                maskPii={maskPii}
+              />
+            </TabsContent>
+
+            {hasFieldtrip && (
+              <TabsContent value="fieldtrip">
+                {ftReport && (ftReport.questions.length > 0 || ftReport.freetexts.length > 0) ? (
+                  <ReportView
+                    report={ftReport}
+                    parsed={parsed}
+                    showRawText={showRawText}
+                    maskPii={maskPii}
+                  />
+                ) : (
+                  <Card className="mt-4">
+                    <CardContent className="pt-6 pb-6 text-center text-sm text-muted-foreground">
+                      견학 수요 관련 문항이 감지되지 않았습니다.
+                    </CardContent>
+                  </Card>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Report */}
-        {report && (
-          <div className="space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <SummaryCard
-                icon={<Users className="h-4 w-4" />}
-                label="총 응답 수"
-                value={`${report.totalResponses.toLocaleString()}명`}
-              />
-              <SummaryCard
-                icon={<BarChart3 className="h-4 w-4" />}
-                label="전체 평균"
-                value={report.overallMean !== null ? `${report.overallMean}점` : "—"}
-              />
-              <SummaryCard
-                icon={<ThumbsUp className="h-4 w-4 text-emerald-500" />}
-                label="긍정 비율"
-                value={report.positiveRate !== null ? `${report.positiveRate}%` : "—"}
-                sub={report.negativeRate !== null ? `부정 ${report.negativeRate}%` : undefined}
-              />
-              <SummaryCard
-                icon={<Minus className="h-4 w-4 text-amber-500" />}
-                label="보통 비율"
-                value={report.neutralRate !== null ? `${report.neutralRate}%` : "—"}
-              />
-            </div>
-
-            {/* Question Analysis */}
-            {report.questions.length > 0 && (
-              <div className="space-y-3">
-                <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                  문항별 분석
-                  <Badge variant="outline" className="text-[10px]">{report.questions.length}개 문항</Badge>
-                </h2>
-                <div className="grid gap-3">
-                  {report.questions.map((q) => (
-                    <Card key={q.columnIndex}>
-                      <CardHeader className="pb-2 pt-4 px-4">
-                        <CardTitle className="text-sm font-medium">{q.header}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-4 pb-4">
-                        <div className="flex flex-wrap items-center gap-4 mb-3 text-sm">
-                          <span>평균 <strong>{q.mean}</strong></span>
-                          <span>중앙값 <strong>{q.median}</strong></span>
-                          <span className="text-emerald-600 dark:text-emerald-400">긍정 {q.positiveRate}%</span>
-                          <span className="text-rose-600 dark:text-rose-400">부정 {q.negativeRate}%</span>
-                          <span className="text-muted-foreground text-xs">({q.validCount}명 응답)</span>
-                        </div>
-                        <SatisfactionScoreChart distribution={q.distribution} />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
+              </TabsContent>
             )}
-
-            {/* Freetext Analysis */}
-            {report.freetexts.length > 0 && (
-              <div className="space-y-3">
-                <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                  자유응답 분석
-                  <Badge variant="outline" className="text-[10px]">{report.freetexts.length}개 문항</Badge>
-                </h2>
-                <div className="grid gap-3">
-                  {report.freetexts.map((ft) => (
-                    <Card key={ft.columnIndex}>
-                      <CardHeader className="pb-2 pt-4 px-4">
-                        <CardTitle className="text-sm font-medium">
-                          {ft.header}
-                          <span className="text-xs text-muted-foreground font-normal ml-2">
-                            ({ft.totalResponses}개 응답)
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-4 pb-4 space-y-3">
-                        {ft.topKeywords.length > 0 && (
-                          <SatisfactionKeywords keywords={ft.topKeywords} />
-                        )}
-                        {showRawText && parsed && (
-                          <SatisfactionFreetextList
-                            rows={parsed.rows}
-                            columnIndex={ft.columnIndex}
-                            maskPii={maskPii}
-                            piiColumns={parsed.columns.filter((c) => c.isPii)}
-                          />
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          </Tabs>
         )}
       </div>
     </Layout>
+  );
+}
+
+// ── Report View (shared between tabs) ──
+function ReportView({
+  report,
+  parsed,
+  showRawText,
+  maskPii,
+}: {
+  report: SatisfactionReport;
+  parsed: ParsedCsv | null;
+  showRawText: boolean;
+  maskPii: boolean;
+}) {
+  return (
+    <div className="space-y-6 mt-4">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <SummaryCard
+          icon={<Users className="h-4 w-4" />}
+          label="총 응답 수"
+          value={`${report.totalResponses.toLocaleString()}명`}
+        />
+        <SummaryCard
+          icon={<BarChart3 className="h-4 w-4" />}
+          label="전체 평균"
+          value={report.overallMean !== null ? `${report.overallMean}점` : "—"}
+        />
+        <SummaryCard
+          icon={<ThumbsUp className="h-4 w-4 text-emerald-500" />}
+          label="긍정 비율"
+          value={report.positiveRate !== null ? `${report.positiveRate}%` : "—"}
+          sub={report.negativeRate !== null ? `부정 ${report.negativeRate}%` : undefined}
+        />
+        <SummaryCard
+          icon={<Minus className="h-4 w-4 text-amber-500" />}
+          label="보통 비율"
+          value={report.neutralRate !== null ? `${report.neutralRate}%` : "—"}
+        />
+      </div>
+
+      {/* Question Analysis */}
+      {report.questions.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            문항별 분석
+            <Badge variant="outline" className="text-[10px]">{report.questions.length}개 문항</Badge>
+          </h2>
+          <div className="grid gap-3">
+            {report.questions.map((q) => (
+              <Card key={q.columnIndex}>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-sm font-medium">{q.header}</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="flex flex-wrap items-center gap-4 mb-3 text-sm">
+                    <span>평균 <strong>{q.mean}</strong></span>
+                    <span>중앙값 <strong>{q.median}</strong></span>
+                    <span className="text-emerald-600 dark:text-emerald-400">긍정 {q.positiveRate}%</span>
+                    <span className="text-rose-600 dark:text-rose-400">부정 {q.negativeRate}%</span>
+                    <span className="text-muted-foreground text-xs">({q.validCount}명 응답)</span>
+                  </div>
+                  <SatisfactionScoreChart distribution={q.distribution} />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Freetext Analysis */}
+      {report.freetexts.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            자유응답 분석
+            <Badge variant="outline" className="text-[10px]">{report.freetexts.length}개 문항</Badge>
+          </h2>
+          <div className="grid gap-3">
+            {report.freetexts.map((ft) => (
+              <Card key={ft.columnIndex}>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-sm font-medium">
+                    {ft.header}
+                    <span className="text-xs text-muted-foreground font-normal ml-2">
+                      ({ft.totalResponses}개 응답)
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 space-y-3">
+                  {ft.topKeywords.length > 0 && (
+                    <SatisfactionKeywords keywords={ft.topKeywords} />
+                  )}
+                  {showRawText && parsed && (
+                    <SatisfactionFreetextList
+                      rows={parsed.rows}
+                      columnIndex={ft.columnIndex}
+                      maskPii={maskPii}
+                      piiColumns={parsed.columns.filter((c) => c.isPii)}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {report.questions.length === 0 && report.freetexts.length === 0 && (
+        <Card>
+          <CardContent className="pt-6 pb-6 text-center text-sm text-muted-foreground">
+            해당 그룹에 분석 가능한 문항이 없습니다.
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
