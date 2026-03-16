@@ -1,4 +1,4 @@
-import { LayoutDashboard, PanelLeftClose, PanelLeft } from "lucide-react";
+import { LayoutDashboard, PanelLeftClose, PanelLeft, SmilePlus } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
