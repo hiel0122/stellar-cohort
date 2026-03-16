@@ -119,6 +119,10 @@ const Index = () => {
   const currentCost = useMemo(() => resolveCostSummary(currentKpi), [currentKpi, platformCosts]);
   const baselineCost = useMemo(() => resolveCostSummary(baselineKpi), [baselineKpi, platformCosts]);
 
+  // Resolve total_sales from njab details (for 총매출 KPI)
+  const njabTotalSales = useMemo(() => resolveNjabTotalSales(currentKpi), [currentKpi, platformCosts]);
+  const displayRevenue = njabTotalSales ?? currentKpi?.revenue ?? 0;
+
   // Sparkline for payout (실지급액) across all kpis
   const payoutSparkline = useMemo(() => {
     return kpis.map((k) => {
