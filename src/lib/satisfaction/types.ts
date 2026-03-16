@@ -3,6 +3,9 @@
 
 export type ColumnKind = "pii" | "score" | "choice" | "freetext" | "meta" | "unknown";
 
+/** Which logical group a column belongs to */
+export type ColumnGroup = "satisfaction" | "fieldtrip" | "pii" | "meta" | "unknown";
+
 export interface ColumnClassification {
   header: string;
   index: number;
@@ -11,6 +14,8 @@ export interface ColumnClassification {
   scoreRange?: { min: number; max: number };
   /** Whether this column is a PII candidate */
   isPii: boolean;
+  /** Logical group for tab-based separation */
+  group: ColumnGroup;
 }
 
 export interface ParsedCsv {
@@ -63,7 +68,7 @@ export interface SatisfactionReport {
 
 export interface SatisfactionDataService {
   loadCsv(file: File): Promise<ParsedCsv>;
-  buildReport(parsed: ParsedCsv, activeFilters?: Record<number, string[]>): SatisfactionReport;
+  buildReport(parsed: ParsedCsv, activeFilters?: Record<number, string[]>, group?: ColumnGroup): SatisfactionReport;
   saveSnapshot(parsed: ParsedCsv): void;
   loadLastSnapshot(): ParsedCsv | null;
   clearSnapshot(): void;

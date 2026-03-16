@@ -4,6 +4,7 @@ import type {
   QuestionAnalysis,
   FreetextAnalysis,
   ScoreDistribution,
+  ColumnGroup,
 } from "./types";
 import { parseScoreValue } from "./csvParser";
 
@@ -131,7 +132,8 @@ function analyzeFreetextColumn(
 
 export function buildReport(
   parsed: ParsedCsv,
-  activeFilters?: Record<number, string[]>
+  activeFilters?: Record<number, string[]>,
+  group?: ColumnGroup
 ): SatisfactionReport {
   // Apply filters
   let filteredRows = parsed.rows;
@@ -146,8 +148,12 @@ export function buildReport(
     }
   }
 
-  // Score columns analysis
-  const scoreColumns = parsed.columns.filter((c) => c.kind === "score");
+  // Filter columns by group if specified
+  const targetGroup = group ?? "satisfaction";
+  const groupColumns = parsed.columns.filter((c) => c.group === targetGroup);
+
+  // Score columns analysis (within group)
+  const scoreColumns = groupColumns.filter((c) => c.kind === "score");
   const questions = scoreColumns.map((col) =>
     analyzeScoreColumn(
       col.header,
@@ -157,14 +163,16 @@ export function buildReport(
     )
   );
 
-  // Freetext columns analysis
-  const freetextColumns = parsed.columns.filter((c) => c.kind === "freetext");
+  // Freetext columns analysis (within group)
+  const freetextColumns = groupColumns.filter((c) => c.kind === "freetext");
   const freetexts = freetextColumns.map((col) =>
     analyzeFreetextColumn(col.header, col.index, filteredRows)
   );
 
-  // Filter options
-  const choiceColumns = parsed.columns.filter((c) => c.kind === "choice");
+  // Filter options: choice columns NOT in pii/meta, regardless of group (cross-cutting filters)
+  const choiceColumns = parsed.columns.filter(
+    (c) => c.kind === "choice" && c.group !== "pii" && c.group !== "meta"
+  );
   const filters = choiceColumns.map((col) => {
     const values = [
       ...new Set(

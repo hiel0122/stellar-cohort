@@ -14,8 +14,8 @@ class LocalSatisfactionService implements SatisfactionDataService {
     return parseCsvFile(file);
   }
 
-  buildReport(parsed: ParsedCsv, activeFilters?: Record<number, string[]>): SatisfactionReport {
-    return buildReport(parsed, activeFilters);
+  buildReport(parsed: ParsedCsv, activeFilters?: Record<number, string[]>, group?: "satisfaction" | "fieldtrip"): SatisfactionReport {
+    return buildReport(parsed, activeFilters, group);
   }
 
   saveSnapshot(parsed: ParsedCsv): void {
