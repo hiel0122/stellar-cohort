@@ -3,6 +3,9 @@
 
 export type ColumnKind = "pii" | "score" | "choice" | "freetext" | "meta" | "unknown";
 
+/** Which logical group a column belongs to */
+export type ColumnGroup = "satisfaction" | "fieldtrip" | "pii" | "meta" | "unknown";
+
 export interface ColumnClassification {
   header: string;
   index: number;
