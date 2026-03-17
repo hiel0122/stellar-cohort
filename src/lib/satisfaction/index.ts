@@ -3,6 +3,7 @@ export type {
   ParsedCsv,
   SatisfactionReport,
   QuestionAnalysis,
+  ChoiceAnalysis,
   FreetextAnalysis,
   ColumnClassification,
   ColumnGroup,

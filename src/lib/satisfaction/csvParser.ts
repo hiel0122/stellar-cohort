@@ -1,4 +1,5 @@
 import type { ParsedCsv, ColumnClassification, ColumnKind, ColumnGroup } from "./types";
+import { normalizeHeader, matchAllowlist, SATISFACTION_ALLOWLIST } from "./allowlist";
 
 // ── PII keyword detection (Korean + English) ──
 const PII_KEYWORDS = [
@@ -47,32 +48,68 @@ export function parseScoreValue(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-// ── Determine column group ──
-function classifyGroup(header: string, kind: ColumnKind, isPii: boolean): ColumnGroup {
-  if (isPii) return "pii";
-  if (isFieldtripHeader(header)) return "fieldtrip";
-  if (isMetaHeader(header)) return "meta";
-  // Numbered questions (e.g. "1. ...") → satisfaction
-  if (/^\d+\./.test(header.trim())) return "satisfaction";
-  // Score/freetext columns default to satisfaction
-  if (kind === "score" || kind === "freetext") return "satisfaction";
-  // Choice columns could be filters → unknown (will be available as filters)
-  return "unknown";
-}
+// ── Column classification (with allowlist override) ──
+function classifyColumn(
+  header: string,
+  index: number,
+  rows: string[][],
+  allowlistMatch: ReturnType<typeof matchAllowlist>[number] | undefined
+): ColumnClassification {
+  // If allowlist matched → force satisfaction group
+  if (allowlistMatch) {
+    // Determine kind by inspecting values
+    const kind = detectKind(header, index, rows);
+    return {
+      header,
+      index,
+      kind,
+      isPii: false,
+      group: "satisfaction",
+      scoreRange: kind === "score" ? detectScoreRange(index, rows) : undefined,
+    };
+  }
 
-// ── Column classification ──
-function classifyColumn(header: string, index: number, rows: string[][]): ColumnClassification {
-  const isPii = isPiiHeader(header);
-  
-  if (isPii) {
+  // PII check
+  if (isPiiHeader(header)) {
     return { header, index, kind: "pii", isPii: true, group: "pii" };
   }
 
-  const values = rows.map((r) => r[index]?.trim() ?? "").filter(Boolean);
-  if (values.length === 0) {
-    const group = classifyGroup(header, "unknown", false);
-    return { header, index, kind: "unknown", isPii: false, group };
+  // Fieldtrip check
+  if (isFieldtripHeader(header)) {
+    const kind = detectKind(header, index, rows);
+    return { header, index, kind, isPii: false, group: "fieldtrip" };
   }
+
+  // Meta check
+  if (isMetaHeader(header)) {
+    return { header, index, kind: "meta", isPii: false, group: "meta" };
+  }
+
+  // Auto-detect kind
+  const kind = detectKind(header, index, rows);
+
+  // Numbered questions → satisfaction
+  if (/^\d+\./.test(header.trim())) {
+    return {
+      header, index, kind, isPii: false, group: "satisfaction",
+      scoreRange: kind === "score" ? detectScoreRange(index, rows) : undefined,
+    };
+  }
+
+  // Score/freetext → satisfaction by default
+  if (kind === "score" || kind === "freetext") {
+    return {
+      header, index, kind, isPii: false, group: "satisfaction",
+      scoreRange: kind === "score" ? detectScoreRange(index, rows) : undefined,
+    };
+  }
+
+  return { header, index, kind, isPii: false, group: "unknown" };
+}
+
+function detectKind(header: string, index: number, rows: string[][]): ColumnKind {
+  const values = rows.map((r) => r[index]?.trim() ?? "").filter(Boolean);
+  if (values.length === 0) return "unknown";
 
   // Try score detection
   const parsed = values.map(parseScoreValue);
@@ -80,30 +117,29 @@ function classifyColumn(header: string, index: number, rows: string[][]): Column
   const scoreRatio = validScores.length / values.length;
 
   if (scoreRatio >= 0.6 && validScores.length >= 3) {
-    const min = Math.min(...validScores);
     const max = Math.max(...validScores);
-    if (max <= 10) {
-      const group = classifyGroup(header, "score", false);
-      return { header, index, kind: "score", isPii: false, scoreRange: { min, max }, group };
-    }
+    if (max <= 10) return "score";
   }
 
-  // Choice detection: limited unique values
+  // Choice detection
   const unique = new Set(values);
   if (unique.size <= 15 && unique.size < values.length * 0.5) {
-    const group = classifyGroup(header, "choice", false);
-    return { header, index, kind: "choice", isPii: false, group };
+    return "choice";
   }
 
-  // Free text: longer strings with high diversity
+  // Free text
   const avgLen = values.reduce((s, v) => s + v.length, 0) / values.length;
   if (avgLen > 10 && unique.size > values.length * 0.5) {
-    const group = classifyGroup(header, "freetext", false);
-    return { header, index, kind: "freetext", isPii: false, group };
+    return "freetext";
   }
 
-  const group = classifyGroup(header, "unknown", false);
-  return { header, index, kind: "unknown", isPii: false, group };
+  return "unknown";
+}
+
+function detectScoreRange(index: number, rows: string[][]): { min: number; max: number } | undefined {
+  const values = rows.map((r) => parseScoreValue(r[index] ?? "")).filter((v): v is number => v !== null);
+  if (values.length === 0) return undefined;
+  return { min: Math.min(...values), max: Math.max(...values) };
 }
 
 // ── CSV text parsing (handles quoted fields) ──
@@ -168,7 +204,23 @@ export async function parseCsvFile(file: File): Promise<ParsedCsv> {
     return r.slice(0, headers.length);
   });
 
-  const columns = headers.map((h, i) => classifyColumn(h, i, normalized));
+  // Match headers against allowlist
+  const allowlistMatches = matchAllowlist(headers);
+
+  const columns = headers.map((h, i) =>
+    classifyColumn(h, i, normalized, allowlistMatches[i])
+  );
+
+  // Compute missing allowlist items
+  const matchedAllowlistIndices = new Set(
+    Object.values(allowlistMatches)
+      .filter(Boolean)
+      .map((m) => m!.allowlistIndex)
+  );
+  const missingAllowlist = SATISFACTION_ALLOWLIST
+    .map((item, idx) => ({ ...item, allowlistIndex: idx }))
+    .filter((item) => !matchedAllowlistIndices.has(item.allowlistIndex))
+    .map((item) => item.label);
 
   return {
     headers,
@@ -177,5 +229,6 @@ export async function parseCsvFile(file: File): Promise<ParsedCsv> {
     rowCount: normalized.length,
     fileName: file.name,
     uploadedAt: new Date().toISOString(),
+    missingAllowlistQuestions: missingAllowlist.length > 0 ? missingAllowlist : undefined,
   };
 }
