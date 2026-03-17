@@ -6,11 +6,13 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText, RotateCcw, BarChart3, Users, ThumbsUp, Minus, Eye, EyeOff, X } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Upload, FileText, RotateCcw, BarChart3, Users, ThumbsUp, Minus, Eye, EyeOff, X, AlertTriangle } from "lucide-react";
 import { satisfactionService } from "@/lib/satisfaction";
 import type { ParsedCsv, SatisfactionReport, ColumnGroup } from "@/lib/satisfaction";
 import { toast } from "@/hooks/use-toast";
 import { SatisfactionScoreChart } from "@/components/satisfaction/ScoreChart";
+import { SatisfactionChoiceChart } from "@/components/satisfaction/ChoiceChart";
 import { SatisfactionKeywords } from "@/components/satisfaction/Keywords";
 import { SatisfactionFreetextList } from "@/components/satisfaction/FreetextList";
 
@@ -105,7 +107,6 @@ export default function SatisfactionPage() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Page Header */}
         <div>
           <h1 className="text-xl font-bold text-foreground">만족도 분석</h1>
           <p className="text-sm text-muted-foreground mt-1">CSV 업로드 기반 만족도 리포트</p>
@@ -172,6 +173,22 @@ export default function SatisfactionPage() {
           </CardContent>
         </Card>
 
+        {/* Missing questions warning */}
+        {parsed?.missingAllowlistQuestions && parsed.missingAllowlistQuestions.length > 0 && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>강의 만족도 문항 누락: {parsed.missingAllowlistQuestions.length}개</AlertTitle>
+            <AlertDescription>
+              <p className="text-xs mb-2">아래 문항이 CSV에서 감지되지 않았습니다. 헤더를 확인해주세요.</p>
+              <ul className="text-xs space-y-0.5 list-disc list-inside">
+                {parsed.missingAllowlistQuestions.map((q, i) => (
+                  <li key={i}>{q}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Tabs + Report */}
         {satReport && (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -224,7 +241,7 @@ export default function SatisfactionPage() {
 
             {hasFieldtrip && (
               <TabsContent value="fieldtrip">
-                {ftReport && (ftReport.questions.length > 0 || ftReport.freetexts.length > 0) ? (
+                {ftReport && (ftReport.questions.length > 0 || ftReport.freetexts.length > 0 || ftReport.choices.length > 0) ? (
                   <ReportView
                     report={ftReport}
                     parsed={parsed}
@@ -286,11 +303,38 @@ function ReportView({
         />
       </div>
 
-      {/* Question Analysis */}
+      {/* Choice Analysis (Q1, Q2 etc.) */}
+      {report.choices.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            선택형 문항
+            <Badge variant="outline" className="text-[10px]">{report.choices.length}개 문항</Badge>
+          </h2>
+          <div className="grid gap-3">
+            {report.choices.map((ch) => (
+              <Card key={ch.columnIndex}>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-sm font-medium">
+                    {ch.header}
+                    <span className="text-xs text-muted-foreground font-normal ml-2">
+                      ({ch.totalResponses}개 응답)
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <SatisfactionChoiceChart analysis={ch} />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Score Question Analysis */}
       {report.questions.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            문항별 분석
+            점수형 문항 분석
             <Badge variant="outline" className="text-[10px]">{report.questions.length}개 문항</Badge>
           </h2>
           <div className="grid gap-3">
@@ -352,7 +396,7 @@ function ReportView({
         </div>
       )}
 
-      {report.questions.length === 0 && report.freetexts.length === 0 && (
+      {report.questions.length === 0 && report.freetexts.length === 0 && report.choices.length === 0 && (
         <Card>
           <CardContent className="pt-6 pb-6 text-center text-sm text-muted-foreground">
             해당 그룹에 분석 가능한 문항이 없습니다.
@@ -365,15 +409,9 @@ function ReportView({
 
 // ── Summary Card ──
 function SummaryCard({
-  icon,
-  label,
-  value,
-  sub,
+  icon, label, value, sub,
 }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  sub?: string;
+  icon: React.ReactNode; label: string; value: string; sub?: string;
 }) {
   return (
     <Card>

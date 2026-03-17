@@ -2,6 +2,7 @@ import type {
   ParsedCsv,
   SatisfactionReport,
   QuestionAnalysis,
+  ChoiceAnalysis,
   FreetextAnalysis,
   ScoreDistribution,
   ColumnGroup,
@@ -22,7 +23,6 @@ function extractKeywords(texts: string[]): { word: string; count: number }[] {
   const freq = new Map<string, number>();
 
   for (const text of texts) {
-    // Simple tokenization: split by whitespace and punctuation
     const tokens = text
       .replace(/[.,!?;:""''()\[\]{}\/\\<>~@#$%^&*+=|`]/g, " ")
       .split(/\s+/)
@@ -58,15 +58,8 @@ function analyzeScoreColumn(
 
   if (values.length === 0) {
     return {
-      header,
-      columnIndex,
-      mean: 0,
-      median: 0,
-      distribution: [],
-      positiveRate: 0,
-      negativeRate: 0,
-      neutralRate: 0,
-      validCount: 0,
+      header, columnIndex, mean: 0, median: 0, distribution: [],
+      positiveRate: 0, negativeRate: 0, neutralRate: 0, validCount: 0,
     };
   }
 
@@ -77,7 +70,6 @@ function analyzeScoreColumn(
       ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
       : sorted[Math.floor(sorted.length / 2)];
 
-  // Distribution
   const countMap = new Map<number, number>();
   for (const v of values) countMap.set(v, (countMap.get(v) || 0) + 1);
   const distribution: ScoreDistribution[] = [];
@@ -86,7 +78,6 @@ function analyzeScoreColumn(
     distribution.push({ value: i, count, percentage: (count / values.length) * 100 });
   }
 
-  // Sentiment thresholds based on scale
   let positiveThreshold: number, negativeThreshold: number;
   if (maxScore <= 5) {
     positiveThreshold = 4;
@@ -101,8 +92,7 @@ function analyzeScoreColumn(
   const neutral = values.length - positive - negative;
 
   return {
-    header,
-    columnIndex,
+    header, columnIndex,
     mean: Math.round(mean * 100) / 100,
     median: Math.round(median * 100) / 100,
     distribution,
@@ -113,18 +103,34 @@ function analyzeScoreColumn(
   };
 }
 
+function analyzeChoiceColumn(
+  header: string,
+  columnIndex: number,
+  rows: string[][]
+): ChoiceAnalysis {
+  const values = rows.map((r) => (r[columnIndex] ?? "").trim()).filter(Boolean);
+  const freq = new Map<string, number>();
+  for (const v of values) freq.set(v, (freq.get(v) || 0) + 1);
+
+  const distribution = [...freq.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([value, count]) => ({
+      value,
+      count,
+      percentage: values.length > 0 ? Math.round((count / values.length) * 1000) / 10 : 0,
+    }));
+
+  return { header, columnIndex, totalResponses: values.length, distribution };
+}
+
 function analyzeFreetextColumn(
   header: string,
   columnIndex: number,
   rows: string[][]
 ): FreetextAnalysis {
-  const texts = rows
-    .map((r) => (r[columnIndex] ?? "").trim())
-    .filter(Boolean);
-
+  const texts = rows.map((r) => (r[columnIndex] ?? "").trim()).filter(Boolean);
   return {
-    header,
-    columnIndex,
+    header, columnIndex,
     totalResponses: texts.length,
     topKeywords: extractKeywords(texts),
   };
@@ -148,43 +154,41 @@ export function buildReport(
     }
   }
 
-  // Filter columns by group if specified
   const targetGroup = group ?? "satisfaction";
   const groupColumns = parsed.columns.filter((c) => c.group === targetGroup);
 
-  // Score columns analysis (within group)
+  // Score columns
   const scoreColumns = groupColumns.filter((c) => c.kind === "score");
   const questions = scoreColumns.map((col) =>
-    analyzeScoreColumn(
-      col.header,
-      col.index,
-      filteredRows,
-      col.scoreRange?.max ?? 5
-    )
+    analyzeScoreColumn(col.header, col.index, filteredRows, col.scoreRange?.max ?? 5)
   );
 
-  // Freetext columns analysis (within group)
+  // Choice columns within the group
+  const choiceColumns = groupColumns.filter((c) => c.kind === "choice");
+  const choices = choiceColumns.map((col) =>
+    analyzeChoiceColumn(col.header, col.index, filteredRows)
+  );
+
+  // Freetext columns
   const freetextColumns = groupColumns.filter((c) => c.kind === "freetext");
   const freetexts = freetextColumns.map((col) =>
     analyzeFreetextColumn(col.header, col.index, filteredRows)
   );
 
-  // Filter options: choice columns NOT in pii/meta, regardless of group (cross-cutting filters)
-  const choiceColumns = parsed.columns.filter(
-    (c) => c.kind === "choice" && c.group !== "pii" && c.group !== "meta"
+  // Filter options: choice columns NOT in current group, not pii/meta (cross-cutting filters)
+  const filterChoiceColumns = parsed.columns.filter(
+    (c) => c.kind === "choice" && c.group !== "pii" && c.group !== "meta" && c.group !== targetGroup
   );
-  const filters = choiceColumns.map((col) => {
+  const filters = filterChoiceColumns.map((col) => {
     const values = [
       ...new Set(
-        parsed.rows
-          .map((r) => (r[col.index] ?? "").trim())
-          .filter(Boolean)
+        parsed.rows.map((r) => (r[col.index] ?? "").trim()).filter(Boolean)
       ),
     ].sort();
     return { header: col.header, columnIndex: col.index, values };
   });
 
-  // Overall stats
+  // Overall stats (score questions only)
   const validQuestions = questions.filter((q) => q.validCount > 0);
   const overallMean =
     validQuestions.length > 0
@@ -195,12 +199,10 @@ export function buildReport(
 
   const totalValid = validQuestions.reduce((s, q) => s + q.validCount, 0);
   const totalPositive = validQuestions.reduce(
-    (s, q) => s + Math.round((q.positiveRate / 100) * q.validCount),
-    0
+    (s, q) => s + Math.round((q.positiveRate / 100) * q.validCount), 0
   );
   const totalNegative = validQuestions.reduce(
-    (s, q) => s + Math.round((q.negativeRate / 100) * q.validCount),
-    0
+    (s, q) => s + Math.round((q.negativeRate / 100) * q.validCount), 0
   );
   const totalNeutral = totalValid - totalPositive - totalNegative;
 
@@ -211,6 +213,7 @@ export function buildReport(
     neutralRate: totalValid > 0 ? Math.round((totalNeutral / totalValid) * 1000) / 10 : null,
     negativeRate: totalValid > 0 ? Math.round((totalNegative / totalValid) * 1000) / 10 : null,
     questions,
+    choices,
     freetexts,
     filters,
   };

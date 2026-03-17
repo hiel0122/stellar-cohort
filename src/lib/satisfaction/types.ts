@@ -25,6 +25,8 @@ export interface ParsedCsv {
   rowCount: number;
   fileName: string;
   uploadedAt: string;
+  /** Allowlist questions not found in CSV headers */
+  missingAllowlistQuestions?: string[];
 }
 
 export interface ScoreDistribution {
@@ -39,10 +41,17 @@ export interface QuestionAnalysis {
   mean: number;
   median: number;
   distribution: ScoreDistribution[];
-  positiveRate: number; // 4-5 out of max 5, or top 40%
-  negativeRate: number; // 1-2 out of max 5, or bottom 40%
+  positiveRate: number;
+  negativeRate: number;
   neutralRate: number;
   validCount: number;
+}
+
+export interface ChoiceAnalysis {
+  header: string;
+  columnIndex: number;
+  totalResponses: number;
+  distribution: { value: string; count: number; percentage: number }[];
 }
 
 export interface FreetextAnalysis {
@@ -59,8 +68,9 @@ export interface SatisfactionReport {
   neutralRate: number | null;
   negativeRate: number | null;
   questions: QuestionAnalysis[];
+  choices: ChoiceAnalysis[];
   freetexts: FreetextAnalysis[];
-  /** Unique values for filterable columns (choice type) */
+  /** Unique values for filterable columns (choice type outside satisfaction group) */
   filters: { header: string; columnIndex: number; values: string[] }[];
 }
 
