@@ -9,6 +9,7 @@ import type { MarketingLink } from "@/lib/marketing/types";
 
 interface Props {
   links: MarketingLink[];
+  selectedLinkId?: string | null;
   onSelect: (link: MarketingLink) => void;
 }
 
