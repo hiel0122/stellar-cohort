@@ -1,5 +1,6 @@
 /* ── localStorage-based MarketingDataProvider ── */
 import type { MarketingDataProvider, MarketingLink, ClickEvent, MarketingSettings, CreateLinkInput } from "./types";
+import { isBot, simpleFingerprint } from "./dedup";
 
 const LINKS_KEY = "mc_links_v1";
 const EVENTS_KEY = "mc_click_events_v1";
@@ -38,6 +39,13 @@ class LocalMarketingProvider implements MarketingDataProvider {
       total_clicks: 0,
       last_clicked_at: null,
       created_at: new Date().toISOString(),
+      tracked_url: input.tracked_url,
+      utm_enabled: input.utm_enabled ?? false,
+      utm_source: input.utm_source,
+      utm_medium: input.utm_medium,
+      utm_campaign: input.utm_campaign,
+      utm_content: input.utm_content,
+      utm_term: input.utm_term,
     };
     links.push(link);
     writeJSON(LINKS_KEY, links);
@@ -68,7 +76,6 @@ class LocalMarketingProvider implements MarketingDataProvider {
   deleteLink(id: string): void {
     const links = this.listLinks().filter((l) => l.id !== id);
     writeJSON(LINKS_KEY, links);
-    // also clean events
     const events = this.listClickEvents().filter((e) => e.link_id !== id);
     writeJSON(EVENTS_KEY, events);
   }
@@ -79,32 +86,72 @@ class LocalMarketingProvider implements MarketingDataProvider {
     const link = links.find((l) => l.track_code === track_code);
     if (!link) return false;
 
-    // simple dedup: same UA within 10s
-    const events = this.listClickEvents();
-    const now = Date.now();
+    const settings = this.getSettings();
     const ua = meta?.user_agent ?? "";
-    const isDup = events.some(
-      (e) =>
-        e.track_code === track_code &&
-        e.user_agent === ua &&
-        now - new Date(e.timestamp).getTime() < 10_000,
-    );
-    if (isDup) return false;
 
-    const evt: ClickEvent = {
+    // Bot filter
+    if (settings?.bot_filter_enabled && isBot(ua)) {
+      // Record as deduped bot click
+      const events = this.listClickEvents();
+      events.push({
+        id: uid(),
+        link_id: link.id,
+        track_code,
+        timestamp: new Date().toISOString(),
+        referrer: meta?.referrer ?? "",
+        user_agent: ua,
+        deduped: true,
+      });
+      writeJSON(EVENTS_KEY, events);
+      return false;
+    }
+
+    // Dedup check
+    const dedupEnabled = settings?.dedup_enabled ?? false;
+    const windowSec = link.dedup_window_override ?? settings?.dedup_window_sec ?? 60;
+
+    if (dedupEnabled) {
+      const events = this.listClickEvents();
+      const now = Date.now();
+      const fp = simpleFingerprint(ua);
+      const isDup = events.some(
+        (e) =>
+          e.track_code === track_code &&
+          !e.deduped &&
+          simpleFingerprint(e.user_agent) === fp &&
+          now - new Date(e.timestamp).getTime() < windowSec * 1000,
+      );
+      if (isDup) {
+        events.push({
+          id: uid(),
+          link_id: link.id,
+          track_code,
+          timestamp: new Date().toISOString(),
+          referrer: meta?.referrer ?? "",
+          user_agent: ua,
+          deduped: true,
+        });
+        writeJSON(EVENTS_KEY, events);
+        return false;
+      }
+    }
+
+    // Normal click
+    const events = this.listClickEvents();
+    events.push({
       id: uid(),
       link_id: link.id,
       track_code,
       timestamp: new Date().toISOString(),
       referrer: meta?.referrer ?? "",
       user_agent: ua,
-    };
-    events.push(evt);
+      deduped: false,
+    });
     writeJSON(EVENTS_KEY, events);
 
     // update link stats
     link.total_clicks += 1;
-    link.last_clicked_at = evt.timestamp;
+    link.last_clicked_at = new Date().toISOString();
     const idx = links.findIndex((l) => l.id === link.id);
     links[idx] = link;
     writeJSON(LINKS_KEY, links);
