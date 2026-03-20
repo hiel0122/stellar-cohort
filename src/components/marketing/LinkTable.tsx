@@ -97,7 +97,7 @@ export function LinkTable({ links, selectedLinkId, onSelect }: Props) {
               {filtered.map((link, i) => (
                 <TableRow
                   key={link.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className={`cursor-pointer hover:bg-muted/50 ${selectedLinkId === link.id ? "bg-muted/70 ring-1 ring-primary/20" : ""}`}
                   onClick={() => onSelect(link)}
                 >
                   <TableCell className="text-center text-muted-foreground text-xs">{i + 1}</TableCell>
