@@ -17,12 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const mainNav = [
-  { title: "대시보드", url: "/", icon: LayoutDashboard },
-  { title: "만족도 분석", url: "/satisfaction", icon: SmilePlus },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Survey", url: "/satisfaction", icon: SmilePlus },
 ];
 
 const mediaCommerceNav = [
-  { title: "마케팅 대시보드", url: "/media-commerce/marketing", icon: Megaphone },
+  { title: "Link Tracking", url: "/media-commerce/marketing", icon: Megaphone },
 ];
 
 export function AppSidebar() {
