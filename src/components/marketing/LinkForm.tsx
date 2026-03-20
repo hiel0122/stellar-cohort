@@ -1,14 +1,15 @@
-import { useState } from "react";
-import { Plus, Copy, Check, AlertTriangle } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, Copy, Check, AlertTriangle, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { marketingProvider, createShortLink } from "@/lib/marketing";
+import { marketingProvider, createShortLink, buildUTMParams, appendUTMToUrl } from "@/lib/marketing";
 import { CHANNEL_OPTIONS, type MarketingChannel } from "@/lib/marketing/types";
 
 interface Props {
@@ -30,8 +31,26 @@ export function LinkForm({ onCreated }: Props) {
   const [result, setResult] = useState<{ short_url: string; track_code: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // UTM
+  const [utmEnabled, setUtmEnabled] = useState(true);
+  const [utmTerm, setUtmTerm] = useState("");
+
   const settings = marketingProvider.getSettings();
   const hasSettings = !!(settings?.link24_customer_id && settings?.link24_api_key);
+
+  const utmParams = useMemo(() => {
+    if (!utmEnabled) return null;
+    return buildUTMParams(channel, campaign, alias, "preview", utmTerm);
+  }, [utmEnabled, channel, campaign, alias, utmTerm]);
+
+  const trackedUrlPreview = useMemo(() => {
+    if (!utmParams || !destinationUrl.trim()) return null;
+    try {
+      return appendUTMToUrl(destinationUrl.trim(), utmParams);
+    } catch {
+      return null;
+    }
+  }, [utmParams, destinationUrl]);
 
   const handleSubmit = async () => {
     if (!alias.trim() || !destinationUrl.trim()) {
@@ -49,6 +68,14 @@ export function LinkForm({ onCreated }: Props) {
       const baseUrl = settings!.tracking_base_url || window.location.origin;
       const trackingUrl = `${baseUrl}/r/${track_code}`;
 
+      // Build UTM params for this link
+      const finalUtmParams = utmEnabled
+        ? buildUTMParams(channel, campaign, alias, track_code, utmTerm)
+        : null;
+      const tracked_url = finalUtmParams
+        ? appendUTMToUrl(destinationUrl.trim(), finalUtmParams)
+        : undefined;
+
       const { short_url } = await createShortLink(trackingUrl, settings!);
 
       marketingProvider.createLink({
@@ -59,17 +86,24 @@ export function LinkForm({ onCreated }: Props) {
         short_url,
         track_code,
         note: note.trim(),
+        tracked_url,
+        utm_enabled: utmEnabled,
+        utm_source: finalUtmParams?.utm_source,
+        utm_medium: finalUtmParams?.utm_medium,
+        utm_campaign: finalUtmParams?.utm_campaign,
+        utm_content: finalUtmParams?.utm_content,
+        utm_term: finalUtmParams?.utm_term,
       });
 
       setResult({ short_url, track_code });
       toast({ title: "링크 생성 완료", description: `${alias} 단축 링크가 생성되었습니다.` });
       onCreated();
 
-      // reset form
       setAlias("");
       setCampaign("");
       setDestinationUrl("");
       setNote("");
+      setUtmTerm("");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "알 수 없는 오류";
       toast({ title: "링크 생성 실패", description: msg, variant: "destructive" });
@@ -123,6 +157,60 @@ export function LinkForm({ onCreated }: Props) {
             <Label htmlFor="dest">최종 URL *</Label>
             <Input id="dest" placeholder="https://..." value={destinationUrl} onChange={(e) => setDestinationUrl(e.target.value)} />
           </div>
+        </div>
+
+        {/* UTM Section */}
+        <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium">UTM 자동 생성</span>
+            </div>
+            <Switch checked={utmEnabled} onCheckedChange={setUtmEnabled} />
+          </div>
+
+          {utmEnabled && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                <div>
+                  <span className="text-muted-foreground">source:</span>{" "}
+                  <span className="font-mono">{utmParams?.utm_source ?? "-"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">medium:</span>{" "}
+                  <span className="font-mono">{utmParams?.utm_medium ?? "-"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">campaign:</span>{" "}
+                  <span className="font-mono">{utmParams?.utm_campaign ?? "-"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">content:</span>{" "}
+                  <span className="font-mono truncate">{utmParams?.utm_content ?? "-"}</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px]">utm_term (선택)</Label>
+                <Input
+                  value={utmTerm}
+                  onChange={(e) => setUtmTerm(e.target.value)}
+                  placeholder="검색 키워드"
+                  className="h-7 text-xs"
+                />
+              </div>
+              {trackedUrlPreview && (
+                <div className="rounded border border-border/40 bg-background p-2">
+                  <p className="text-[10px] text-muted-foreground mb-1">UTM 적용 URL 미리보기</p>
+                  <div className="flex items-center gap-1.5">
+                    <code className="text-[10px] font-mono break-all flex-1 text-foreground/80">{trackedUrlPreview}</code>
+                    <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={() => handleCopy(trackedUrlPreview)}>
+                      {copied ? <Check className="h-2.5 w-2.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="space-y-1.5">

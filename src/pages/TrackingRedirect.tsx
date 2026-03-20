@@ -3,10 +3,8 @@ import { useParams } from "react-router-dom";
 import { marketingProvider } from "@/lib/marketing";
 
 /**
- * /r/:code → 클릭 기록 후 302 리다이렉트 (클라이언트 측 MVP)
- * 
- * 주의: localStorage 기반이므로 동일 브라우저에서만 기록됨.
- * 실제 운영 시 Supabase Edge Function으로 전환 필요.
+ * /r/:code → 클릭 기록 후 리다이렉트
+ * UTM이 활성화된 링크는 tracked_url로 리다이렉트
  */
 export default function TrackingRedirect() {
   const { code } = useParams<{ code: string }>();
@@ -16,13 +14,18 @@ export default function TrackingRedirect() {
 
     const link = marketingProvider.getLinkByTrackCode(code);
     if (link) {
-      // record click
+      // record click (dedup/bot filter handled inside provider)
       marketingProvider.recordClick(code, {
         referrer: document.referrer || "",
         user_agent: navigator.userAgent || "",
       });
-      // redirect
-      window.location.replace(link.destination_url);
+
+      // Use tracked_url (UTM-applied) if available, otherwise destination_url
+      const redirectTo = (link.utm_enabled && link.tracked_url)
+        ? link.tracked_url
+        : link.destination_url;
+
+      window.location.replace(redirectTo);
     }
   }, [code]);
 
