@@ -78,7 +78,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70">미디어커머스</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70">Media Commerce</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mediaCommerceNav.map((item) => (
