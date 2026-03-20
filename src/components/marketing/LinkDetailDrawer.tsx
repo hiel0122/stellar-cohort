@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -6,9 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { marketingProvider } from "@/lib/marketing";
 import { CHANNEL_OPTIONS, type MarketingLink, type MarketingChannel, type ClickEvent } from "@/lib/marketing/types";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
+import { RefreshCw } from "lucide-react";
 
 interface Props {
   link: MarketingLink | null;
@@ -23,28 +25,38 @@ export function LinkDetailDrawer({ link, events, open, onOpenChange, onUpdated }
   const [channel, setChannel] = useState<MarketingChannel>("카페");
   const [campaign, setCampaign] = useState("");
   const [note, setNote] = useState("");
+  const [localEvents, setLocalEvents] = useState<ClickEvent[]>([]);
 
-  // sync form when link changes
-  useState(() => {
-    if (link) {
-      setAlias(link.alias);
-      setChannel(link.channel);
-      setCampaign(link.campaign);
-      setNote(link.note);
-    }
-  });
-
-  // Also watch link changes via key
   const linkId = link?.id;
+
   useMemo(() => {
     if (link) {
       setAlias(link.alias);
       setChannel(link.channel);
       setCampaign(link.campaign);
       setNote(link.note);
+      setLocalEvents(marketingProvider.listClickEvents(link.id));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkId]);
+
+  const refreshEvents = useCallback(() => {
+    if (link) setLocalEvents(marketingProvider.listClickEvents(link.id));
+  }, [link]);
+
+  const recentEvents = useMemo(() => {
+    return [...localEvents]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 10);
+  }, [localEvents]);
+
+  const dedupedCount24h = useMemo(() => {
+    if (!link) return 0;
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    return localEvents.filter(
+      (e) => e.deduped && new Date(e.timestamp).getTime() >= cutoff
+    ).length;
+  }, [link, localEvents]);
 
   const chartData = useMemo(() => {
     if (!link) return [];
@@ -94,6 +106,12 @@ export function LinkDetailDrawer({ link, events, open, onOpenChange, onUpdated }
               <p className="text-xs text-muted-foreground">총 클릭</p>
               <p className="text-2xl font-bold">{link.total_clicks}</p>
             </div>
+            {dedupedCount24h > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground">중복 제외 (24h)</p>
+                <p className="text-sm font-medium text-muted-foreground">{dedupedCount24h}건</p>
+              </div>
+            )}
             <Badge variant={link.status === "active" ? "default" : "secondary"}>
               {link.status === "active" ? "활성" : "비활성"}
             </Badge>
@@ -147,6 +165,54 @@ export function LinkDetailDrawer({ link, events, open, onOpenChange, onUpdated }
               <Textarea value={note} onChange={(e) => setNote(e.target.value)} className="min-h-[60px] text-sm" />
             </div>
             <Button onClick={handleSave} className="w-full" size="sm">저장</Button>
+          </div>
+
+          {/* Recent Click Events Log */}
+          <div className="pt-2 border-t space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-semibold text-foreground">최근 클릭 로그 (최대 10개)</h4>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={refreshEvents}>
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
+
+            {recentEvents.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">아직 클릭 이벤트가 없습니다.</p>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="h-8 px-2 text-xs">시간</TableHead>
+                      <TableHead className="h-8 px-2 text-xs">채널</TableHead>
+                      <TableHead className="h-8 px-2 text-xs text-right">처리</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentEvents.map((evt) => (
+                      <TableRow key={evt.id} className={evt.deduped ? "opacity-60" : ""}>
+                        <TableCell className="px-2 py-1.5 text-xs font-mono whitespace-nowrap">
+                          {new Date(evt.timestamp).toLocaleString("ko-KR", {
+                            month: "2-digit", day: "2-digit",
+                            hour: "2-digit", minute: "2-digit", second: "2-digit",
+                          })}
+                        </TableCell>
+                        <TableCell className="px-2 py-1.5 text-xs">{link.channel}</TableCell>
+                        <TableCell className="px-2 py-1.5 text-right">
+                          {evt.deduped ? (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground border-muted">
+                              중복 제외
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-foreground">집계됨</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </div>
       </SheetContent>
