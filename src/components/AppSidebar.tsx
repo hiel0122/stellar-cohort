@@ -1,4 +1,4 @@
-import { LayoutDashboard, PanelLeftClose, PanelLeft, SmilePlus } from "lucide-react";
+import { LayoutDashboard, PanelLeftClose, PanelLeft, SmilePlus, Megaphone } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -16,9 +16,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-const navItems = [
+const mainNav = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
   { title: "만족도 분석", url: "/satisfaction", icon: SmilePlus },
+];
+
+const mediaCommerceNav = [
+  { title: "마케팅 대시보드", url: "/media-commerce/marketing", icon: Megaphone },
 ];
 
 export function AppSidebar() {
@@ -54,12 +58,34 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70">메뉴</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {mainNav.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
+                      className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      activeClassName="bg-accent text-foreground font-medium"
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70">미디어커머스</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mediaCommerceNav.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild tooltip={item.title}>
+                    <NavLink
+                      to={item.url}
                       className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       activeClassName="bg-accent text-foreground font-medium"
                     >
