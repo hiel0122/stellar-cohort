@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Satisfaction from "./pages/Satisfaction";
+import MarketingDashboard from "./pages/MarketingDashboard";
+import TrackingRedirect from "./pages/TrackingRedirect";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +22,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/satisfaction" element={<Satisfaction />} />
+            <Route path="/media-commerce/marketing" element={<MarketingDashboard />} />
+            <Route path="/r/:code" element={<TrackingRedirect />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

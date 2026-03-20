@@ -9,6 +9,7 @@ import { RawDataInputDrawer } from "@/components/RawDataInputDrawer";
 
 const TITLE_MAP: Record<string, string> = {
   "/": "매출 대시보드",
+  "/media-commerce/marketing": "마케팅 대시보드",
   "/dashboard": "매출 대시보드",
   "/satisfaction": "만족도 분석",
 };
