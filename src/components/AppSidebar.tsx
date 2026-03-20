@@ -1,4 +1,4 @@
-import { LayoutDashboard, PanelLeftClose, PanelLeft, SmilePlus } from "lucide-react";
+import { LayoutDashboard, PanelLeftClose, PanelLeft, SmilePlus, Megaphone } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -16,9 +16,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-const navItems = [
+const mainNav = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
   { title: "만족도 분석", url: "/satisfaction", icon: SmilePlus },
+];
+
+const mediaCommerceNav = [
+  { title: "마케팅 대시보드", url: "/media-commerce/marketing", icon: Megaphone },
 ];
 
 export function AppSidebar() {
