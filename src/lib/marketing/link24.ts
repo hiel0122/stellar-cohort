@@ -1,4 +1,5 @@
-/* ── Link24 API wrapper ── */
+/* ── Link24 API wrapper (via Supabase Edge Function proxy) ── */
+import { supabase } from "@/integrations/supabase/client";
 import type { MarketingSettings } from "./types";
 
 interface ShortenResult {
@@ -7,7 +8,7 @@ interface ShortenResult {
 
 /**
  * Link24 단축 링크 생성
- * org_url에는 최종 URL이 아닌 우리 트래킹 URL을 넣는다.
+ * Edge Function을 통해 CORS 우회 + application/x-www-form-urlencoded 포맷 전송
  */
 export async function createShortLink(
   trackingUrl: string,
@@ -18,24 +19,23 @@ export async function createShortLink(
     throw new Error("Link24 API 설정이 필요합니다.");
   }
 
-  const res = await fetch("https://www.link24.kr/api/v1/shorten", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Customer-Id": link24_customer_id,
-      "X-Api-Key": link24_api_key,
+  const { data, error } = await supabase.functions.invoke("link24-shoturl", {
+    body: {
+      customer_id: link24_customer_id,
+      api_key: link24_api_key,
+      org_url: trackingUrl,
     },
-    body: JSON.stringify({ org_url: trackingUrl }),
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Link24 API 오류 (${res.status}): ${text}`);
+  if (error) {
+    throw new Error(`Link24 프록시 오류: ${error.message}`);
   }
 
-  const data = await res.json();
-  // Link24 응답 형태에 따라 파싱 (일반적: { short_url: "..." })
-  const short_url: string = data.short_url ?? data.shortUrl ?? data.url ?? "";
+  if (!data || data.error) {
+    throw new Error(data?.error || "Link24 API 오류: 알 수 없는 응답");
+  }
+
+  const short_url: string = data.url ?? data.short_url ?? data.shortUrl ?? "";
   if (!short_url) throw new Error("Link24 응답에서 short_url을 찾을 수 없습니다.");
   return { short_url };
 }
