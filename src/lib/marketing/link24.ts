@@ -66,11 +66,11 @@ export async function createShortLink(
     throw new Error(await getFunctionErrorMessage(error));
   }
 
-  if (!data || data.ok === false) {
+  if (!data || data.ok !== true) {
     throw new Error(data?.message || data?.error || "Link24 API 오류: 알 수 없는 응답");
   }
 
-  const short_url = data.url ?? data.short_url ?? data.shortUrl ?? "";
+  const short_url = data.short_url ?? data.url ?? data.shortUrl ?? "";
   if (!short_url) {
     throw new Error(data.message || "Link24 응답에서 short_url을 찾을 수 없습니다.");
   }

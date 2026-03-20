@@ -136,19 +136,18 @@ Deno.serve(async (req) => {
     const url = getTrimmedString(parsedBody?.url ?? parsedBody?.short_url ?? parsedBody?.shortUrl);
     const message = getTrimmedString(parsedBody?.message);
 
-    if (response.ok && result === "OK" && url) {
-      return jsonResponse({ ok: true, url, message });
+    const isSuccess = response.ok && (result === "OK" || result === "Y" || result === "true" || parsedBody?.result === true);
+
+    if (isSuccess && url) {
+      return jsonResponse({ ok: true, short_url: url, message, raw_result: result });
     }
 
-    return jsonResponse(
-      {
-        ok: false,
-        status: 502,
-        message: `link24 failed: ${message || `unexpected response (status ${response.status})`}`,
-        raw: bodyText.slice(0, 300),
-      },
-      502,
-    );
+    return jsonResponse({
+      ok: false,
+      message: `link24 failed: ${message || `unexpected response (status ${response.status})`}`,
+      link24_status: response.status,
+      link24_body: bodyText.slice(0, 300),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "An unexpected error occurred";
     console.error("link24-shoturl unexpected error", { message });
