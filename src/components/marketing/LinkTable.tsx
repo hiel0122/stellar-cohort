@@ -13,7 +13,7 @@ interface Props {
   onSelect: (link: MarketingLink) => void;
 }
 
-export function LinkTable({ links, onSelect }: Props) {
+export function LinkTable({ links, selectedLinkId, onSelect }: Props) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"clicks" | "date">("date");
   const [copiedId, setCopiedId] = useState<string | null>(null);
