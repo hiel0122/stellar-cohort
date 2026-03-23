@@ -13,7 +13,7 @@ import {
 import { BarChart3, ClipboardList, Link2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import authBg from "@/assets/auth-bg.jpg";
-import { BrandMark } from "@/components/brand/BrandMark";
+
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -90,12 +90,12 @@ export default function Auth() {
 
           {/* Left — headline */}
            <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
-            <BrandMark variant="lockup" height={96} className="dark:invert mx-auto lg:mx-0 sm:h-[96px] h-[64px]" />
+            <span className="block text-[44px] sm:text-[56px] font-medium tracking-[-0.01em] text-foreground drop-shadow-sm" style={{ fontFamily: "'Caveat', cursive" }}>Con-tudio</span>
             <h1 className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm sm:text-4xl lg:text-[2.75rem] lg:leading-[1.2]">
               파편화된 업무 데이터,<br />하나의 Studio로
             </h1>
             <p className="text-sm leading-relaxed text-foreground/70 drop-shadow-sm sm:text-base max-w-md mx-auto lg:mx-0">
-              여기저기 흩어진 업무 데이터를<br />하나의 Studio 에서 관리, 트레킹하세요.
+              여기저기 흩어진 업무 데이터를<br />Con-tudio에서 관리, 트레킹하세요.
             </p>
             <div className="space-y-3 pt-2">
               {[
@@ -203,9 +203,8 @@ export default function Auth() {
         </div>
       </main>
 
-      {/* Footer — wordmark */}
       <footer className="relative z-10 flex justify-center pb-6 pt-2">
-        <BrandMark variant="wordmark" height={26} className="dark:invert opacity-70" />
+        <span className="text-lg font-medium text-foreground/50 tracking-[-0.01em]" style={{ fontFamily: "'Caveat', cursive" }}>Con-tudio</span>
       </footer>
     </div>
   );
