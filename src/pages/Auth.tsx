@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { getDefaultRoute } from "@/lib/auth";
-import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import {
 import { BarChart3, ClipboardList, Link2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import authBg from "@/assets/auth-bg.jpg";
+import contentStudioLogo from "@/assets/content-studio-logo.png";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -82,18 +83,17 @@ export default function Auth() {
       <div className="absolute inset-0 bg-white/25 dark:bg-black/45" />
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 dark:from-black/20 dark:to-black/30" />
 
-      <header className="relative z-10 flex items-center px-6 pt-5 lg:px-10">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold tracking-[0.2em] uppercase text-foreground drop-shadow-sm">운영 Studio</span>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-amber-500/20 text-amber-700 border-amber-500/40 dark:text-amber-300 dark:bg-amber-500/15 dark:border-amber-400/30">Beta</Badge>
-        </div>
-      </header>
+      <header className="relative z-10 h-5 pt-5" />
 
       <main className="relative z-10 flex min-h-[calc(100vh-60px)] items-center justify-center px-6 lg:px-16">
         <div className="flex w-full max-w-5xl flex-col-reverse items-center gap-10 lg:flex-row lg:items-center lg:gap-16">
 
           {/* Left — headline */}
-          <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
+           <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
+            <div className="flex items-center gap-2.5 justify-center lg:justify-start">
+              <img src={contentStudioLogo} alt="Content S tudio logo" className="h-8 w-auto object-contain dark:invert" />
+              <span className="text-base font-semibold tracking-wide text-foreground/90 drop-shadow-sm">Content S tudio</span>
+            </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm sm:text-4xl lg:text-[2.75rem] lg:leading-[1.2]">
               파편화된 업무 데이터,<br />하나의 Studio로
             </h1>
