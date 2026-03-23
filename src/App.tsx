@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Landing from "./pages/Landing";
+// Landing page removed — Auth is now the main entry
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Satisfaction from "./pages/Satisfaction";

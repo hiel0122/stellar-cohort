@@ -8,8 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { BarChart3, ClipboardList, Link2, ChevronLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { BarChart3, ClipboardList, Link2 } from "lucide-react";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
