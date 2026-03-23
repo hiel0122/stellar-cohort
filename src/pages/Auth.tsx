@@ -85,7 +85,7 @@ export default function Auth() {
 
       {/* Top center — symbol */}
       <header className="relative z-10 flex justify-center pt-6">
-        <BrandMark variant="symbol" height={24} className="dark:invert opacity-80" />
+        <BrandMark variant="symbol" height={29} className="dark:invert opacity-80" />
       </header>
 
       <main className="relative z-10 flex min-h-[calc(100vh-60px)] items-center justify-center px-6 lg:px-16">
