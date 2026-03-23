@@ -167,36 +167,40 @@ export default function Auth() {
                 <span className="text-foreground/30">@bobusanggroup.com 도메인만 허용 예정</span>
               </p>
 
-              {/* Sign up link + collapsible form */}
+              {/* Sign up link + modal */}
               <p className="text-center text-xs text-foreground/50">
                 New here?{" "}
-                <button onClick={() => setSignupOpen(!signupOpen)} className="font-medium text-primary hover:underline underline-offset-2">
+                <button onClick={() => setSignupOpen(true)} className="font-medium text-primary hover:underline underline-offset-2">
                   Create Account
                 </button>
               </p>
 
-              <Collapsible open={signupOpen} onOpenChange={setSignupOpen}>
-                <CollapsibleContent className="space-y-3 pt-1">
-                  <Separator className="bg-foreground/10" />
-                  <p className="text-[10px] text-foreground/40 text-center">현재는 UI만 제공됩니다. 실제 가입은 추후 활성화됩니다.</p>
-                  <div className="space-y-2.5">
+              <Dialog open={signupOpen} onOpenChange={(open) => {
+                setSignupOpen(open);
+                if (!open) { setSuName(""); setSuEmail(""); setSuPw(""); setSuPwConfirm(""); setShowSuPw(false); }
+              }}>
+                <DialogContent className="max-w-sm sm:max-w-md rounded-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg font-semibold">Create Account</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 pt-1">
                     <Input placeholder="홍길동" value={suName} onChange={(e) => setSuName(e.target.value)}
-                      className="h-10 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
+                      className="h-10 text-sm" />
                     <Input type="email" placeholder="name@bobusanggroup.com" value={suEmail} onChange={(e) => setSuEmail(e.target.value)}
-                      className="h-10 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
+                      className="h-10 text-sm" />
                     <div className="relative">
                       <Input type={showSuPw ? "text" : "password"} placeholder="비밀번호 입력" value={suPw} onChange={(e) => setSuPw(e.target.value)}
-                        className="h-10 pr-10 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
-                      <button type="button" onClick={() => setShowSuPw(!showSuPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/70 transition-colors" tabIndex={-1}>
+                        className="h-10 pr-10 text-sm" />
+                      <button type="button" onClick={() => setShowSuPw(!showSuPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                         {showSuPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </button>
                     </div>
                     <Input type="password" placeholder="비밀번호 확인" value={suPwConfirm} onChange={(e) => setSuPwConfirm(e.target.value)}
-                      className="h-10 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
+                      className="h-10 text-sm" />
                   </div>
-                  <Button onClick={handleSignup} className="w-full h-10 text-sm font-semibold">Create Account</Button>
-                </CollapsibleContent>
-              </Collapsible>
+                  <Button onClick={handleSignup} className="w-full h-10 text-sm font-semibold mt-1">Create Account</Button>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
