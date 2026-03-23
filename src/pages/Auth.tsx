@@ -95,7 +95,7 @@ export default function Auth() {
               파편화된 업무 데이터,<br />하나의 Studio로
             </h1>
             <p className="text-sm leading-relaxed text-foreground/70 drop-shadow-sm sm:text-base max-w-md mx-auto lg:mx-0">
-              여기저기 흩어진 업무 데이터를<br />하나의 Studio 에서 관리, 트레킹하세요.
+              여기저기 흩어진 업무 데이터를<br />Con-tudio에서 관리, 트레킹하세요.
             </p>
             <div className="space-y-3 pt-2">
               {[
