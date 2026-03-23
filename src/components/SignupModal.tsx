@@ -87,16 +87,16 @@ export function SignupModal({ open, onOpenChange }: SignupModalProps) {
     handleOpenChange(false);
   };
 
-  const inputCls = "h-10 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm";
+  const inputCls = "h-11 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-sm sm:max-w-md rounded-lg border border-white/30 dark:border-white/10 bg-white/60 dark:bg-black/40 backdrop-blur-md shadow-sm p-0 gap-0">
-        <DialogHeader className="px-6 pt-6 pb-2">
+      <DialogContent className="max-w-sm sm:max-w-md rounded-lg border border-white/30 dark:border-white/10 bg-white/55 dark:bg-black/35 backdrop-blur-xl shadow-sm p-0 gap-0">
+        <DialogHeader className="px-8 pt-8 pb-3">
           <DialogTitle className="text-lg font-semibold text-foreground">Create Account</DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 pb-6 space-y-3">
+        <div className="px-8 pb-8 space-y-4">
           {/* Name */}
           <Input placeholder="이름 (홍길동)" value={name} onChange={(e) => setName(e.target.value)}
             className={inputCls} />
