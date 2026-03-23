@@ -7,10 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import { BarChart3, ClipboardList, Link2, Eye, EyeOff } from "lucide-react";
+import { SignupModal } from "@/components/SignupModal";
 import { toast } from "sonner";
 import authBg from "@/assets/auth-bg.jpg";
 import { BrandWordmark } from "@/components/brand/BrandWordmark";
@@ -37,11 +35,6 @@ export default function Auth() {
 
   // Sign-up state
   const [signupOpen, setSignupOpen] = useState(false);
-  const [suName, setSuName] = useState("");
-  const [suEmail, setSuEmail] = useState("");
-  const [suPw, setSuPw] = useState("");
-  const [suPwConfirm, setSuPwConfirm] = useState("");
-  const [showSuPw, setShowSuPw] = useState(false);
 
   if (isAuthenticated && user) {
     return <Navigate to={getDefaultRoute(user.role)} replace />;
@@ -67,16 +60,8 @@ export default function Auth() {
     }, 400);
   };
 
-  const handleSignup = () => {
-    if (!suName.trim()) { toast.error("이름을 입력해주세요."); return; }
-    if (!suEmail.includes("@bobusanggroup.com")) {
-      toast.error("@bobusanggroup.com 도메인 이메일만 사용할 수 있습니다.");
-      return;
-    }
-    if (suPw.length < 6) { toast.error("비밀번호는 6자 이상이어야 합니다."); return; }
-    if (suPw !== suPwConfirm) { toast.error("비밀번호가 일치하지 않습니다."); return; }
-    toast.success("회원가입 요청이 접수되었습니다(추후 인증 연동 예정).");
-  };
+
+
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -173,32 +158,7 @@ export default function Auth() {
                 </button>
               </p>
 
-              <Dialog open={signupOpen} onOpenChange={(open) => {
-                setSignupOpen(open);
-                if (!open) { setSuName(""); setSuEmail(""); setSuPw(""); setSuPwConfirm(""); setShowSuPw(false); }
-              }}>
-                <DialogContent className="max-w-sm sm:max-w-md rounded-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="text-lg font-semibold">Create Account</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-3 pt-1">
-                    <Input placeholder="홍길동" value={suName} onChange={(e) => setSuName(e.target.value)}
-                      className="h-10 text-sm" />
-                    <Input type="email" placeholder="name@bobusanggroup.com" value={suEmail} onChange={(e) => setSuEmail(e.target.value)}
-                      className="h-10 text-sm" />
-                    <div className="relative">
-                      <Input type={showSuPw ? "text" : "password"} placeholder="비밀번호 입력" value={suPw} onChange={(e) => setSuPw(e.target.value)}
-                        className="h-10 pr-10 text-sm" />
-                      <button type="button" onClick={() => setShowSuPw(!showSuPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
-                        {showSuPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
-                    <Input type="password" placeholder="비밀번호 확인" value={suPwConfirm} onChange={(e) => setSuPwConfirm(e.target.value)}
-                      className="h-10 text-sm" />
-                  </div>
-                  <Button onClick={handleSignup} className="w-full h-10 text-sm font-semibold mt-1">Create Account</Button>
-                </DialogContent>
-              </Dialog>
+              <SignupModal open={signupOpen} onOpenChange={setSignupOpen} />
             </div>
           </div>
         </div>
