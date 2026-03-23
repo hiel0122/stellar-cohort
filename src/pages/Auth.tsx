@@ -83,10 +83,7 @@ export default function Auth() {
       <div className="absolute inset-0 bg-white/25 dark:bg-black/45" />
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 dark:from-black/20 dark:to-black/30" />
 
-      {/* Top center — symbol */}
-      <header className="relative z-10 flex justify-center pt-6">
-        <BrandMark variant="symbol" height={29} className="dark:invert opacity-80" />
-      </header>
+      {/* Top center — removed */}
 
       <main className="relative z-10 flex min-h-[calc(100vh-60px)] items-center justify-center px-6 lg:px-16">
         <div className="flex w-full max-w-5xl flex-col-reverse items-center gap-10 lg:flex-row lg:items-center lg:gap-16">
