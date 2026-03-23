@@ -158,32 +158,7 @@ export default function Auth() {
                 </button>
               </p>
 
-              <Dialog open={signupOpen} onOpenChange={(open) => {
-                setSignupOpen(open);
-                if (!open) { setSuName(""); setSuEmail(""); setSuPw(""); setSuPwConfirm(""); setShowSuPw(false); }
-              }}>
-                <DialogContent className="max-w-sm sm:max-w-md rounded-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="text-lg font-semibold">Create Account</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-3 pt-1">
-                    <Input placeholder="홍길동" value={suName} onChange={(e) => setSuName(e.target.value)}
-                      className="h-10 text-sm" />
-                    <Input type="email" placeholder="name@bobusanggroup.com" value={suEmail} onChange={(e) => setSuEmail(e.target.value)}
-                      className="h-10 text-sm" />
-                    <div className="relative">
-                      <Input type={showSuPw ? "text" : "password"} placeholder="비밀번호 입력" value={suPw} onChange={(e) => setSuPw(e.target.value)}
-                        className="h-10 pr-10 text-sm" />
-                      <button type="button" onClick={() => setShowSuPw(!showSuPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
-                        {showSuPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
-                    <Input type="password" placeholder="비밀번호 확인" value={suPwConfirm} onChange={(e) => setSuPwConfirm(e.target.value)}
-                      className="h-10 text-sm" />
-                  </div>
-                  <Button onClick={handleSignup} className="w-full h-10 text-sm font-semibold mt-1">Create Account</Button>
-                </DialogContent>
-              </Dialog>
+              <SignupModal open={signupOpen} onOpenChange={setSignupOpen} />
             </div>
           </div>
         </div>
