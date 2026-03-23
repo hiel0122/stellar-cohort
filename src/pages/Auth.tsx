@@ -89,7 +89,11 @@ export default function Auth() {
         <div className="flex w-full max-w-5xl flex-col-reverse items-center gap-10 lg:flex-row lg:items-center lg:gap-16">
 
           {/* Left — headline */}
-          <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
+           <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
+            <div className="flex items-center gap-2.5 justify-center lg:justify-start">
+              <img src={contentStudioLogo} alt="Content S tudio logo" className="h-8 w-auto object-contain dark:invert" />
+              <span className="text-base font-semibold tracking-wide text-foreground/90 drop-shadow-sm">Content S tudio</span>
+            </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm sm:text-4xl lg:text-[2.75rem] lg:leading-[1.2]">
               파편화된 업무 데이터,<br />하나의 Studio로
             </h1>
