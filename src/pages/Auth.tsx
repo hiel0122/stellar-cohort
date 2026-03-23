@@ -83,17 +83,14 @@ export default function Auth() {
       <div className="absolute inset-0 bg-white/25 dark:bg-black/45" />
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 dark:from-black/20 dark:to-black/30" />
 
-      {/* Top center — symbol */}
-      <header className="relative z-10 flex justify-center pt-6">
-        <BrandMark variant="symbol" height={29} className="dark:invert opacity-80" />
-      </header>
+      {/* Top center — removed */}
 
-      <main className="relative z-10 flex min-h-[calc(100vh-60px)] items-center justify-center px-6 lg:px-16">
+      <main className="relative z-10 flex min-h-screen items-center justify-center px-6 lg:px-16">
         <div className="flex w-full max-w-5xl flex-col-reverse items-center gap-10 lg:flex-row lg:items-center lg:gap-16">
 
           {/* Left — headline */}
            <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
-            <BrandMark variant="lockup" height={48} className="dark:invert mx-auto lg:mx-0" />
+            <BrandMark variant="lockup" height={96} className="dark:invert mx-auto lg:mx-0 sm:h-[96px] h-[64px]" />
             <h1 className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm sm:text-4xl lg:text-[2.75rem] lg:leading-[1.2]">
               파편화된 업무 데이터,<br />하나의 Studio로
             </h1>
