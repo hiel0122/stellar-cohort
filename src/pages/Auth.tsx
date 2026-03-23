@@ -8,8 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { BarChart3, ClipboardList, Link2, ChevronLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { BarChart3, ClipboardList, Link2 } from "lucide-react";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -55,61 +54,8 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Left brand panel */}
-      <div className="relative flex-1 flex flex-col justify-center px-8 py-12 lg:px-16 bg-muted/30 overflow-hidden">
-        {/* Decorative blobs */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-primary/8 blur-3xl" />
-
-        <div className="relative z-10 max-w-md space-y-8">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" /> 홈으로
-          </Link>
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold tracking-widest uppercase text-foreground">
-                운영 Studio
-              </span>
-              <Badge
-                variant="outline"
-                className="text-[10px] px-1.5 py-0 h-4 font-medium bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"
-              >
-                Beta
-              </Badge>
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">
-              교육 운영 데이터를
-              <br />
-              한 곳에서 관리하세요
-            </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              매출·정산·만족도·마케팅 지표를 통합 관리하는 운영 도구입니다.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {[
-              { icon: BarChart3, label: "매출 대시보드 — KPI, 정산, 퍼널 분석" },
-              { icon: ClipboardList, label: "만족도 분석 — CSV 기반 설문 리포트" },
-              { icon: Link2, label: "링크 트래킹 — 단축 링크 & 클릭 추적" },
-            ].map((f) => (
-              <div key={f.label} className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                  <f.icon className="h-3.5 w-3.5 text-primary" />
-                </div>
-                <span className="text-sm text-muted-foreground">{f.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Right login card */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-16 bg-background">
+      {/* Left login card */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-16 bg-background order-first">
         <Card className="w-full max-w-sm shadow-lg border-border/60 rounded-2xl">
           <CardContent className="pt-8 pb-8 px-8 space-y-6">
             <div className="space-y-1.5 text-center">
@@ -151,6 +97,52 @@ export default function Auth() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Right brand panel */}
+      <div className="relative flex-1 flex flex-col justify-center px-8 py-12 lg:px-16 bg-muted/30 overflow-hidden order-last">
+        {/* Decorative blobs */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-primary/8 blur-3xl" />
+
+        <div className="relative z-10 max-w-md space-y-8">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold tracking-widest uppercase text-foreground">
+                운영 Studio
+              </span>
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 h-4 font-medium bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400"
+              >
+                Beta
+              </Badge>
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">
+              교육 운영 데이터를
+              <br />
+              한 곳에서 관리하세요
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              매출·정산·만족도·마케팅 지표를 통합 관리하는 운영 도구입니다.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              { icon: BarChart3, label: "매출 대시보드 — KPI, 정산, 퍼널 분석" },
+              { icon: ClipboardList, label: "만족도 분석 — CSV 기반 설문 리포트" },
+              { icon: Link2, label: "링크 트래킹 — 단축 링크 & 클릭 추적" },
+            ].map((f) => (
+              <div key={f.label} className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                  <f.icon className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <span className="text-sm text-muted-foreground">{f.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
