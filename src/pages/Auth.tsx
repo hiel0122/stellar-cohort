@@ -205,7 +205,7 @@ export default function Auth() {
       </main>
 
       <footer className="relative z-10 flex justify-center pb-6 pt-2">
-        <span className="text-lg font-medium text-foreground/50 tracking-[-0.01em]" style={{ fontFamily: "'Caveat', cursive" }}>Con-tudio</span>
+        <BrandWordmark className="text-lg opacity-50" showBadge={false} />
       </footer>
     </div>
   );
