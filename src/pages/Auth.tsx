@@ -1,19 +1,16 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
-import { getDefaultRoute, type UserRole } from "@/lib/auth";
+import { getDefaultRoute } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Collapsible, CollapsibleContent, CollapsibleTrigger,
+  Collapsible, CollapsibleContent,
 } from "@/components/ui/collapsible";
-import { BarChart3, ClipboardList, Link2, Eye, EyeOff, ChevronDown } from "lucide-react";
+import { BarChart3, ClipboardList, Link2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import authBg from "@/assets/auth-bg.jpg";
 
@@ -31,12 +28,18 @@ function GoogleIcon({ className }: { className?: string }) {
 export default function Auth() {
   const { user, isAuthenticated, signIn } = useAuth();
   const navigate = useNavigate();
-  const [devRole, setDevRole] = useState<UserRole>("admin");
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
-  const [devOpen, setDevOpen] = useState(false);
+
+  // Sign-up state
+  const [signupOpen, setSignupOpen] = useState(false);
+  const [suName, setSuName] = useState("");
+  const [suEmail, setSuEmail] = useState("");
+  const [suPw, setSuPw] = useState("");
+  const [suPwConfirm, setSuPwConfirm] = useState("");
+  const [showSuPw, setShowSuPw] = useState(false);
 
   if (isAuthenticated && user) {
     return <Navigate to={getDefaultRoute(user.role)} replace />;
@@ -49,60 +52,53 @@ export default function Auth() {
     }
     setLoading(true);
     setTimeout(() => {
-      signIn(devRole);
-      navigate(getDefaultRoute(devRole));
+      signIn("admin");
+      navigate(getDefaultRoute("admin"));
     }, 400);
   };
 
   const handleGoogleSignIn = () => {
     setLoading(true);
     setTimeout(() => {
-      signIn(devRole);
-      navigate(getDefaultRoute(devRole));
+      signIn("admin");
+      navigate(getDefaultRoute("admin"));
     }, 400);
+  };
+
+  const handleSignup = () => {
+    if (!suName.trim()) { toast.error("이름을 입력해주세요."); return; }
+    if (!suEmail.includes("@bobusanggroup.com")) {
+      toast.error("@bobusanggroup.com 도메인 이메일만 사용할 수 있습니다.");
+      return;
+    }
+    if (suPw.length < 6) { toast.error("비밀번호는 6자 이상이어야 합니다."); return; }
+    if (suPw !== suPwConfirm) { toast.error("비밀번호가 일치하지 않습니다."); return; }
+    toast.success("회원가입 요청이 접수되었습니다(추후 인증 연동 예정).");
   };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      <img
-        src={authBg}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      <img src={authBg} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-white/25 dark:bg-black/45" />
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 dark:from-black/20 dark:to-black/30" />
 
-      {/* Top bar */}
       <header className="relative z-10 flex items-center px-6 pt-5 lg:px-10">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold tracking-[0.2em] uppercase text-foreground drop-shadow-sm">
-            운영 Studio
-          </span>
-          <Badge
-            variant="outline"
-            className="text-[10px] px-1.5 py-0 h-4 font-medium bg-amber-500/20 text-amber-700 border-amber-500/40 dark:text-amber-300 dark:bg-amber-500/15 dark:border-amber-400/30"
-          >
-            Beta
-          </Badge>
+          <span className="text-sm font-bold tracking-[0.2em] uppercase text-foreground drop-shadow-sm">운영 Studio</span>
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-amber-500/20 text-amber-700 border-amber-500/40 dark:text-amber-300 dark:bg-amber-500/15 dark:border-amber-400/30">Beta</Badge>
         </div>
       </header>
 
-      {/* Main */}
       <main className="relative z-10 flex min-h-[calc(100vh-60px)] items-center justify-center px-6 lg:px-16">
         <div className="flex w-full max-w-5xl flex-col-reverse items-center gap-10 lg:flex-row lg:items-center lg:gap-16">
 
           {/* Left — headline */}
           <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
             <h1 className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm sm:text-4xl lg:text-[2.75rem] lg:leading-[1.2]">
-              파편화된 업무 데이터,
-              <br />
-              하나의 Studio로
+              파편화된 업무 데이터,<br />하나의 Studio로
             </h1>
             <p className="text-sm leading-relaxed text-foreground/70 drop-shadow-sm sm:text-base max-w-md mx-auto lg:mx-0">
-              여기저기 흩어진 업무 데이터를
-              <br />
-              하나의 Studio 에서 관리, 트레킹하세요.
+              여기저기 흩어진 업무 데이터를<br />하나의 Studio 에서 관리, 트레킹하세요.
             </p>
             <div className="space-y-3 pt-2">
               {[
@@ -126,111 +122,81 @@ export default function Auth() {
           {/* Right — glass login card */}
           <div className="w-full max-w-sm shrink-0">
             <div className="rounded-2xl border border-white/30 dark:border-white/10 bg-white/55 dark:bg-black/35 backdrop-blur-xl shadow-sm px-8 py-10 space-y-5">
-              {/* Header */}
               <div className="space-y-1.5 text-center">
                 <h2 className="text-xl font-semibold text-foreground">Sign in</h2>
                 <p className="text-sm text-foreground/60">계정으로 로그인하세요.</p>
               </div>
 
-              {/* Email / Password form */}
+              {/* Email / Password */}
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-xs text-foreground/70">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm"
-                  />
+                  <Input id="email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)}
+                    className="h-11 bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="password" className="text-xs text-foreground/70">Password</Label>
                   <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPw ? "text" : "password"}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-11 pr-10 bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPw(!showPw)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/70 transition-colors"
-                      tabIndex={-1}
-                    >
+                    <Input id="password" type={showPw ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)}
+                      className="h-11 pr-10 bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
+                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/70 transition-colors" tabIndex={-1}>
                       {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Login button */}
-              <Button
-                onClick={handleLogin}
-                disabled={loading}
-                className="w-full h-11 text-sm font-semibold tracking-wide"
-              >
+              <Button onClick={handleLogin} disabled={loading} className="w-full h-11 text-sm font-semibold tracking-wide">
                 {loading ? "로그인 중…" : "Sign In"}
               </Button>
 
-              {/* Separator */}
               <div className="flex items-center gap-3">
                 <Separator className="flex-1 bg-foreground/10" />
                 <span className="text-[11px] text-foreground/40 whitespace-nowrap">or continue with</span>
                 <Separator className="flex-1 bg-foreground/10" />
               </div>
 
-              {/* Google button */}
-              <Button
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                variant="outline"
-                className="w-full h-11 text-sm font-medium gap-3 bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 hover:bg-white/90 dark:hover:bg-white/20 text-foreground transition-colors backdrop-blur-sm"
-              >
+              <Button onClick={handleGoogleSignIn} disabled={loading} variant="outline"
+                className="w-full h-11 text-sm font-medium gap-3 bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 hover:bg-white/90 dark:hover:bg-white/20 text-foreground transition-colors backdrop-blur-sm">
                 <GoogleIcon className="h-5 w-5" />
                 Continue with Google
               </Button>
 
               <p className="text-[11px] text-foreground/40 text-center leading-relaxed">
-                회사 Google 계정(Workspace)으로 로그인할 수 있어요.
-                <br />
-                <span className="text-foreground/30">@company.com 도메인만 허용 예정</span>
+                회사 Google 계정(Workspace)으로 로그인할 수 있어요.<br />
+                <span className="text-foreground/30">@bobusanggroup.com 도메인만 허용 예정</span>
               </p>
 
-              {/* DEV role — collapsible */}
-              <Collapsible open={devOpen} onOpenChange={setDevOpen}>
-                <CollapsibleTrigger className="flex w-full items-center justify-center gap-1 border-t border-foreground/10 pt-3 text-[10px] uppercase tracking-wider text-foreground/30 font-medium hover:text-foreground/50 transition-colors">
-                  Dev — Role 선택
-                  <ChevronDown className={`h-3 w-3 transition-transform ${devOpen ? "rotate-180" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
-                  <Select value={devRole} onValueChange={(v) => setDevRole(v as UserRole)}>
-                    <SelectTrigger className="h-8 text-xs bg-white/40 dark:bg-white/5 border-foreground/10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin (전체 접근)</SelectItem>
-                      <SelectItem value="education">Education (대시보드+Survey)</SelectItem>
-                      <SelectItem value="marketing">Marketing (Link Tracking)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </CollapsibleContent>
-              </Collapsible>
-
-              {/* Sign up link */}
+              {/* Sign up link + collapsible form */}
               <p className="text-center text-xs text-foreground/50">
                 New here?{" "}
-                <button
-                  onClick={() => toast.info("회원가입은 추후 제공 예정입니다.")}
-                  className="font-medium text-primary hover:underline underline-offset-2"
-                >
+                <button onClick={() => setSignupOpen(!signupOpen)} className="font-medium text-primary hover:underline underline-offset-2">
                   Create Account
                 </button>
               </p>
+
+              <Collapsible open={signupOpen} onOpenChange={setSignupOpen}>
+                <CollapsibleContent className="space-y-3 pt-1">
+                  <Separator className="bg-foreground/10" />
+                  <p className="text-[10px] text-foreground/40 text-center">현재는 UI만 제공됩니다. 실제 가입은 추후 활성화됩니다.</p>
+                  <div className="space-y-2.5">
+                    <Input placeholder="홍길동" value={suName} onChange={(e) => setSuName(e.target.value)}
+                      className="h-10 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
+                    <Input type="email" placeholder="name@bobusanggroup.com" value={suEmail} onChange={(e) => setSuEmail(e.target.value)}
+                      className="h-10 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
+                    <div className="relative">
+                      <Input type={showSuPw ? "text" : "password"} placeholder="비밀번호 입력" value={suPw} onChange={(e) => setSuPw(e.target.value)}
+                        className="h-10 pr-10 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
+                      <button type="button" onClick={() => setShowSuPw(!showSuPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/70 transition-colors" tabIndex={-1}>
+                        {showSuPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                    <Input type="password" placeholder="비밀번호 확인" value={suPwConfirm} onChange={(e) => setSuPwConfirm(e.target.value)}
+                      className="h-10 text-sm bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 placeholder:text-foreground/30 backdrop-blur-sm" />
+                  </div>
+                  <Button onClick={handleSignup} className="w-full h-10 text-sm font-semibold">Create Account</Button>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </div>
         </div>
