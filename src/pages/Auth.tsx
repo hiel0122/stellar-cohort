@@ -208,7 +208,7 @@ export default function Auth() {
 
       {/* Footer — wordmark */}
       <footer className="relative z-10 flex justify-center pb-6 pt-2">
-        <BrandMark variant="wordmark" height={18} className="dark:invert opacity-60" />
+        <BrandMark variant="wordmark" height={26} className="dark:invert opacity-70" />
       </footer>
     </div>
   );
