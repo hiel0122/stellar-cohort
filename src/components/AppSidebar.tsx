@@ -40,13 +40,8 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 group-data-[collapsible=icon]:hidden">
-            <span className="text-xs font-bold tracking-widest uppercase text-muted-foreground">
-              운영 Studio
-            </span>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/30">
-              Beta
-            </Badge>
+          <div className="group-data-[collapsible=icon]:hidden">
+            <BrandWordmark className="text-base" />
           </div>
           <Button
             variant="ghost"
