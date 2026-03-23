@@ -14,7 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { BrandWordmark } from "@/components/brand/BrandWordmark";
 import { useAuth } from "@/components/AuthProvider";
 import { getAllowedRoutes } from "@/lib/auth";
 
