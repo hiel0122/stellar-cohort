@@ -85,7 +85,7 @@ export default function Auth() {
 
       {/* Top center — removed */}
 
-      <main className="relative z-10 flex min-h-[calc(100vh-60px)] items-center justify-center px-6 lg:px-16">
+      <main className="relative z-10 flex min-h-screen items-center justify-center px-6 lg:px-16">
         <div className="flex w-full max-w-5xl flex-col-reverse items-center gap-10 lg:flex-row lg:items-center lg:gap-16">
 
           {/* Left — headline */}
