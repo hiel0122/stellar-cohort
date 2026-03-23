@@ -13,6 +13,7 @@ import {
 import { BarChart3, ClipboardList, Link2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import authBg from "@/assets/auth-bg.jpg";
+import contentStudioLogo from "@/assets/content-studio-logo.png";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
