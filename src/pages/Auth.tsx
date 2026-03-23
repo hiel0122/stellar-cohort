@@ -90,7 +90,7 @@ export default function Auth() {
 
           {/* Left — headline */}
            <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
-            <span className="block text-[70px] sm:text-[90px] font-medium tracking-[-0.01em] text-foreground drop-shadow-sm leading-none mb-2" style={{ fontFamily: "'Caveat', cursive" }}>Con-tudio</span>
+            <BrandWordmark className="text-[70px] sm:text-[90px] leading-none mb-2" />
             <h1 className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm sm:text-4xl lg:text-[2.75rem] lg:leading-[1.2]">
               파편화된 업무 데이터,<br />하나의 Studio로
             </h1>
