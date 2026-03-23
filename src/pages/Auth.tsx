@@ -85,7 +85,7 @@ export default function Auth() {
 
       {/* Top center — symbol */}
       <header className="relative z-10 flex justify-center pt-6">
-        <BrandMark variant="symbol" height={24} className="dark:invert opacity-80" />
+        <BrandMark variant="symbol" height={29} className="dark:invert opacity-80" />
       </header>
 
       <main className="relative z-10 flex min-h-[calc(100vh-60px)] items-center justify-center px-6 lg:px-16">
@@ -93,7 +93,7 @@ export default function Auth() {
 
           {/* Left — headline */}
            <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
-            <BrandMark variant="lockup" height={32} className="dark:invert mx-auto lg:mx-0" />
+            <BrandMark variant="lockup" height={48} className="dark:invert mx-auto lg:mx-0" />
             <h1 className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm sm:text-4xl lg:text-[2.75rem] lg:leading-[1.2]">
               파편화된 업무 데이터,<br />하나의 Studio로
             </h1>
@@ -208,7 +208,7 @@ export default function Auth() {
 
       {/* Footer — wordmark */}
       <footer className="relative z-10 flex justify-center pb-6 pt-2">
-        <BrandMark variant="wordmark" height={18} className="dark:invert opacity-60" />
+        <BrandMark variant="wordmark" height={26} className="dark:invert opacity-70" />
       </footer>
     </div>
   );
