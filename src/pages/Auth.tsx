@@ -60,16 +60,8 @@ export default function Auth() {
     }, 400);
   };
 
-  const handleSignup = () => {
-    if (!suName.trim()) { toast.error("이름을 입력해주세요."); return; }
-    if (!suEmail.includes("@bobusanggroup.com")) {
-      toast.error("@bobusanggroup.com 도메인 이메일만 사용할 수 있습니다.");
-      return;
-    }
-    if (suPw.length < 6) { toast.error("비밀번호는 6자 이상이어야 합니다."); return; }
-    if (suPw !== suPwConfirm) { toast.error("비밀번호가 일치하지 않습니다."); return; }
-    toast.success("회원가입 요청이 접수되었습니다(추후 인증 연동 예정).");
-  };
+
+
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
