@@ -75,14 +75,14 @@ export default function Auth() {
           {/* Left — headline & features */}
           <div className="flex-1 space-y-6 text-center lg:text-left min-w-0">
             <h1 className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm sm:text-4xl lg:text-[2.75rem] lg:leading-[1.2]">
-              교육 운영 데이터를
+              파편화된 업무 데이터,
               <br />
-              한 곳에서 관리하세요
+              하나의 Studio로
             </h1>
             <p className="text-sm leading-relaxed text-foreground/70 drop-shadow-sm sm:text-base max-w-md mx-auto lg:mx-0">
-              매출·정산·Survey·Link Tracking을
-              <br className="hidden sm:block" />
-              하나의 운영 스튜디오에서.
+              여기저기 흩어진 업무 데이터를
+              <br />
+              하나의 Studio 에서 관리, 트레킹하세요.
             </p>
 
             <div className="space-y-3 pt-2">
