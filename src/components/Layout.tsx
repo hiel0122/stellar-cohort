@@ -1,20 +1,27 @@
 import { useState, createContext, useContext, useCallback } from "react";
-import { useLocation } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { useLocation, useNavigate } from "react-router-dom";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Menu, Bell, User, Database } from "lucide-react";
+import { Bell, User, Database, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RawDataInputDrawer } from "@/components/RawDataInputDrawer";
+import { useAuth } from "@/components/AuthProvider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const TITLE_MAP: Record<string, string> = {
-  "/": "매출 대시보드",
-  "/media-commerce/marketing": "마케팅 대시보드",
   "/dashboard": "매출 대시보드",
+  "/media-commerce/marketing": "마케팅 대시보드",
   "/satisfaction": "만족도 분석",
 };
 
-const RAW_DATA_ROUTES = new Set(["/", "/dashboard"]);
+const RAW_DATA_ROUTES = new Set(["/dashboard"]);
 
 type RawDataTabType = "cohorts" | "costs" | "targets";
 interface LayoutContextType {
@@ -34,6 +41,8 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
   const [rawDataOpen, setRawDataOpen] = useState(false);
   const [rawDataTab, setRawDataTab] = useState<RawDataTabType>("cohorts");
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const pageTitle = TITLE_MAP[pathname] ?? "운영 Studio";
   const showRawData = RAW_DATA_ROUTES.has(pathname);
@@ -42,6 +51,11 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
     setRawDataTab(tab);
     setRawDataOpen(true);
   }, []);
+
+  const handleLogout = () => {
+    signOut();
+    navigate("/auth");
+  };
 
   return (
     <LayoutContext.Provider value={{ openRawData }}>
@@ -64,7 +78,30 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
                 
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><Bell className="h-4 w-4" /></Button>
                 <ThemeToggle />
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><User className="h-4 w-4" /></Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {user && (
+                      <>
+                        <div className="px-2 py-1.5">
+                          <p className="text-sm font-medium text-foreground">{user.name}</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                          <p className="text-[10px] text-muted-foreground/60 uppercase mt-0.5">Role: {user.role}</p>
+                        </div>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                      <LogOut className="h-3.5 w-3.5 mr-2" />
+                      로그아웃
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </header>
             <main className="flex-1 overflow-auto">
