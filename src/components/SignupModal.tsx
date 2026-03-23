@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Eye, EyeOff, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,11 +24,30 @@ function addRegisteredEmail(email: string) {
 }
 
 export async function checkEmailAvailable(email: string): Promise<boolean> {
-  // Mock: localStorage-based. Replace with Supabase query later.
   return !getRegisteredEmails().includes(email.toLowerCase().trim());
 }
 
 type EmailStatus = "idle" | "checking" | "available" | "taken";
+type PwStrength = "none" | "weak" | "medium" | "strong";
+
+function evaluatePasswordStrength(pw: string): PwStrength {
+  if (!pw) return "none";
+  const hasLetter = /[a-zA-Z]/.test(pw);
+  const hasNumber = /[0-9]/.test(pw);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(pw);
+  const kindCount = [hasLetter, hasNumber, hasSpecial].filter(Boolean).length;
+  const lengthOk = pw.length >= 8 && pw.length <= 20;
+
+  if (!lengthOk || kindCount <= 1) return "weak";
+  if (kindCount === 2) return "medium";
+  return "strong";
+}
+
+const strengthConfig: Record<Exclude<PwStrength, "none">, { label: string; color: string; progress: number }> = {
+  weak:   { label: "취약", color: "text-red-500",    progress: 33 },
+  medium: { label: "보통", color: "text-yellow-500", progress: 66 },
+  strong: { label: "안심", color: "text-emerald-500", progress: 100 },
+};
 
 interface SignupModalProps {
   open: boolean;
@@ -54,10 +74,14 @@ export function SignupModal({ open, onOpenChange }: SignupModalProps) {
     if (!o) resetForm();
   };
 
+  const pwStrength = useMemo(() => evaluatePasswordStrength(pw), [pw]);
   const pwMismatch = pwConfirm.length > 0 && pw !== pwConfirm;
+  const pwMatch = pwConfirm.length > 0 && pw === pwConfirm;
+
   const canSubmit =
     name.trim() && email.trim() && department.trim() && title.trim() &&
-    pw.length >= 6 && !pwMismatch && emailStatus === "available";
+    (pwStrength === "medium" || pwStrength === "strong") &&
+    !pwMismatch && pwConfirm.length > 0 && emailStatus === "available";
 
   const handleCheckEmail = async () => {
     const trimmed = email.trim().toLowerCase();
@@ -78,7 +102,9 @@ export function SignupModal({ open, onOpenChange }: SignupModalProps) {
     }
     if (!department.trim()) { toast.error("부서를 입력해주세요."); return; }
     if (!title.trim()) { toast.error("직급을 입력해주세요."); return; }
-    if (pw.length < 6) { toast.error("비밀번호는 6자 이상이어야 합니다."); return; }
+    if (pwStrength === "weak" || pwStrength === "none") {
+      toast.error("비밀번호가 너무 취약합니다. 문자, 숫자, 특수문자를 포함해주세요."); return;
+    }
     if (pw !== pwConfirm) { toast.error("비밀번호가 일치하지 않습니다."); return; }
     if (emailStatus !== "available") { toast.error("이메일 중복확인을 완료해주세요."); return; }
 
@@ -148,12 +174,33 @@ export function SignupModal({ open, onOpenChange }: SignupModalProps) {
             <div className="relative">
               <Input type={showPw ? "text" : "password"} value={pw}
                 onChange={(e) => setPw(e.target.value)}
+                placeholder="문자, 숫자, 특수문자 포함 8-20자 이내"
                 className={`${inputCls} pr-10`} />
               <button type="button" onClick={() => setShowPw(!showPw)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/70 transition-colors" tabIndex={-1}>
                 {showPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               </button>
             </div>
+            {pw.length > 0 && pwStrength !== "none" && (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-medium ${strengthConfig[pwStrength].color}`}>
+                    {strengthConfig[pwStrength].label}
+                  </span>
+                </div>
+                <Progress
+                  value={strengthConfig[pwStrength].progress}
+                  className="h-1.5 bg-foreground/10"
+                  style={{
+                    // @ts-ignore – CSS custom property for indicator color
+                    "--progress-color":
+                      pwStrength === "weak" ? "hsl(0 84% 60%)" :
+                      pwStrength === "medium" ? "hsl(45 93% 47%)" :
+                      "hsl(160 60% 45%)",
+                  } as React.CSSProperties}
+                />
+              </div>
+            )}
           </div>
 
           {/* Confirm password */}
@@ -161,10 +208,16 @@ export function SignupModal({ open, onOpenChange }: SignupModalProps) {
             <label className="text-xs font-medium text-foreground/60">비밀번호 확인</label>
             <Input type="password" value={pwConfirm}
               onChange={(e) => setPwConfirm(e.target.value)}
+              placeholder="비밀번호를 한 번 더 입력하세요"
               className={inputCls} />
             {pwMismatch && (
               <p className="text-xs text-destructive mt-1">
                 비밀번호가 동일하지 않아요! 다시 한 번 확인해주세요!
+              </p>
+            )}
+            {pwMatch && (
+              <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> 비밀번호가 일치합니다.
               </p>
             )}
           </div>
