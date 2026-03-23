@@ -98,61 +98,76 @@ export function SignupModal({ open, onOpenChange }: SignupModalProps) {
 
         <div className="px-8 pb-8 space-y-4">
           {/* Name */}
-          <Input placeholder="이름 (홍길동)" value={name} onChange={(e) => setName(e.target.value)}
-            className={inputCls} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground/60">이름</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+          </div>
 
           {/* Email + duplicate check */}
-          <div className="flex gap-2">
-            <Input type="email" placeholder="name@bobusanggroup.com" value={email}
-              onChange={(e) => { setEmail(e.target.value); setEmailStatus("idle"); }}
-              className={`${inputCls} flex-1 min-w-0`} />
-            <Button type="button" variant="outline" size="sm"
-              onClick={handleCheckEmail}
-              disabled={emailStatus === "checking"}
-              className="h-10 min-w-[88px] text-xs font-medium shrink-0 bg-white/50 dark:bg-white/10 border-white/40 dark:border-white/15 backdrop-blur-sm">
-              {emailStatus === "checking" && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
-              {emailStatus === "checking" ? "확인중" : "중복확인"}
-            </Button>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground/60">메일</label>
+            <div className="flex gap-2">
+              <Input type="email" value={email}
+                onChange={(e) => { setEmail(e.target.value); setEmailStatus("idle"); }}
+                className={`${inputCls} flex-1 min-w-0`} />
+              <Button type="button" variant="outline" size="sm"
+                onClick={handleCheckEmail}
+                disabled={emailStatus === "checking"}
+                className="h-11 min-w-[88px] text-xs font-medium shrink-0 bg-white/50 dark:bg-white/10 border-white/40 dark:border-white/15 backdrop-blur-sm">
+                {emailStatus === "checking" && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                {emailStatus === "checking" ? "확인중" : "중복확인"}
+              </Button>
+            </div>
+            {emailStatus === "available" && (
+              <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5" /> 사용 가능한 이메일입니다.
+              </p>
+            )}
+            {emailStatus === "taken" && (
+              <p className="flex items-center gap-1 text-xs text-destructive">
+                <XCircle className="h-3.5 w-3.5" /> 이미 사용 중인 이메일입니다.
+              </p>
+            )}
           </div>
-          {emailStatus === "available" && (
-            <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 -mt-1">
-              <CheckCircle2 className="h-3.5 w-3.5" /> 사용 가능한 이메일입니다.
-            </p>
-          )}
-          {emailStatus === "taken" && (
-            <p className="flex items-center gap-1 text-xs text-destructive -mt-1">
-              <XCircle className="h-3.5 w-3.5" /> 이미 사용 중인 이메일입니다.
-            </p>
-          )}
 
           {/* Department */}
-          <Input placeholder="부서 (예: 교육팀)" value={department} onChange={(e) => setDepartment(e.target.value)}
-            className={inputCls} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground/60">부서</label>
+            <Input value={department} onChange={(e) => setDepartment(e.target.value)} className={inputCls} />
+          </div>
 
           {/* Title / Position */}
-          <Input placeholder="직급 (예: 매니저)" value={title} onChange={(e) => setTitle(e.target.value)}
-            className={inputCls} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground/60">직급</label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
+          </div>
 
           {/* Password */}
-          <div className="relative">
-            <Input type={showPw ? "text" : "password"} placeholder="비밀번호 (6자 이상)" value={pw}
-              onChange={(e) => setPw(e.target.value)}
-              className={`${inputCls} pr-10`} />
-            <button type="button" onClick={() => setShowPw(!showPw)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/70 transition-colors" tabIndex={-1}>
-              {showPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            </button>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground/60">비밀번호 작성</label>
+            <div className="relative">
+              <Input type={showPw ? "text" : "password"} value={pw}
+                onChange={(e) => setPw(e.target.value)}
+                className={`${inputCls} pr-10`} />
+              <button type="button" onClick={() => setShowPw(!showPw)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/70 transition-colors" tabIndex={-1}>
+                {showPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </button>
+            </div>
           </div>
 
           {/* Confirm password */}
-          <Input type="password" placeholder="비밀번호 확인" value={pwConfirm}
-            onChange={(e) => setPwConfirm(e.target.value)}
-            className={inputCls} />
-          {pwMismatch && (
-            <p className="text-xs text-destructive -mt-1">
-              비밀번호가 동일하지 않아요! 다시 한 번 확인해주세요!
-            </p>
-          )}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground/60">비밀번호 확인</label>
+            <Input type="password" value={pwConfirm}
+              onChange={(e) => setPwConfirm(e.target.value)}
+              className={inputCls} />
+            {pwMismatch && (
+              <p className="text-xs text-destructive mt-1">
+                비밀번호가 동일하지 않아요! 다시 한 번 확인해주세요!
+              </p>
+            )}
+          </div>
 
           {/* Submit */}
           <Button onClick={handleSignup} disabled={!canSubmit}
