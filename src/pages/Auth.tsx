@@ -35,11 +35,6 @@ export default function Auth() {
 
   // Sign-up state
   const [signupOpen, setSignupOpen] = useState(false);
-  const [suName, setSuName] = useState("");
-  const [suEmail, setSuEmail] = useState("");
-  const [suPw, setSuPw] = useState("");
-  const [suPwConfirm, setSuPwConfirm] = useState("");
-  const [showSuPw, setShowSuPw] = useState(false);
 
   if (isAuthenticated && user) {
     return <Navigate to={getDefaultRoute(user.role)} replace />;
