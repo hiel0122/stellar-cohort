@@ -156,7 +156,7 @@ export function SignupModal({ open, onOpenChange }: SignupModalProps) {
 
           {/* Submit */}
           <Button onClick={handleSignup} disabled={!canSubmit}
-            className="w-full h-10 text-sm font-semibold mt-1">
+            className="w-full h-11 text-sm font-semibold mt-2">
             Create Account
           </Button>
         </div>
