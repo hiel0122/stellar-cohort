@@ -203,9 +203,8 @@ export default function Auth() {
         </div>
       </main>
 
-      {/* Footer — wordmark */}
       <footer className="relative z-10 flex justify-center pb-6 pt-2">
-        <BrandMark variant="wordmark" height={26} className="dark:invert opacity-70" />
+        <span className="text-lg font-medium text-foreground/50 tracking-[-0.01em]" style={{ fontFamily: "'Caveat', cursive" }}>Con-tudio</span>
       </footer>
     </div>
   );
