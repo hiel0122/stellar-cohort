@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { BarChart3, ClipboardList, Link2, Eye, EyeOff } from "lucide-react";
-import { SignupModal } from "@/components/SignupModal";
+import { ProfileEditModal } from "@/components/ProfileEditModal";
 import { toast } from "sonner";
 import authBg from "@/assets/auth-bg.jpg";
 import { BrandWordmark } from "@/components/brand/BrandWordmark";
@@ -162,13 +162,13 @@ export default function Auth() {
 
               {/* Sign up link + modal */}
               <p className="text-center text-xs text-foreground/50">
-                New here?{" "}
+                프로필 정보를 수정하려면{" "}
                 <button onClick={() => setSignupOpen(true)} className="font-medium text-primary hover:underline underline-offset-2">
-                  Create Account
+                  프로필 설정
                 </button>
               </p>
 
-              <SignupModal open={signupOpen} onOpenChange={setSignupOpen} />
+              <ProfileEditModal open={signupOpen} onOpenChange={setSignupOpen} />
             </div>
           </div>
         </div>

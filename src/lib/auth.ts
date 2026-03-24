@@ -2,7 +2,7 @@ export type UserRole = "admin" | "education" | "marketing" | "pending";
 
 /** Route access matrix */
 const ROLE_ROUTES: Record<UserRole, string[]> = {
-  admin: ["/dashboard", "/satisfaction", "/media-commerce/marketing"],
+  admin: ["/dashboard", "/satisfaction", "/media-commerce/marketing", "/admin/users"],
   education: ["/dashboard", "/satisfaction"],
   marketing: ["/media-commerce/marketing"],
   pending: [],
