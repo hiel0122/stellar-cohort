@@ -10,8 +10,9 @@ interface Props {
 }
 
 export function ProtectedRoute({ children, requiredPath }: Props) {
-  const { user, profile, role, isAuthenticated, loading } = useAuth();
+  const { user, profile, role, isAuthenticated, loading, profileLoading } = useAuth();
 
+  // Still bootstrapping session
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -22,6 +23,15 @@ export function ProtectedRoute({ children, requiredPath }: Props) {
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Profile is still loading — show spinner, do NOT route to /pending
+  if (profileLoading || !profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   if (role === "pending") {

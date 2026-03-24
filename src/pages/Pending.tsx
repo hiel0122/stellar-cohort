@@ -11,49 +11,58 @@ import { toast } from "sonner";
 import type { UserRole } from "@/lib/auth";
 
 export default function Pending() {
-  const { user, profile, role, signOut, loading } = useAuth();
+  const { user, profile, role, signOut, loading, profileLoading } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [checking, setChecking] = useState(false);
 
-  // Redirect if not pending
+  // Immediately redirect if role is not pending (prevents flicker)
   useEffect(() => {
-    if (!loading && role !== "pending") {
-      navigate(getDefaultRoute(role), { replace: true });
+    if (loading || profileLoading) return;
+    if (!profile) return; // still no profile, stay put
+    if (role !== "pending") {
+      navigate(getDefaultRoute(role, profile), { replace: true });
     }
-  }, [role, loading, navigate]);
+  }, [role, loading, profileLoading, profile, navigate]);
 
-  // Auto-poll every 8 seconds
+  // Auto-poll every 8 seconds — only when session is ready and role is pending
   useEffect(() => {
-    if (!user) return;
+    if (!user || loading || profileLoading) return;
+    if (role !== "pending") return;
+
     const interval = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (data && data.role !== "pending") {
+          const newRole = data.role as UserRole;
+          window.location.href = getDefaultRoute(newRole, data as any);
+        }
+      } catch {}
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [user, loading, profileLoading, role]);
+
+  const handleManualCheck = useCallback(async () => {
+    if (!user) return;
+    setChecking(true);
+    try {
       const { data } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .maybeSingle();
       if (data && data.role !== "pending") {
-        const newRole = data.role as UserRole;
-        window.location.href = getDefaultRoute(newRole, data as any);
+        toast.success("권한이 승인되었습니다!");
+        window.location.href = getDefaultRoute(data.role as UserRole);
+      } else {
+        toast.info("아직 승인 대기 중입니다.");
       }
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  const handleManualCheck = useCallback(async () => {
-    if (!user) return;
-    setChecking(true);
-    const { data } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-    setChecking(false);
-    if (data && data.role !== "pending") {
-      toast.success("권한이 승인되었습니다!");
-      window.location.href = getDefaultRoute(data.role as UserRole);
-    } else {
-      toast.info("아직 승인 대기 중입니다.");
+    } finally {
+      setChecking(false);
     }
   }, [user]);
 
@@ -68,7 +77,7 @@ export default function Pending() {
     navigate("/auth");
   };
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -79,12 +88,10 @@ export default function Pending() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-md space-y-6">
-        {/* Brand */}
         <div className="flex justify-center">
           <BrandWordmark className="text-3xl" />
         </div>
 
-        {/* Card */}
         <div className="rounded-lg border bg-card p-8 text-center space-y-5 shadow-sm">
           <ShieldAlert className="mx-auto h-12 w-12 text-muted-foreground" />
 
@@ -96,7 +103,6 @@ export default function Pending() {
             </p>
           </div>
 
-          {/* My info */}
           <div className="rounded-md border bg-muted/30 p-4 text-left text-sm space-y-1.5">
             <div className="flex justify-between">
               <span className="text-muted-foreground">이메일</span>
@@ -116,7 +122,6 @@ export default function Pending() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="space-y-2.5">
             <Button onClick={handleManualCheck} disabled={checking} variant="default" className="w-full gap-2">
               <RefreshCw className={`h-4 w-4 ${checking ? "animate-spin" : ""}`} />
