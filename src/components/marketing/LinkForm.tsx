@@ -39,8 +39,8 @@ export function LinkForm({ onCreated }: Props) {
   const [hasSettings, setHasSettings] = useState(false);
   const [trackingBaseUrl, setTrackingBaseUrl] = useState(window.location.origin);
 
-  // Load settings from DB
-  useState(() => {
+  // Load settings from DB on mount
+  useEffect(() => {
     supabase
       .from("app_settings")
       .select("value")
@@ -53,7 +53,7 @@ export function LinkForm({ onCreated }: Props) {
           setTrackingBaseUrl((val.tracking_domain as string) || window.location.origin);
         }
       });
-  });
+  }, []);
 
   const utmParams = useMemo(() => {
     if (!utmEnabled) return null;
