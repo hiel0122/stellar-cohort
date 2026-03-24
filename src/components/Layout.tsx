@@ -89,9 +89,8 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
                     {user && (
                       <>
                         <div className="px-2 py-1.5">
-                          <p className="text-sm font-medium text-foreground">{user.name}</p>
+                          <p className="text-sm font-medium text-foreground">{user.user_metadata?.full_name ?? "User"}</p>
                           <p className="text-xs text-muted-foreground">{user.email}</p>
-                          <p className="text-[10px] text-muted-foreground/60 uppercase mt-0.5">Role: {user.role}</p>
                         </div>
                         <DropdownMenuSeparator />
                       </>
