@@ -30,9 +30,9 @@ const mediaCommerceNav = [
 export function AppSidebar() {
   const { toggleSidebar, state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { user } = useAuth();
+  const { role } = useAuth();
 
-  const allowed = user ? getAllowedRoutes(user.role) : [];
+  const allowed = getAllowedRoutes(role);
   const filteredMain = mainNav.filter((item) => allowed.some((r) => item.url.startsWith(r)));
   const filteredMedia = mediaCommerceNav.filter((item) => allowed.some((r) => item.url.startsWith(r)));
 

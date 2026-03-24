@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { getDefaultRoute } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,50 +27,59 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function Auth() {
-  const { user, isAuthenticated, signIn } = useAuth();
+  const { isAuthenticated, loading, role } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [btnLoading, setBtnLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
-
-  // Sign-up state
   const [signupOpen, setSignupOpen] = useState(false);
 
-  if (isAuthenticated && user) {
-    return <Navigate to={getDefaultRoute(user.role)} replace />;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
-  const handleLogin = () => {
+  if (isAuthenticated) {
+    return <Navigate to={getDefaultRoute(role)} replace />;
+  }
+
+  const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       toast.error("이메일과 비밀번호를 입력해주세요.");
       return;
     }
-    setLoading(true);
-    setTimeout(() => {
-      signIn("admin");
-      navigate(getDefaultRoute("admin"));
-    }, 400);
+    setBtnLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setBtnLoading(false);
+    if (error) {
+      toast.error(error.message);
+    }
+    // Auth state change listener handles navigation
   };
 
-  const handleGoogleSignIn = () => {
-    setLoading(true);
-    setTimeout(() => {
-      signIn("admin");
-      navigate(getDefaultRoute("admin"));
-    }, 400);
+  const handleGoogleSignIn = async () => {
+    setBtnLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+    if (error) {
+      setBtnLoading(false);
+      toast.error(error.message);
+    }
   };
-
-
-
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       <img src={authBg} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-white/25 dark:bg-black/45" />
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 dark:from-black/20 dark:to-black/30" />
-
-      {/* Top center — removed */}
 
       <main className="relative z-10 flex min-h-screen items-center justify-center px-6 lg:px-16">
         <div className="flex w-full max-w-5xl flex-col-reverse items-center gap-10 lg:flex-row lg:items-center lg:gap-16">
@@ -129,8 +139,8 @@ export default function Auth() {
                 </div>
               </div>
 
-              <Button onClick={handleLogin} disabled={loading} className="w-full h-11 text-sm font-semibold tracking-wide">
-                {loading ? "로그인 중…" : "Sign In"}
+              <Button onClick={handleLogin} disabled={btnLoading} className="w-full h-11 text-sm font-semibold tracking-wide">
+                {btnLoading ? "로그인 중…" : "Sign In"}
               </Button>
 
               <div className="flex items-center gap-3">
@@ -139,7 +149,7 @@ export default function Auth() {
                 <Separator className="flex-1 bg-foreground/10" />
               </div>
 
-              <Button onClick={handleGoogleSignIn} disabled={loading} variant="outline"
+              <Button onClick={handleGoogleSignIn} disabled={btnLoading} variant="outline"
                 className="w-full h-11 text-sm font-medium gap-3 bg-white/70 dark:bg-white/10 border-white/50 dark:border-white/15 hover:bg-white/90 dark:hover:bg-white/20 text-foreground transition-colors backdrop-blur-sm">
                 <GoogleIcon className="h-5 w-5" />
                 Continue with Google
@@ -147,7 +157,7 @@ export default function Auth() {
 
               <p className="text-[11px] text-foreground/40 text-center leading-relaxed">
                 회사 Google 계정(Workspace)으로 로그인할 수 있어요.<br />
-                <span className="text-foreground/30">@bobusanggroup.com 도메인만 허용 예정</span>
+                <span className="text-foreground/30">@bobusanggroup.com 도메인만 허용</span>
               </p>
 
               {/* Sign up link + modal */}
