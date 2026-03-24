@@ -38,7 +38,7 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function Auth() {
-  const { isAuthenticated, loading, role } = useAuth();
+  const { isAuthenticated, loading, profileLoading, role, profile } = useAuth();
   const navigate = useNavigate();
   const [btnLoading, setBtnLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -46,7 +46,7 @@ export default function Auth() {
   const [showPw, setShowPw] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -55,7 +55,7 @@ export default function Auth() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={getDefaultRoute(role)} replace />;
+    return <Navigate to={getDefaultRoute(role, profile)} replace />;
   }
 
   const handleLogin = async () => {
@@ -77,7 +77,11 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/`,
+        queryParams: {
+          prompt: "select_account",
+          hd: "bobusanggroup.com",
+        },
       },
     });
     if (error) {

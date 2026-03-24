@@ -5,7 +5,7 @@ import type { User, Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, RefreshCw, LogOut } from "lucide-react";
+import { AlertTriangle, RefreshCw, LogOut, Trash2 } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -26,6 +26,7 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   loading: boolean;
+  profileLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   isAuthenticated: false,
   loading: true,
+  profileLoading: false,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -70,10 +72,25 @@ async function fetchProfile(userId: string, retries = 3): Promise<Profile | null
   return null;
 }
 
+/** Clear Supabase auth tokens from localStorage to recover from LockManager issues */
+function clearSupabaseAuthTokens() {
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sb-") && key.includes("-auth-token")) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch {}
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // initial session bootstrap
+  const [profileLoading, setProfileLoading] = useState(false); // profile fetch after session
   const [authError, setAuthError] = useState<string | null>(null);
   const profileLoadRef = useRef<string | null>(null);
   const initDone = useRef(false);
@@ -88,15 +105,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(async (user: User) => {
     if (profileLoadRef.current === user.id) return;
     profileLoadRef.current = user.id;
+    setProfileLoading(true);
     try {
       const p = await fetchProfile(user.id);
       setProfile(p);
-      if (!p) {
-        if (import.meta.env.DEV) console.warn("Profile not found after retries for", user.id);
-      }
+      if (!p && import.meta.env.DEV) console.warn("Profile not found after retries for", user.id);
     } catch (e) {
       if (import.meta.env.DEV) console.warn("loadProfile error", e);
     } finally {
+      setProfileLoading(false);
       profileLoadRef.current = null;
     }
   }, []);
@@ -105,8 +122,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const currentUser = session?.user;
     if (!currentUser) return;
     profileLoadRef.current = null;
-    const p = await fetchProfile(currentUser.id, 1);
-    if (p) setProfile(p);
+    setProfileLoading(true);
+    try {
+      const p = await fetchProfile(currentUser.id, 1);
+      if (p) setProfile(p);
+    } finally {
+      setProfileLoading(false);
+    }
   }, [session]);
 
   const handleRetry = useCallback(async () => {
@@ -133,11 +155,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [loadProfile]);
 
+  const handleSessionReset = useCallback(() => {
+    clearSupabaseAuthTokens();
+    window.location.reload();
+  }, []);
+
   useEffect(() => {
     if (initDone.current) return;
     initDone.current = true;
 
-    // Safety timeout — never spin forever
     const safetyTimer = setTimeout(() => {
       setLoading((prev) => {
         if (prev) {
@@ -152,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         try {
-          if (import.meta.env.DEV) console.warn("Auth event:", event, "origin:", window.location.origin);
+          if (import.meta.env.DEV) console.warn("Auth event:", event);
 
           if (event === "SIGNED_IN" && newSession?.user) {
             if (!isAllowedDomain(newSession.user.email)) {
@@ -218,7 +244,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadProfile]);
 
   const user = session?.user ?? null;
-  const role: UserRole = toUserRole(profile?.role);
+  // CRITICAL: only derive role when profile is actually loaded
+  const role: UserRole = profile ? toUserRole(profile.role) : "pending";
 
   // Error fallback UI
   if (!loading && authError) {
@@ -233,12 +260,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">{authError}</p>
-            <div className="flex gap-3">
-              <Button onClick={handleRetry} className="flex-1 gap-2" variant="default">
+            <div className="flex flex-col gap-2">
+              <Button onClick={handleRetry} className="w-full gap-2" variant="default">
                 <RefreshCw className="h-4 w-4" />
                 다시 시도
               </Button>
-              <Button onClick={handleSignOut} className="flex-1 gap-2" variant="outline">
+              <Button onClick={handleSessionReset} className="w-full gap-2" variant="outline">
+                <Trash2 className="h-4 w-4" />
+                세션 초기화 (권장)
+              </Button>
+              <Button onClick={handleSignOut} className="w-full gap-2" variant="ghost">
                 <LogOut className="h-4 w-4" />
                 로그아웃
               </Button>
@@ -258,6 +289,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         isAuthenticated: !!user,
         loading,
+        profileLoading,
         signOut: handleSignOut,
         refreshProfile,
       }}
