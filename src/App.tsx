@@ -52,6 +52,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute requiredPath="/admin/users">
+                    <UserAdmin />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/r/:code" element={<TrackingRedirect />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
