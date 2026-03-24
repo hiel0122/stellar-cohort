@@ -82,8 +82,7 @@ export function LinkForm({ onCreated }: Props) {
     setLoading(true);
     try {
       const track_code = generateTrackCode();
-      const baseUrl = settings!.tracking_base_url || window.location.origin;
-      const trackingUrl = `${baseUrl}/r/${track_code}`;
+      const trackingUrl = `${trackingBaseUrl}/r/${track_code}`;
 
       // Build UTM params for this link
       const finalUtmParams = utmEnabled
@@ -93,7 +92,7 @@ export function LinkForm({ onCreated }: Props) {
         ? appendUTMToUrl(destinationUrl.trim(), finalUtmParams)
         : undefined;
 
-      const { short_url } = await createShortLink(trackingUrl, settings!);
+      const { short_url } = await createShortLink(trackingUrl);
 
       marketingProvider.createLink({
         alias: alias.trim(),
