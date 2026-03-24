@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isAllowedDomain, type UserRole } from "@/lib/auth";
+import { isAllowedDomain, type UserRole, type PermissionProfile } from "@/lib/auth";
 import type { User, Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
@@ -11,6 +11,9 @@ interface Profile {
   department: string | null;
   title: string | null;
   role: string;
+  clearance_level: number;
+  allow_pages: string[] | null;
+  deny_pages: string[] | null;
 }
 
 interface AuthContextType {
@@ -21,6 +24,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,6 +35,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function useAuth() {
@@ -48,10 +53,10 @@ async function fetchProfile(userId: string, retries = 3): Promise<Profile | null
   for (let i = 0; i < retries; i++) {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, full_name, department, title, role")
+      .select("id, email, full_name, department, title, role, clearance_level, allow_pages, deny_pages")
       .eq("id", userId)
       .maybeSingle();
-    if (data) return data as Profile;
+    if (data) return data as unknown as Profile;
     if (error) console.warn("Profile fetch error:", error.message);
     if (i < retries - 1) await new Promise((r) => setTimeout(r, 1000));
   }
@@ -77,6 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(p);
     profileLoadRef.current = null;
   }, []);
+
+  const refreshProfile = useCallback(async () => {
+    const currentUser = session?.user;
+    if (!currentUser) return;
+    profileLoadRef.current = null;
+    const p = await fetchProfile(currentUser.id, 1);
+    if (p) setProfile(p);
+  }, [session]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -133,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         loading,
         signOut: handleSignOut,
+        refreshProfile,
       }}
     >
       {children}

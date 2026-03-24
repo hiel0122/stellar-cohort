@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function ProtectedRoute({ children, requiredPath }: Props) {
-  const { user, role, isAuthenticated, loading } = useAuth();
+  const { user, profile, role, isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
@@ -25,22 +25,11 @@ export function ProtectedRoute({ children, requiredPath }: Props) {
   }
 
   if (role === "pending") {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <div className="max-w-sm rounded-lg border bg-card p-8 text-center space-y-4 shadow-sm">
-          <ShieldAlert className="mx-auto h-10 w-10 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">권한 승인 대기 중</h2>
-          <p className="text-sm text-muted-foreground">
-            관리자가 권한을 부여한 후 사용할 수 있습니다.<br />
-            잠시 후 다시 시도해주세요.
-          </p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/pending" replace />;
   }
 
-  if (requiredPath && !canAccess(role, requiredPath)) {
-    const defaultRoute = getDefaultRoute(role);
+  if (requiredPath && !canAccess(role, requiredPath, profile)) {
+    const defaultRoute = getDefaultRoute(role, profile);
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <div className="max-w-sm rounded-lg border bg-card p-8 text-center space-y-4 shadow-sm">
