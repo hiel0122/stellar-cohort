@@ -27,6 +27,10 @@ const mediaCommerceNav = [
   { title: "Link Tracking", url: "/media-commerce/marketing", icon: Megaphone },
 ];
 
+const adminNav = [
+  { title: "사용자 관리", url: "/admin/users", icon: ShieldCheck },
+];
+
 export function AppSidebar() {
   const { toggleSidebar, state } = useSidebar();
   const collapsed = state === "collapsed";
