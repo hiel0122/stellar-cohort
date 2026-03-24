@@ -13,6 +13,7 @@ import Satisfaction from "./pages/Satisfaction";
 import MarketingDashboard from "./pages/MarketingDashboard";
 import UserAdmin from "./pages/UserAdmin";
 import TrackingRedirect from "./pages/TrackingRedirect";
+import Pending from "./pages/Pending";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
