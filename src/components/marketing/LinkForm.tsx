@@ -36,8 +36,24 @@ export function LinkForm({ onCreated }: Props) {
   const [utmEnabled, setUtmEnabled] = useState(true);
   const [utmTerm, setUtmTerm] = useState("");
 
-  const settings = marketingProvider.getSettings();
-  const hasSettings = !!(settings?.link24_customer_id && settings?.link24_api_key);
+  const [hasSettings, setHasSettings] = useState(false);
+  const [trackingBaseUrl, setTrackingBaseUrl] = useState(window.location.origin);
+
+  // Load settings from DB
+  useState(() => {
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "link24")
+      .maybeSingle()
+      .then(({ data }) => {
+        const val = data?.value as Record<string, unknown> | null;
+        if (val?.customer_id) {
+          setHasSettings(true);
+          setTrackingBaseUrl((val.tracking_domain as string) || window.location.origin);
+        }
+      });
+  });
 
   const utmParams = useMemo(() => {
     if (!utmEnabled) return null;
