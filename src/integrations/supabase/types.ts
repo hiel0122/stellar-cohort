@@ -16,7 +16,10 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          allow_pages: string[] | null
+          clearance_level: number
           created_at: string
+          deny_pages: string[] | null
           department: string | null
           email: string
           full_name: string | null
@@ -26,7 +29,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_pages?: string[] | null
+          clearance_level?: number
           created_at?: string
+          deny_pages?: string[] | null
           department?: string | null
           email: string
           full_name?: string | null
@@ -36,7 +42,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_pages?: string[] | null
+          clearance_level?: number
           created_at?: string
+          deny_pages?: string[] | null
           department?: string | null
           email?: string
           full_name?: string | null
