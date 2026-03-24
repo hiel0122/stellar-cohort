@@ -215,23 +215,15 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
             <p className="text-[11px] text-muted-foreground/70">
               Role 기본 권한에 추가로 페이지를 허용/차단할 수 있습니다.
             </p>
-            {ALL_PAGES.map((key) => {
-              const inBaseline = (ROLE_BASELINE[role] ?? []).includes(key);
-              return (
-                <div key={key} className="flex items-center justify-between py-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{PAGE_LABELS[key]}</span>
-                    {inBaseline && (
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0">기본</Badge>
-                    )}
-                  </div>
-                  <Switch
-                    checked={pageToggles[key]}
-                    onCheckedChange={(on) => handlePageToggle(key, on)}
-                  />
-                </div>
-              );
-            })}
+            {ALL_PAGES.map((key) => (
+              <div key={key} className="flex items-center justify-between py-1">
+                <span className="text-sm">{PAGE_LABELS[key]}</span>
+                <Switch
+                  checked={pageToggles[key]}
+                  onCheckedChange={(on) => handlePageToggle(key, on)}
+                />
+              </div>
+            ))}
           </div>
 
           {/* Save */}
