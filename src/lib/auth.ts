@@ -1,10 +1,11 @@
-export type UserRole = "admin" | "education" | "marketing";
+export type UserRole = "admin" | "education" | "marketing" | "pending";
 
 /** Route access matrix */
 const ROLE_ROUTES: Record<UserRole, string[]> = {
   admin: ["/dashboard", "/satisfaction", "/media-commerce/marketing"],
   education: ["/dashboard", "/satisfaction"],
   marketing: ["/media-commerce/marketing"],
+  pending: [],
 };
 
 export function getAllowedRoutes(role: UserRole): string[] {
