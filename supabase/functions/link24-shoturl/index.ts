@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
 const TARGET_API_URL = "https://link24.kr/api/shoturl.apsl";
 
 const corsHeaders = {
@@ -7,61 +9,52 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const jsonHeaders = {
-  ...corsHeaders,
-  "Content-Type": "application/json",
-};
+const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: jsonHeaders });
+}
+
+type Rec = Record<string, unknown>;
+function isRecord(v: unknown): v is Rec {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+function str(v: unknown): string {
+  return typeof v === "string" ? v.trim() : "";
+}
 
 const supportedKeys = ["customer_id", "customerId", "api_key", "apiKey", "org_url", "orgUrl"];
 
-type RequestPayload = Record<string, unknown>;
-
-function isRecord(value: unknown): value is RequestPayload {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function getTrimmedString(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: jsonHeaders,
-  });
-}
-
-async function parseRequestBody(req: Request): Promise<RequestPayload> {
+async function parseBody(req: Request): Promise<Rec> {
   try {
-    const json = await req.clone().json();
-    if (isRecord(json)) {
-      return json;
-    }
-  } catch {
-    // fall through to text parsing
-  }
-
-  const rawText = await req.text();
-  const text = rawText.trim();
-  if (!text) {
-    return {};
-  }
-
-  const formPayload = Object.fromEntries(new URLSearchParams(text).entries());
-  if (Object.keys(formPayload).some((key) => supportedKeys.includes(key))) {
-    return formPayload;
-  }
-
+    const j = await req.clone().json();
+    if (isRecord(j)) return j;
+  } catch { /* fall through */ }
+  const raw = (await req.text()).trim();
+  if (!raw) return {};
+  const form = Object.fromEntries(new URLSearchParams(raw).entries());
+  if (Object.keys(form).some((k) => supportedKeys.includes(k))) return form;
   try {
-    const json = JSON.parse(text);
-    if (isRecord(json)) {
-      return json;
-    }
-  } catch {
-    // ignore malformed fallback JSON
-  }
-
+    const j = JSON.parse(raw);
+    if (isRecord(j)) return j;
+  } catch { /* ignore */ }
   return {};
+}
+
+/* ── Permission check ── */
+const BASELINE_ALLOWED_ROLES = new Set(["admin", "marketing"]);
+const PAGE_KEY = "link_tracking";
+
+function hasLinkTrackingAccess(
+  role: string,
+  allowPages: string[] | null,
+  denyPages: string[] | null,
+): boolean {
+  if (role === "pending") return false;
+  if (denyPages?.includes(PAGE_KEY)) return false;
+  const baselineAllowed = BASELINE_ALLOWED_ROLES.has(role);
+  const overrideAllowed = allowPages?.includes(PAGE_KEY) ?? false;
+  return baselineAllowed || overrideAllowed;
 }
 
 Deno.serve(async (req) => {
@@ -70,46 +63,52 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const contentType = req.headers.get("content-type") ?? "";
-    const payload = await parseRequestBody(req);
+    /* ── 1. Auth check ── */
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return jsonResponse({ ok: false, message: "Unauthorized" }, 401);
+    }
 
-    const customer_id = getTrimmedString(payload.customer_id ?? payload.customerId);
-    const api_key = getTrimmedString(payload.api_key ?? payload.apiKey);
-    const org_url = getTrimmedString(payload.org_url ?? payload.orgUrl);
-
-    console.log("link24-shoturl request", {
-      contentType,
-      hasCustomerId: !!customer_id,
-      hasApiKey: !!api_key,
-      hasOrgUrl: !!org_url,
-      orgUrlPrefix: org_url.slice(0, 60),
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
     });
 
-    if (!customer_id) {
-      return jsonResponse({ ok: false, status: 400, message: "missing customer_id" }, 400);
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !user) {
+      return jsonResponse({ ok: false, message: "Unauthorized" }, 401);
     }
 
-    if (!api_key) {
-      return jsonResponse({ ok: false, status: 400, message: "missing api_key" }, 400);
+    /* ── 2. Profile & permission check ── */
+    const { data: profile, error: profErr } = await supabase
+      .from("profiles")
+      .select("role, allow_pages, deny_pages")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profErr || !profile) {
+      return jsonResponse({ ok: false, message: "Profile not found" }, 403);
     }
 
-    if (!org_url) {
-      return jsonResponse({ ok: false, status: 400, message: "missing org_url" }, 400);
+    if (!hasLinkTrackingAccess(profile.role, profile.allow_pages, profile.deny_pages)) {
+      return jsonResponse({ ok: false, message: "Forbidden: no link_tracking access" }, 403);
     }
 
+    /* ── 3. Existing Link24 logic ── */
+    const payload = await parseBody(req);
+    const customer_id = str(payload.customer_id ?? payload.customerId);
+    const api_key = str(payload.api_key ?? payload.apiKey);
+    const org_url = str(payload.org_url ?? payload.orgUrl);
+
+    if (!customer_id) return jsonResponse({ ok: false, status: 400, message: "missing customer_id" }, 400);
+    if (!api_key) return jsonResponse({ ok: false, status: 400, message: "missing api_key" }, 400);
+    if (!org_url) return jsonResponse({ ok: false, status: 400, message: "missing org_url" }, 400);
     if (!/^https?:\/\//i.test(org_url)) {
-      return jsonResponse(
-        { ok: false, status: 400, message: "invalid org_url (must start with http/https)" },
-        400,
-      );
+      return jsonResponse({ ok: false, status: 400, message: "invalid org_url (must start with http/https)" }, 400);
     }
 
-    const params = new URLSearchParams({
-      customer_id,
-      api_key,
-      org_url,
-    });
-
+    const params = new URLSearchParams({ customer_id, api_key, org_url });
     const response = await fetch(TARGET_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -117,25 +116,15 @@ Deno.serve(async (req) => {
     });
 
     const bodyText = await response.text();
-    console.log("link24-shoturl link24 response", {
-      status: response.status,
-      bodyPreview: bodyText.slice(0, 300),
-    });
-
-    let parsedBody: RequestPayload | null = null;
+    let parsedBody: Rec | null = null;
     try {
-      const json = JSON.parse(bodyText);
-      if (isRecord(json)) {
-        parsedBody = json;
-      }
-    } catch {
-      // allow non-JSON body from Link24
-    }
+      const j = JSON.parse(bodyText);
+      if (isRecord(j)) parsedBody = j;
+    } catch { /* allow non-JSON */ }
 
-    const result = getTrimmedString(parsedBody?.result);
-    const url = getTrimmedString(parsedBody?.url ?? parsedBody?.short_url ?? parsedBody?.shortUrl);
-    const message = getTrimmedString(parsedBody?.message);
-
+    const result = str(parsedBody?.result);
+    const url = str(parsedBody?.url ?? parsedBody?.short_url ?? parsedBody?.shortUrl);
+    const message = str(parsedBody?.message);
     const isSuccess = response.ok && (result === "OK" || result === "Y" || result === "true" || parsedBody?.result === true);
 
     if (isSuccess && url) {
@@ -150,7 +139,7 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "An unexpected error occurred";
-    console.error("link24-shoturl unexpected error", { message });
+    console.error("link24-shoturl error", { message });
     return jsonResponse({ ok: false, status: 500, message }, 500);
   }
 });
