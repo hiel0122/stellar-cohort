@@ -1,8 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isAllowedDomain, type UserRole, type PermissionProfile } from "@/lib/auth";
+import { isAllowedDomain, type UserRole } from "@/lib/auth";
 import type { User, Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, RefreshCw, LogOut } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -51,14 +54,18 @@ function toUserRole(raw: string | undefined | null): UserRole {
 
 async function fetchProfile(userId: string, retries = 3): Promise<Profile | null> {
   for (let i = 0; i < retries; i++) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, email, full_name, department, title, role, clearance_level, allow_pages, deny_pages")
-      .eq("id", userId)
-      .maybeSingle();
-    if (data) return data as unknown as Profile;
-    if (error) console.warn("Profile fetch error:", error.message);
-    if (i < retries - 1) await new Promise((r) => setTimeout(r, 1000));
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, email, full_name, department, title, role, clearance_level, allow_pages, deny_pages")
+        .eq("id", userId)
+        .maybeSingle();
+      if (data) return data as unknown as Profile;
+      if (error && import.meta.env.DEV) console.warn("Profile fetch attempt", i + 1, error.message);
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn("Profile fetch network error", e);
+    }
+    if (i < retries - 1) await new Promise((r) => setTimeout(r, 800));
   }
   return null;
 }
@@ -67,20 +74,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const profileLoadRef = useRef<string | null>(null);
+  const initDone = useRef(false);
 
   const handleSignOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    try { await supabase.auth.signOut(); } catch {}
     setSession(null);
     setProfile(null);
+    setAuthError(null);
   }, []);
 
   const loadProfile = useCallback(async (user: User) => {
     if (profileLoadRef.current === user.id) return;
     profileLoadRef.current = user.id;
-    const p = await fetchProfile(user.id);
-    setProfile(p);
-    profileLoadRef.current = null;
+    try {
+      const p = await fetchProfile(user.id);
+      setProfile(p);
+      if (!p) {
+        if (import.meta.env.DEV) console.warn("Profile not found after retries for", user.id);
+      }
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn("loadProfile error", e);
+    } finally {
+      profileLoadRef.current = null;
+    }
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -91,50 +109,145 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (p) setProfile(p);
   }, [session]);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        if (event === "SIGNED_IN" && newSession?.user) {
-          if (!isAllowedDomain(newSession.user.email)) {
-            toast.error("@bobusanggroup.com 계정만 로그인할 수 있어요.");
-            await supabase.auth.signOut();
-            setSession(null);
-            setProfile(null);
-            setLoading(false);
-            return;
-          }
-          setSession(newSession);
-          await loadProfile(newSession.user);
-          setLoading(false);
-          return;
-        }
-        if (event === "SIGNED_OUT") {
+  const handleRetry = useCallback(async () => {
+    setAuthError(null);
+    setLoading(true);
+    try {
+      const { data: { session: s }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      if (s?.user) {
+        if (!isAllowedDomain(s.user.email)) {
+          toast.error("@bobusanggroup.com 계정만 로그인할 수 있어요.");
+          await supabase.auth.signOut();
           setSession(null);
           setProfile(null);
         } else {
-          setSession(newSession);
+          setSession(s);
+          await loadProfile(s.user);
         }
-        setLoading(false);
+      }
+    } catch (e: any) {
+      setAuthError(e?.message || "세션 초기화에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }, [loadProfile]);
+
+  useEffect(() => {
+    if (initDone.current) return;
+    initDone.current = true;
+
+    // Safety timeout — never spin forever
+    const safetyTimer = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          if (import.meta.env.DEV) console.warn("Auth safety timeout — forcing loading=false");
+          setAuthError("세션 로딩 시간이 초과되었습니다. 다시 시도해주세요.");
+          return false;
+        }
+        return prev;
+      });
+    }, 10_000);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        try {
+          if (import.meta.env.DEV) console.warn("Auth event:", event, "origin:", window.location.origin);
+
+          if (event === "SIGNED_IN" && newSession?.user) {
+            if (!isAllowedDomain(newSession.user.email)) {
+              toast.error("@bobusanggroup.com 계정만 로그인할 수 있어요.");
+              await supabase.auth.signOut();
+              setSession(null);
+              setProfile(null);
+              setLoading(false);
+              return;
+            }
+            setSession(newSession);
+            await loadProfile(newSession.user);
+            setLoading(false);
+            return;
+          }
+          if (event === "SIGNED_OUT") {
+            setSession(null);
+            setProfile(null);
+          } else if (newSession) {
+            setSession(newSession);
+          }
+        } catch (e: any) {
+          if (import.meta.env.DEV) console.warn("onAuthStateChange error", e);
+          setAuthError(e?.message || "인증 상태 변경 중 오류가 발생했습니다.");
+        } finally {
+          setLoading(false);
+        }
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
-      if (s?.user && !isAllowedDomain(s.user.email)) {
-        supabase.auth.signOut();
-        setSession(null);
-        setProfile(null);
-      } else if (s?.user) {
-        setSession(s);
-        await loadProfile(s.user);
+    supabase.auth.getSession().then(async ({ data: { session: s }, error }) => {
+      try {
+        if (error) {
+          if (import.meta.env.DEV) console.warn("getSession error:", error.message);
+          setAuthError(error.message);
+          setLoading(false);
+          return;
+        }
+        if (s?.user && !isAllowedDomain(s.user.email)) {
+          await supabase.auth.signOut();
+          setSession(null);
+          setProfile(null);
+        } else if (s?.user) {
+          setSession(s);
+          await loadProfile(s.user);
+        }
+      } catch (e: any) {
+        if (import.meta.env.DEV) console.warn("getSession handler error", e);
+        setAuthError(e?.message || "세션 초기화에 실패했습니다.");
+      } finally {
+        setLoading(false);
       }
+    }).catch((e: any) => {
+      if (import.meta.env.DEV) console.warn("getSession promise rejection", e);
+      setAuthError(e?.message || "세션 초기화에 실패했습니다.");
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, [loadProfile]);
 
   const user = session?.user ?? null;
   const role: UserRole = toUserRole(profile?.role);
+
+  // Error fallback UI
+  if (!loading && authError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center space-y-2">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+            </div>
+            <CardTitle className="text-lg">세션 초기화 실패</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">{authError}</p>
+            <div className="flex gap-3">
+              <Button onClick={handleRetry} className="flex-1 gap-2" variant="default">
+                <RefreshCw className="h-4 w-4" />
+                다시 시도
+              </Button>
+              <Button onClick={handleSignOut} className="flex-1 gap-2" variant="outline">
+                <LogOut className="h-4 w-4" />
+                로그아웃
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider
