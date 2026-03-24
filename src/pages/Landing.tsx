@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, BarChart3, Link2, ClipboardList } from "lucide-react";
 
 export default function Landing() {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
 
-  if (isAuthenticated && user) {
-    return <Navigate to={getDefaultRoute(user.role)} replace />;
+  if (isAuthenticated) {
+    return <Navigate to={getDefaultRoute(role)} replace />;
   }
 
   return (

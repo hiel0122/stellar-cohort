@@ -1,43 +1,5 @@
 export type UserRole = "admin" | "education" | "marketing";
 
-export interface AuthUser {
-  email: string;
-  name: string;
-  role: UserRole;
-  avatar?: string;
-}
-
-const AUTH_KEY = "auth_user_v1";
-
-export function getStoredUser(): AuthUser | null {
-  try {
-    const raw = localStorage.getItem(AUTH_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as AuthUser;
-  } catch {
-    return null;
-  }
-}
-
-export function storeUser(user: AuthUser): void {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-}
-
-export function clearUser(): void {
-  localStorage.removeItem(AUTH_KEY);
-}
-
-/** Mock sign-in — will be replaced with Supabase Auth */
-export function mockSignIn(role: UserRole = "admin"): AuthUser {
-  const user: AuthUser = {
-    email: "user@company.com",
-    name: "Studio User",
-    role,
-  };
-  storeUser(user);
-  return user;
-}
-
 /** Route access matrix */
 const ROLE_ROUTES: Record<UserRole, string[]> = {
   admin: ["/dashboard", "/satisfaction", "/media-commerce/marketing"],
@@ -57,4 +19,11 @@ export function canAccess(role: UserRole, pathname: string): boolean {
 
 export function getDefaultRoute(role: UserRole): string {
   return ROLE_ROUTES[role]?.[0] ?? "/dashboard";
+}
+
+const ALLOWED_DOMAIN = "bobusanggroup.com";
+
+export function isAllowedDomain(email: string | undefined | null): boolean {
+  if (!email) return false;
+  return email.endsWith(`@${ALLOWED_DOMAIN}`);
 }
