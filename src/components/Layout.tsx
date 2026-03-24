@@ -52,8 +52,8 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
     setRawDataOpen(true);
   }, []);
 
-  const handleLogout = () => {
-    signOut();
+  const handleLogout = async () => {
+    await signOut();
     navigate("/auth");
   };
 
