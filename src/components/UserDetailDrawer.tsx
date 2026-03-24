@@ -100,40 +100,44 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
   }
 
   async function handleSave() {
-    if (!p) return;
+    if (!p || saving) return;
     setSaving(true);
 
-    // Compute allow_pages / deny_pages from toggles vs baseline
-    const baseline = new Set<PageKey>(ROLE_BASELINE[role] ?? []);
-    const allow_pages: string[] = [];
-    const deny_pages: string[] = [];
+    try {
+      const baseline = new Set<PageKey>(ROLE_BASELINE[role] ?? []);
+      const allow_pages: string[] = [];
+      const deny_pages: string[] = [];
 
-    for (const key of ALL_PAGES) {
-      const inBaseline = baseline.has(key);
-      const isOn = pageToggles[key];
-      if (isOn && !inBaseline) allow_pages.push(key);
-      if (!isOn && inBaseline) deny_pages.push(key);
-    }
+      for (const key of ALL_PAGES) {
+        const inBaseline = baseline.has(key);
+        const isOn = pageToggles[key];
+        if (isOn && !inBaseline) allow_pages.push(key);
+        if (!isOn && inBaseline) deny_pages.push(key);
+      }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        department: department.trim() || null,
-        title: title.trim() || null,
-        role,
-        clearance_level: clearance,
-        allow_pages: allow_pages.length > 0 ? allow_pages : null,
-        deny_pages: deny_pages.length > 0 ? deny_pages : null,
-      } as any)
-      .eq("id", p.id);
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          department: department.trim() || null,
+          title: title.trim() || null,
+          role,
+          clearance_level: clearance,
+          allow_pages: allow_pages.length > 0 ? allow_pages : null,
+          deny_pages: deny_pages.length > 0 ? deny_pages : null,
+        } as any)
+        .eq("id", p.id);
 
-    setSaving(false);
-    if (error) {
-      toast.error("저장 실패: " + error.message);
-    } else {
-      toast.success("저장되었습니다.");
-      onSaved();
-      onOpenChange(false);
+      if (error) {
+        toast.error("저장 실패: " + error.message);
+      } else {
+        toast.success("저장되었습니다.");
+        onSaved();
+        onOpenChange(false);
+      }
+    } catch (err) {
+      toast.error("저장 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
     }
   }
 
