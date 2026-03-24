@@ -39,6 +39,7 @@ export function AppSidebar() {
   const allowed = getAllowedRoutes(role);
   const filteredMain = mainNav.filter((item) => allowed.some((r) => item.url.startsWith(r)));
   const filteredMedia = mediaCommerceNav.filter((item) => allowed.some((r) => item.url.startsWith(r)));
+  const filteredAdmin = adminNav.filter((item) => allowed.some((r) => item.url.startsWith(r)));
 
   return (
     <Sidebar collapsible="icon">
