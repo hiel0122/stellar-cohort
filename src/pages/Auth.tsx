@@ -38,7 +38,7 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function Auth() {
-  const { isAuthenticated, loading, role } = useAuth();
+  const { isAuthenticated, loading, profileLoading, role, profile } = useAuth();
   const navigate = useNavigate();
   const [btnLoading, setBtnLoading] = useState(false);
   const [email, setEmail] = useState("");
