@@ -47,7 +47,7 @@ export default function Auth() {
     if (role === "pending") {
       return <Navigate to="/pending" replace />;
     }
-    return <Navigate to={getDefaultRoute(role)} replace />;
+    return <Navigate to={getDefaultRoute(role, profile)} replace />;
   }
 
   const handleLogin = async () => {

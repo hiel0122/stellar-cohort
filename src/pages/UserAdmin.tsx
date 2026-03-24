@@ -3,12 +3,13 @@ import { Layout } from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Save, Loader2, Users } from "lucide-react";
+import { Search, Loader2, Users, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { CLEARANCE_LABELS } from "@/lib/auth";
+import { UserDetailDrawer } from "@/components/UserDetailDrawer";
 
 interface ProfileRow {
   id: string;
@@ -17,6 +18,9 @@ interface ProfileRow {
   department: string | null;
   title: string | null;
   role: string;
+  clearance_level: number;
+  allow_pages: string[] | null;
+  deny_pages: string[] | null;
   created_at: string;
 }
 
@@ -35,31 +39,35 @@ export default function UserAdmin() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<ProfileRow | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
+  useEffect(() => { fetchProfiles(); }, []);
 
   async function fetchProfiles() {
     setLoading(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, full_name, department, title, role, created_at")
+      .select("id, email, full_name, department, title, role, clearance_level, allow_pages, deny_pages, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
       toast.error("사용자 목록을 불러오지 못했습니다.");
       console.error(error);
     } else {
-      setProfiles((data as ProfileRow[]) ?? []);
+      setProfiles((data as unknown as ProfileRow[]) ?? []);
     }
     setLoading(false);
   }
 
   const filtered = useMemo(() => {
     let list = profiles;
+    // Show pending users first
+    list = [...list].sort((a, b) => {
+      if (a.role === "pending" && b.role !== "pending") return -1;
+      if (a.role !== "pending" && b.role === "pending") return 1;
+      return 0;
+    });
     if (roleFilter !== "all") {
       list = list.filter((p) => p.role === roleFilter);
     }
@@ -74,34 +82,9 @@ export default function UserAdmin() {
     return list;
   }, [profiles, search, roleFilter]);
 
-  function handleRoleChange(id: string, newRole: string) {
-    setPendingChanges((prev) => ({ ...prev, [id]: newRole }));
-  }
-
-  async function handleSave(id: string) {
-    const newRole = pendingChanges[id];
-    if (!newRole) return;
-
-    setSaving(id);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: newRole })
-      .eq("id", id);
-
-    if (error) {
-      toast.error("권한 변경에 실패했습니다: " + error.message);
-    } else {
-      toast.success("권한이 변경되었습니다.");
-      setProfiles((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, role: newRole } : p))
-      );
-      setPendingChanges((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    }
-    setSaving(null);
+  function handleRowClick(p: ProfileRow) {
+    setSelectedProfile(p);
+    setDrawerOpen(true);
   }
 
   if (myRole !== "admin") {
@@ -122,7 +105,7 @@ export default function UserAdmin() {
         <div>
           <h1 className="text-xl font-semibold text-foreground">사용자 권한 관리</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            사용자별 권한(role)을 조회하고 변경할 수 있습니다.
+            사용자별 권한·등급·페이지 접근을 조회하고 변경할 수 있습니다.
           </p>
         </div>
 
@@ -162,75 +145,61 @@ export default function UserAdmin() {
                 <TableRow>
                   <TableHead className="min-w-[120px]">이름</TableHead>
                   <TableHead className="min-w-[180px]">이메일</TableHead>
-                  <TableHead className="min-w-[100px]">부서</TableHead>
-                  <TableHead className="min-w-[80px]">직급</TableHead>
-                  <TableHead className="min-w-[140px]">권한</TableHead>
-                  <TableHead className="min-w-[100px]">가입일</TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
+                  <TableHead className="min-w-[80px]">부서</TableHead>
+                  <TableHead className="min-w-[60px]">직급</TableHead>
+                  <TableHead className="min-w-[80px]">권한</TableHead>
+                  <TableHead className="min-w-[60px]">등급</TableHead>
+                  <TableHead className="min-w-[80px]">가입일</TableHead>
+                  <TableHead className="w-[40px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
                       검색 결과가 없습니다.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((p) => {
-                    const currentRole = pendingChanges[p.id] ?? p.role;
-                    const changed = pendingChanges[p.id] != null;
-                    return (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.full_name ?? "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{p.email}</TableCell>
-                        <TableCell className="text-sm">{p.department ?? "—"}</TableCell>
-                        <TableCell className="text-sm">{p.title ?? "—"}</TableCell>
-                        <TableCell>
-                          <Select value={currentRole} onValueChange={(v) => handleRoleChange(p.id, v)}>
-                            <SelectTrigger className="h-8 w-[130px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ROLES.map((r) => (
-                                <SelectItem key={r} value={r}>
-                                  <Badge variant="outline" className={`text-[10px] ${roleBadgeColor[r] ?? ""}`}>
-                                    {r}
-                                  </Badge>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {new Date(p.created_at).toLocaleDateString("ko-KR")}
-                        </TableCell>
-                        <TableCell>
-                          {changed && (
-                            <Button
-                              size="sm"
-                              className="h-7 text-xs gap-1"
-                              onClick={() => handleSave(p.id)}
-                              disabled={saving === p.id}
-                            >
-                              {saving === p.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Save className="h-3 w-3" />
-                              )}
-                              저장
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                  filtered.map((p) => (
+                    <TableRow
+                      key={p.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleRowClick(p)}
+                    >
+                      <TableCell className="font-medium">{p.full_name ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{p.email}</TableCell>
+                      <TableCell className="text-sm">{p.department ?? "—"}</TableCell>
+                      <TableCell className="text-sm">{p.title ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-[10px] ${roleBadgeColor[p.role] ?? ""}`}>
+                          {p.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        Lv.{p.clearance_level ?? 1} {CLEARANCE_LABELS[p.clearance_level ?? 1] ?? ""}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(p.created_at).toLocaleDateString("ko-KR")}
+                      </TableCell>
+                      <TableCell>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
           </div>
         )}
       </div>
+
+      <UserDetailDrawer
+        profile={selectedProfile}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onSaved={fetchProfiles}
+      />
     </Layout>
   );
 }
