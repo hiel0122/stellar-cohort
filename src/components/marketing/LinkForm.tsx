@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Copy, Check, AlertTriangle, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { marketingProvider, createShortLink, buildUTMParams, appendUTMToUrl } from "@/lib/marketing";
 import { CHANNEL_OPTIONS, type MarketingChannel } from "@/lib/marketing/types";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   onCreated: () => void;
@@ -35,8 +36,24 @@ export function LinkForm({ onCreated }: Props) {
   const [utmEnabled, setUtmEnabled] = useState(true);
   const [utmTerm, setUtmTerm] = useState("");
 
-  const settings = marketingProvider.getSettings();
-  const hasSettings = !!(settings?.link24_customer_id && settings?.link24_api_key);
+  const [hasSettings, setHasSettings] = useState(false);
+  const [trackingBaseUrl, setTrackingBaseUrl] = useState(window.location.origin);
+
+  // Load settings from DB on mount
+  useEffect(() => {
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "link24")
+      .maybeSingle()
+      .then(({ data }) => {
+        const val = data?.value as Record<string, unknown> | null;
+        if (val?.customer_id) {
+          setHasSettings(true);
+          setTrackingBaseUrl((val.tracking_domain as string) || window.location.origin);
+        }
+      });
+  }, []);
 
   const utmParams = useMemo(() => {
     if (!utmEnabled) return null;
@@ -65,8 +82,7 @@ export function LinkForm({ onCreated }: Props) {
     setLoading(true);
     try {
       const track_code = generateTrackCode();
-      const baseUrl = settings!.tracking_base_url || window.location.origin;
-      const trackingUrl = `${baseUrl}/r/${track_code}`;
+      const trackingUrl = `${trackingBaseUrl}/r/${track_code}`;
 
       // Build UTM params for this link
       const finalUtmParams = utmEnabled
@@ -76,7 +92,7 @@ export function LinkForm({ onCreated }: Props) {
         ? appendUTMToUrl(destinationUrl.trim(), finalUtmParams)
         : undefined;
 
-      const { short_url } = await createShortLink(trackingUrl, settings!);
+      const { short_url } = await createShortLink(trackingUrl);
 
       marketingProvider.createLink({
         alias: alias.trim(),

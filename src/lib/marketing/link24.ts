@@ -1,7 +1,6 @@
 /* ── Link24 API wrapper (via Supabase Edge Function proxy) ── */
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import type { MarketingSettings } from "./types";
 
 interface ShortenResult {
   short_url: string;
@@ -27,39 +26,23 @@ async function getFunctionErrorMessage(error: unknown): Promise<string> {
     } catch {
       try {
         const text = await error.context.clone().text();
-        if (text) {
-          return text;
-        }
+        if (text) return text;
       } catch {
-        // ignore unreadable response bodies
+        // ignore
       }
     }
   }
-
   return error instanceof Error ? error.message : "알 수 없는 오류";
 }
 
 /**
  * Link24 단축 링크 생성
- * Edge Function을 통해 CORS 우회 + application/x-www-form-urlencoded 포맷 전송
+ * Edge Function이 DB에서 customer_id를 읽고, Secrets에서 API Key를 읽음.
+ * 프론트는 org_url만 전송.
  */
-export async function createShortLink(
-  trackingUrl: string,
-  settings: MarketingSettings,
-): Promise<ShortenResult> {
-  const customer_id = settings.link24_customer_id?.trim() ?? "";
-  const api_key = settings.link24_api_key?.trim() ?? "";
-
-  if (!customer_id || !api_key) {
-    throw new Error("설정을 먼저 입력하세요.");
-  }
-
+export async function createShortLink(trackingUrl: string): Promise<ShortenResult> {
   const { data, error } = await supabase.functions.invoke<Link24FunctionResponse>("link24-shoturl", {
-    body: {
-      customer_id,
-      api_key,
-      org_url: trackingUrl,
-    },
+    body: { org_url: trackingUrl },
   });
 
   if (error) {

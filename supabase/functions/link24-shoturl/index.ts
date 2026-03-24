@@ -23,8 +23,6 @@ function str(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
-const supportedKeys = ["customer_id", "customerId", "api_key", "apiKey", "org_url", "orgUrl"];
-
 async function parseBody(req: Request): Promise<Rec> {
   try {
     const j = await req.clone().json();
@@ -32,8 +30,6 @@ async function parseBody(req: Request): Promise<Rec> {
   } catch { /* fall through */ }
   const raw = (await req.text()).trim();
   if (!raw) return {};
-  const form = Object.fromEntries(new URLSearchParams(raw).entries());
-  if (Object.keys(form).some((k) => supportedKeys.includes(k))) return form;
   try {
     const j = JSON.parse(raw);
     if (isRecord(j)) return j;
@@ -95,19 +91,42 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: false, message: "Forbidden: no link_tracking access" }, 403);
     }
 
-    /* ── 3. Existing Link24 logic ── */
+    /* ── 3. Read org_url from request body ── */
     const payload = await parseBody(req);
-    const customer_id = str(payload.customer_id ?? payload.customerId);
-    const api_key = str(payload.api_key ?? payload.apiKey);
     const org_url = str(payload.org_url ?? payload.orgUrl);
 
-    if (!customer_id) return jsonResponse({ ok: false, status: 400, message: "missing customer_id" }, 400);
-    if (!api_key) return jsonResponse({ ok: false, status: 400, message: "missing api_key" }, 400);
     if (!org_url) return jsonResponse({ ok: false, status: 400, message: "missing org_url" }, 400);
     if (!/^https?:\/\//i.test(org_url)) {
       return jsonResponse({ ok: false, status: 400, message: "invalid org_url (must start with http/https)" }, 400);
     }
 
+    /* ── 4. Read customer_id from DB (app_settings) ── */
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: settingsRow, error: settingsErr } = await adminClient
+      .from("app_settings")
+      .select("value")
+      .eq("key", "link24")
+      .maybeSingle();
+
+    if (settingsErr || !settingsRow) {
+      return jsonResponse({ ok: false, message: "Link24 설정이 없습니다. 관리자에게 문의하세요." }, 400);
+    }
+
+    const settingsVal = settingsRow.value as Rec;
+    const customer_id = str(settingsVal?.customer_id);
+    if (!customer_id) {
+      return jsonResponse({ ok: false, message: "Customer ID가 설정되지 않았습니다." }, 400);
+    }
+
+    /* ── 5. Read API key from Secrets ── */
+    const api_key = Deno.env.get("LINK24_ACCESS_KEY") ?? "";
+    if (!api_key) {
+      return jsonResponse({ ok: false, message: "Link24 API Key가 서버에 설정되지 않았습니다." }, 500);
+    }
+
+    /* ── 6. Call Link24 API ── */
     const params = new URLSearchParams({ customer_id, api_key, org_url });
     const response = await fetch(TARGET_API_URL, {
       method: "POST",
