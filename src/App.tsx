@@ -13,6 +13,7 @@ import Satisfaction from "./pages/Satisfaction";
 import MarketingDashboard from "./pages/MarketingDashboard";
 import UserAdmin from "./pages/UserAdmin";
 import TrackingRedirect from "./pages/TrackingRedirect";
+import Pending from "./pages/Pending";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/pending" element={<Pending />} />
               <Route path="/r/:code" element={<TrackingRedirect />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
