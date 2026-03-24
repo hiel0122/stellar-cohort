@@ -16,30 +16,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { BrandWordmark } from "@/components/brand/BrandWordmark";
 import { useAuth } from "@/components/AuthProvider";
-import { getAllowedRoutes } from "@/lib/auth";
+import { getEffectivePages, PAGE_ROUTE_MAP, type PageKey } from "@/lib/auth";
 
-const mainNav = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Survey", url: "/satisfaction", icon: SmilePlus },
+const mainNav: { title: string; pageKey: PageKey; url: string; icon: typeof LayoutDashboard }[] = [
+  { title: "Dashboard", pageKey: "dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Survey", pageKey: "survey", url: "/satisfaction", icon: SmilePlus },
 ];
 
-const mediaCommerceNav = [
-  { title: "Link Tracking", url: "/media-commerce/marketing", icon: Megaphone },
+const mediaCommerceNav: typeof mainNav = [
+  { title: "Link Tracking", pageKey: "link_tracking", url: "/media-commerce/marketing", icon: Megaphone },
 ];
 
-const adminNav = [
-  { title: "사용자 관리", url: "/admin/users", icon: ShieldCheck },
+const adminNav: typeof mainNav = [
+  { title: "사용자 관리", pageKey: "admin_users", url: "/admin/users", icon: ShieldCheck },
 ];
 
 export function AppSidebar() {
   const { toggleSidebar, state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { role } = useAuth();
+  const { profile } = useAuth();
 
-  const allowed = getAllowedRoutes(role);
-  const filteredMain = mainNav.filter((item) => allowed.some((r) => item.url.startsWith(r)));
-  const filteredMedia = mediaCommerceNav.filter((item) => allowed.some((r) => item.url.startsWith(r)));
-  const filteredAdmin = adminNav.filter((item) => allowed.some((r) => item.url.startsWith(r)));
+  const effectivePages = new Set(getEffectivePages(profile));
+
+  const filteredMain = mainNav.filter((item) => effectivePages.has(item.pageKey));
+  const filteredMedia = mediaCommerceNav.filter((item) => effectivePages.has(item.pageKey));
+  const filteredAdmin = adminNav.filter((item) => effectivePages.has(item.pageKey));
 
   return (
     <Sidebar collapsible="icon">

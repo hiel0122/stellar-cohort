@@ -34,8 +34,7 @@ export default function Pending() {
         .maybeSingle();
       if (data && data.role !== "pending") {
         const newRole = data.role as UserRole;
-        // Force page reload to refresh AuthProvider state
-        window.location.href = getDefaultRoute(newRole);
+        window.location.href = getDefaultRoute(newRole, data as any);
       }
     }, 8000);
     return () => clearInterval(interval);

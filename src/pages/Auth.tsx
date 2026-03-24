@@ -27,7 +27,7 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function Auth() {
-  const { isAuthenticated, loading, role } = useAuth();
+  const { isAuthenticated, loading, role, profile } = useAuth();
   const navigate = useNavigate();
   const [btnLoading, setBtnLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -47,7 +47,7 @@ export default function Auth() {
     if (role === "pending") {
       return <Navigate to="/pending" replace />;
     }
-    return <Navigate to={getDefaultRoute(role)} replace />;
+    return <Navigate to={getDefaultRoute(role, profile)} replace />;
   }
 
   const handleLogin = async () => {
