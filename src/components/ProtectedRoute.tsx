@@ -4,19 +4,26 @@ import { canAccess, getDefaultRoute } from "@/lib/auth";
 
 interface Props {
   children: React.ReactNode;
-  /** The current route path for access check */
   requiredPath?: string;
 }
 
 export function ProtectedRoute({ children, requiredPath }: Props) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, role, isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/auth" replace />;
   }
 
-  if (requiredPath && !canAccess(user.role, requiredPath)) {
-    return <Navigate to={getDefaultRoute(user.role)} replace />;
+  if (requiredPath && !canAccess(role, requiredPath)) {
+    return <Navigate to={getDefaultRoute(role)} replace />;
   }
 
   return <>{children}</>;
