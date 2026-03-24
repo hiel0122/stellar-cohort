@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { marketingProvider, createShortLink, buildUTMParams, appendUTMToUrl } from "@/lib/marketing";
 import { CHANNEL_OPTIONS, type MarketingChannel } from "@/lib/marketing/types";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   onCreated: () => void;
