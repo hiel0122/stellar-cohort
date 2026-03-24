@@ -61,6 +61,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/pending" element={<Pending />} />
               <Route path="/r/:code" element={<TrackingRedirect />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

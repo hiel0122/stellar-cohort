@@ -44,6 +44,9 @@ export default function Auth() {
   }
 
   if (isAuthenticated) {
+    if (role === "pending") {
+      return <Navigate to="/pending" replace />;
+    }
     return <Navigate to={getDefaultRoute(role)} replace />;
   }
 
