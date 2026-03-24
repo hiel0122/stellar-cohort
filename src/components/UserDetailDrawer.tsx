@@ -100,40 +100,44 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
   }
 
   async function handleSave() {
-    if (!p) return;
+    if (!p || saving) return;
     setSaving(true);
 
-    // Compute allow_pages / deny_pages from toggles vs baseline
-    const baseline = new Set<PageKey>(ROLE_BASELINE[role] ?? []);
-    const allow_pages: string[] = [];
-    const deny_pages: string[] = [];
+    try {
+      const baseline = new Set<PageKey>(ROLE_BASELINE[role] ?? []);
+      const allow_pages: string[] = [];
+      const deny_pages: string[] = [];
 
-    for (const key of ALL_PAGES) {
-      const inBaseline = baseline.has(key);
-      const isOn = pageToggles[key];
-      if (isOn && !inBaseline) allow_pages.push(key);
-      if (!isOn && inBaseline) deny_pages.push(key);
-    }
+      for (const key of ALL_PAGES) {
+        const inBaseline = baseline.has(key);
+        const isOn = pageToggles[key];
+        if (isOn && !inBaseline) allow_pages.push(key);
+        if (!isOn && inBaseline) deny_pages.push(key);
+      }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        department: department.trim() || null,
-        title: title.trim() || null,
-        role,
-        clearance_level: clearance,
-        allow_pages: allow_pages.length > 0 ? allow_pages : null,
-        deny_pages: deny_pages.length > 0 ? deny_pages : null,
-      } as any)
-      .eq("id", p.id);
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          department: department.trim() || null,
+          title: title.trim() || null,
+          role,
+          clearance_level: clearance,
+          allow_pages: allow_pages.length > 0 ? allow_pages : null,
+          deny_pages: deny_pages.length > 0 ? deny_pages : null,
+        } as any)
+        .eq("id", p.id);
 
-    setSaving(false);
-    if (error) {
-      toast.error("저장 실패: " + error.message);
-    } else {
-      toast.success("저장되었습니다.");
-      onSaved();
-      onOpenChange(false);
+      if (error) {
+        toast.error("저장 실패: " + error.message);
+      } else {
+        toast.success("저장되었습니다.");
+        onSaved();
+        onOpenChange(false);
+      }
+    } catch (err) {
+      toast.error("저장 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -211,23 +215,15 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
             <p className="text-[11px] text-muted-foreground/70">
               Role 기본 권한에 추가로 페이지를 허용/차단할 수 있습니다.
             </p>
-            {ALL_PAGES.map((key) => {
-              const inBaseline = (ROLE_BASELINE[role] ?? []).includes(key);
-              return (
-                <div key={key} className="flex items-center justify-between py-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{PAGE_LABELS[key]}</span>
-                    {inBaseline && (
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0">기본</Badge>
-                    )}
-                  </div>
-                  <Switch
-                    checked={pageToggles[key]}
-                    onCheckedChange={(on) => handlePageToggle(key, on)}
-                  />
-                </div>
-              );
-            })}
+            {ALL_PAGES.map((key) => (
+              <div key={key} className="flex items-center justify-between py-1">
+                <span className="text-sm">{PAGE_LABELS[key]}</span>
+                <Switch
+                  checked={pageToggles[key]}
+                  onCheckedChange={(on) => handlePageToggle(key, on)}
+                />
+              </div>
+            ))}
           </div>
 
           {/* Save */}
