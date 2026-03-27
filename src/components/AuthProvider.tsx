@@ -28,7 +28,7 @@ interface AuthContextType {
   loading: boolean;
   profileLoading: boolean;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: () => Promise<Profile | null>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -40,7 +40,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   profileLoading: false,
   signOut: async () => {},
-  refreshProfile: async () => {},
+  refreshProfile: async () => null,
 });
 
 export function useAuth() {
@@ -48,6 +48,9 @@ export function useAuth() {
 }
 
 const VALID_ROLES: UserRole[] = ["admin", "education", "marketing", "pending"];
+const PROFILE_SELECT = "id, email, full_name, department, title, role, clearance_level, allow_pages, deny_pages";
+const AUTH_TIMEOUT_MS = 10_000;
+const VISIBILITY_REFRESH_DEBOUNCE_MS = 400;
 
 function toUserRole(raw: string | undefined | null): UserRole {
   if (raw && VALID_ROLES.includes(raw as UserRole)) return raw as UserRole;
@@ -59,7 +62,7 @@ async function fetchProfile(userId: string, retries = 3): Promise<Profile | null
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, email, full_name, department, title, role, clearance_level, allow_pages, deny_pages")
+        .select(PROFILE_SELECT)
         .eq("id", userId)
         .maybeSingle();
       if (data) return data as unknown as Profile;
@@ -75,10 +78,19 @@ async function fetchProfile(userId: string, retries = 3): Promise<Profile | null
 /** Clear Supabase auth tokens from localStorage to recover from LockManager issues */
 function clearSupabaseAuthTokens() {
   try {
+    const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID
+      ?? (() => {
+        try {
+          return new URL(import.meta.env.VITE_SUPABASE_URL).host.split(".")[0];
+        } catch {
+          return null;
+        }
+      })();
+    const storagePrefix = projectRef ? `sb-${projectRef}-auth-token` : "sb-";
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith("sb-") && key.includes("-auth-token")) {
+      if (key && key.startsWith(storagePrefix)) {
         keysToRemove.push(key);
       }
     }
@@ -92,156 +104,251 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true); // initial session bootstrap
   const [profileLoading, setProfileLoading] = useState(false); // profile fetch after session
   const [authError, setAuthError] = useState<string | null>(null);
-  const profileLoadRef = useRef<string | null>(null);
   const initDone = useRef(false);
+  const profileLoadRef = useRef<string | null>(null);
+  const profileRequestRef = useRef(0);
+  const visibilityTimeoutRef = useRef<number | null>(null);
+  const visibilityRefreshInFlightRef = useRef(false);
+  const safetyTimerRef = useRef<number | null>(null);
+
+  const clearSafetyTimer = useCallback(() => {
+    if (safetyTimerRef.current !== null) {
+      window.clearTimeout(safetyTimerRef.current);
+      safetyTimerRef.current = null;
+    }
+  }, []);
+
+  const resetAuthState = useCallback(() => {
+    profileRequestRef.current += 1;
+    profileLoadRef.current = null;
+    setSession(null);
+    setProfile(null);
+    setProfileLoading(false);
+  }, []);
 
   const handleSignOut = useCallback(async () => {
     try { await supabase.auth.signOut(); } catch {}
-    setSession(null);
-    setProfile(null);
+    resetAuthState();
     setAuthError(null);
-  }, []);
+    setLoading(false);
+  }, [resetAuthState]);
 
-  const loadProfile = useCallback(async (user: User) => {
-    if (profileLoadRef.current === user.id) return;
+  const handleInvalidDomain = useCallback(async (email?: string | null) => {
+    if (email) {
+      toast.error("회사 계정(@bobusanggroup.com)으로 로그인하세요.");
+    }
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    resetAuthState();
+    setAuthError(null);
+    setLoading(false);
+  }, [resetAuthState]);
+
+  const loadProfile = useCallback(async (user: User, options?: { force?: boolean }) => {
+    if (profileLoadRef.current === user.id && !options?.force) return null;
     profileLoadRef.current = user.id;
+    const requestId = ++profileRequestRef.current;
     setProfileLoading(true);
     try {
       const p = await fetchProfile(user.id);
+      if (profileRequestRef.current !== requestId) return null;
       setProfile(p);
-      if (!p && import.meta.env.DEV) console.warn("Profile not found after retries for", user.id);
+      if (!p) {
+        setAuthError("세션 로딩 실패(일시적). 프로필을 다시 불러와주세요.");
+        if (import.meta.env.DEV) console.warn("Profile not found after retries for", user.id);
+        return null;
+      }
+      setAuthError(null);
+      return p;
     } catch (e) {
       if (import.meta.env.DEV) console.warn("loadProfile error", e);
+      if (profileRequestRef.current === requestId) {
+        setProfile(null);
+        setAuthError("세션 로딩 실패(일시적). 프로필을 다시 불러와주세요.");
+      }
+      return null;
     } finally {
-      setProfileLoading(false);
-      profileLoadRef.current = null;
+      if (profileRequestRef.current === requestId) {
+        setProfileLoading(false);
+        profileLoadRef.current = null;
+      }
     }
   }, []);
 
   const refreshProfile = useCallback(async () => {
     const currentUser = session?.user;
-    if (!currentUser) return;
-    profileLoadRef.current = null;
-    setProfileLoading(true);
-    try {
-      const p = await fetchProfile(currentUser.id, 1);
-      if (p) setProfile(p);
-    } finally {
-      setProfileLoading(false);
-    }
+    if (!currentUser) return null;
+    return loadProfile(currentUser, { force: true });
+  }, [loadProfile, session]);
+
+  const refreshSession = useCallback(async () => {
+    const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
+    if (error) throw error;
+    setSession(refreshedSession);
+    if (!refreshedSession) setProfile(null);
+    return refreshedSession;
   }, [session]);
 
   const handleRetry = useCallback(async () => {
     setAuthError(null);
     setLoading(true);
     try {
-      const { data: { session: s }, error } = await supabase.auth.getSession();
-      if (error) throw error;
-      if (s?.user) {
-        if (!isAllowedDomain(s.user.email)) {
-          toast.error("@bobusanggroup.com 계정만 로그인할 수 있어요.");
-          await supabase.auth.signOut();
-          setSession(null);
-          setProfile(null);
-        } else {
-          setSession(s);
-          await loadProfile(s.user);
+      let nextSession: Session | null = null;
+
+      try {
+        nextSession = await refreshSession();
+      } catch (refreshError) {
+        if (import.meta.env.DEV) console.warn("refreshSession retry failed", refreshError);
+        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        nextSession = existingSession;
+        setSession(existingSession);
+      }
+
+      if (nextSession?.user) {
+        if (!isAllowedDomain(nextSession.user.email)) {
+          await handleInvalidDomain(nextSession.user.email);
+          return;
         }
+        await loadProfile(nextSession.user, { force: true });
       }
     } catch (e: any) {
-      setAuthError(e?.message || "세션 초기화에 실패했습니다.");
+      setAuthError(e?.message || "세션 로딩 실패(일시적). 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
-  }, [loadProfile]);
+  }, [handleInvalidDomain, loadProfile, refreshSession]);
 
   const handleSessionReset = useCallback(() => {
     clearSupabaseAuthTokens();
     window.location.reload();
   }, []);
 
+  const handleVisibilityRefresh = useCallback(async () => {
+    if (visibilityRefreshInFlightRef.current || loading || profileLoading || !session?.user) return;
+
+    visibilityRefreshInFlightRef.current = true;
+    try {
+      const refreshedSession = await refreshSession();
+      if (refreshedSession?.user) {
+        if (!isAllowedDomain(refreshedSession.user.email)) {
+          await handleInvalidDomain(refreshedSession.user.email);
+          return;
+        }
+        await loadProfile(refreshedSession.user, { force: true });
+      }
+    } catch (e: any) {
+      if (import.meta.env.DEV) console.warn("visibility refresh failed", e);
+      setAuthError(e?.message || "세션 로딩 실패(일시적). 다시 시도해주세요.");
+    } finally {
+      visibilityRefreshInFlightRef.current = false;
+    }
+  }, [handleInvalidDomain, loadProfile, loading, profileLoading, refreshSession, session]);
+
   useEffect(() => {
     if (initDone.current) return;
     initDone.current = true;
 
-    const safetyTimer = setTimeout(() => {
+    safetyTimerRef.current = window.setTimeout(() => {
       setLoading((prev) => {
         if (prev) {
           if (import.meta.env.DEV) console.warn("Auth safety timeout — forcing loading=false");
-          setAuthError("세션 로딩 시간이 초과되었습니다. 다시 시도해주세요.");
+          setAuthError("세션 로딩 실패(일시적). 다시 시도해주세요.");
+          setProfileLoading(false);
           return false;
         }
         return prev;
       });
-    }, 10_000);
+    }, AUTH_TIMEOUT_MS);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        try {
-          if (import.meta.env.DEV) console.warn("Auth event:", event);
+      (event, newSession) => {
+        if (import.meta.env.DEV) console.warn("Auth event:", event);
 
-          if (event === "SIGNED_IN" && newSession?.user) {
-            if (!isAllowedDomain(newSession.user.email)) {
-              toast.error("@bobusanggroup.com 계정만 로그인할 수 있어요.");
-              await supabase.auth.signOut();
-              setSession(null);
-              setProfile(null);
-              setLoading(false);
-              return;
-            }
-            setSession(newSession);
-            await loadProfile(newSession.user);
-            setLoading(false);
-            return;
-          }
-          if (event === "SIGNED_OUT") {
-            setSession(null);
-            setProfile(null);
-          } else if (newSession) {
-            setSession(newSession);
-          }
-        } catch (e: any) {
-          if (import.meta.env.DEV) console.warn("onAuthStateChange error", e);
-          setAuthError(e?.message || "인증 상태 변경 중 오류가 발생했습니다.");
-        } finally {
-          setLoading(false);
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(async ({ data: { session: s }, error }) => {
-      try {
-        if (error) {
-          if (import.meta.env.DEV) console.warn("getSession error:", error.message);
-          setAuthError(error.message);
+        if (event === "SIGNED_OUT") {
+          resetAuthState();
+          setAuthError(null);
           setLoading(false);
           return;
         }
-        if (s?.user && !isAllowedDomain(s.user.email)) {
-          await supabase.auth.signOut();
-          setSession(null);
+
+        setSession(newSession);
+        if (!newSession) {
           setProfile(null);
-        } else if (s?.user) {
-          setSession(s);
-          await loadProfile(s.user);
         }
-      } catch (e: any) {
-        if (import.meta.env.DEV) console.warn("getSession handler error", e);
-        setAuthError(e?.message || "세션 초기화에 실패했습니다.");
-      } finally {
+        if (newSession) {
+          setAuthError(null);
+        }
         setLoading(false);
       }
-    }).catch((e: any) => {
-      if (import.meta.env.DEV) console.warn("getSession promise rejection", e);
-      setAuthError(e?.message || "세션 초기화에 실패했습니다.");
-      setLoading(false);
-    });
+    );
+
+    void supabase.auth.getSession()
+      .then(({ data: { session: s }, error }) => {
+        if (error) throw error;
+        setSession(s);
+        if (!s) setProfile(null);
+      })
+      .catch((e: any) => {
+        if (import.meta.env.DEV) console.warn("getSession promise rejection", e);
+        setAuthError(e?.message || "세션 로딩 실패(일시적). 다시 시도해주세요.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     return () => {
-      clearTimeout(safetyTimer);
+      clearSafetyTimer();
       subscription.unsubscribe();
     };
-  }, [loadProfile]);
+  }, [clearSafetyTimer, resetAuthState]);
+
+  useEffect(() => {
+    if (!loading) {
+      clearSafetyTimer();
+    }
+  }, [clearSafetyTimer, loading]);
+
+  useEffect(() => {
+    const currentUser = session?.user;
+
+    if (!currentUser) {
+      profileRequestRef.current += 1;
+      profileLoadRef.current = null;
+      setProfile(null);
+      setProfileLoading(false);
+      return;
+    }
+
+    if (!isAllowedDomain(currentUser.email)) {
+      void handleInvalidDomain(currentUser.email);
+      return;
+    }
+
+    void loadProfile(currentUser);
+  }, [handleInvalidDomain, loadProfile, session]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      if (visibilityTimeoutRef.current !== null) {
+        window.clearTimeout(visibilityTimeoutRef.current);
+      }
+      visibilityTimeoutRef.current = window.setTimeout(() => {
+        void handleVisibilityRefresh();
+      }, VISIBILITY_REFRESH_DEBOUNCE_MS);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (visibilityTimeoutRef.current !== null) {
+        window.clearTimeout(visibilityTimeoutRef.current);
+      }
+    };
+  }, [handleVisibilityRefresh]);
 
   const user = session?.user ?? null;
   // CRITICAL: only derive role when profile is actually loaded
@@ -256,7 +363,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
               <AlertTriangle className="h-6 w-6 text-destructive" />
             </div>
-            <CardTitle className="text-lg">세션 초기화 실패</CardTitle>
+            <CardTitle className="text-lg">세션 로딩 실패(일시적)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">{authError}</p>

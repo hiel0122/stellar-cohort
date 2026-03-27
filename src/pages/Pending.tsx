@@ -2,7 +2,6 @@ import { useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { getDefaultRoute } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { BrandWordmark } from "@/components/brand/BrandWordmark";
 import { ProfileEditModal } from "@/components/ProfileEditModal";
@@ -11,7 +10,7 @@ import { toast } from "sonner";
 import type { UserRole } from "@/lib/auth";
 
 export default function Pending() {
-  const { user, profile, role, signOut, loading, profileLoading } = useAuth();
+  const { user, profile, role, signOut, loading, profileLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -31,40 +30,26 @@ export default function Pending() {
     if (role !== "pending") return;
 
     const interval = setInterval(async () => {
-      try {
-        const { data } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (data && data.role !== "pending") {
-          const newRole = data.role as UserRole;
-          window.location.href = getDefaultRoute(newRole, data as any);
-        }
-      } catch {}
+      await refreshProfile();
     }, 8000);
     return () => clearInterval(interval);
-  }, [user, loading, profileLoading, role]);
+  }, [user, loading, profileLoading, refreshProfile, role]);
 
   const handleManualCheck = useCallback(async () => {
     if (!user) return;
     setChecking(true);
     try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (data && data.role !== "pending") {
+      const nextProfile = await refreshProfile();
+      if (nextProfile && nextProfile.role !== "pending") {
         toast.success("권한이 승인되었습니다!");
-        window.location.href = getDefaultRoute(data.role as UserRole);
+        navigate(getDefaultRoute(nextProfile.role as UserRole, nextProfile as any), { replace: true });
       } else {
         toast.info("아직 승인 대기 중입니다.");
       }
     } finally {
       setChecking(false);
     }
-  }, [user]);
+  }, [navigate, refreshProfile, user]);
 
   const handleCopyRequest = useCallback(() => {
     const text = `[Con-tudio 권한 요청]\n이름: ${profile?.full_name ?? "미입력"}\n이메일: ${user?.email ?? ""}\n부서: ${profile?.department ?? "미입력"}\n직급: ${profile?.title ?? "미입력"}\n\n위 계정에 대한 접근 권한 승인을 요청드립니다.`;
