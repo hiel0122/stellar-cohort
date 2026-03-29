@@ -107,6 +107,11 @@ export function useSWRDashboard() {
     backgroundRefreshRef.current = false;
 
     if (activeSnapshot && liveHash !== activeSnapshot.hash) {
+      // Check dismissed hash
+      let dismissed: string | null = null;
+      try { dismissed = sessionStorage.getItem("swr_dismissed_hash"); } catch {}
+      if (dismissed === liveHash) return;
+
       setPendingSnapshot({
         kpis: dashboard.kpis,
         funnel: dashboard.funnel,
@@ -140,6 +145,9 @@ export function useSWRDashboard() {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [dashboard.triggerRefresh]);
 
+  // ── Dismissed hash (sessionStorage) ──
+  const DISMISSED_KEY = "swr_dismissed_hash";
+
   // ── Apply / Dismiss ──
   const applyPending = useCallback(() => {
     if (pendingSnapshot) {
@@ -150,9 +158,14 @@ export function useSWRDashboard() {
   }, [pendingSnapshot]);
 
   const dismissPending = useCallback(() => {
+    if (pendingSnapshot) {
+      try {
+        sessionStorage.setItem(DISMISSED_KEY, pendingSnapshot.hash);
+      } catch {}
+    }
     setPendingSnapshot(null);
     setUpdateAvailable(false);
-  }, []);
+  }, [pendingSnapshot]);
 
   // Manual refresh button
   const manualRefresh = useCallback(() => {
@@ -182,5 +195,8 @@ export function useSWRDashboard() {
     applyPending,
     dismissPending,
     manualRefresh,
+    // For diff display
+    activeSnapshot,
+    pendingSnapshot,
   };
 }
