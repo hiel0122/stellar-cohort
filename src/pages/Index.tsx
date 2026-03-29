@@ -167,6 +167,10 @@ const Index = () => {
 
         <div className="space-y-7 pt-8">
 
+          {updateAvailable && (
+            <DataUpdateBanner onApply={applyPending} onDismiss={dismissPending} />
+          )}
+
           {error && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>
           )}
