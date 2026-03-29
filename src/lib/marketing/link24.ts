@@ -1,6 +1,8 @@
 /* ── Link24 API wrapper (via Supabase Edge Function proxy) ── */
-import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+
+const SUPABASE_URL = "https://fwgnljlzzpneinawyeqq.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3Z25samx6enBuZWluYXd5ZXFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODEwOTYsImV4cCI6MjA4NzM1NzA5Nn0.j7y4IRh6TNfwO4uVno5tZ9do7J6CmWuXbNNg3SIHqIc";
 
 interface ShortenResult {
   short_url: string;
@@ -16,41 +18,37 @@ interface Link24FunctionResponse {
   error?: string;
 }
 
-async function getFunctionErrorMessage(error: unknown): Promise<string> {
-  if (error instanceof FunctionsHttpError) {
-    try {
-      const payload = (await error.context.clone().json()) as Link24FunctionResponse;
-      if (payload?.message || payload?.error) {
-        return payload.message ?? payload.error ?? "Link24 프록시 오류";
-      }
-    } catch {
-      try {
-        const text = await error.context.clone().text();
-        if (text) return text;
-      } catch {
-        // ignore
-      }
-    }
-  }
-  return error instanceof Error ? error.message : "알 수 없는 오류";
-}
-
 /**
  * Link24 단축 링크 생성
- * Edge Function이 DB에서 customer_id를 읽고, Secrets에서 API Key를 읽음.
- * 프론트는 org_url만 전송.
+ * fetch로 직접 호출하여 Authorization=anon_key(Verify-JWT 통과),
+ * x-user-jwt=user_access_token(실제 유저 인증)으로 분리.
  */
 export async function createShortLink(trackingUrl: string): Promise<ShortenResult> {
-  const { data, error } = await supabase.functions.invoke<Link24FunctionResponse>("link24-shoturl", {
-    body: { org_url: trackingUrl },
-  });
-
-  if (error) {
-    throw new Error(await getFunctionErrorMessage(error));
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error("로그인이 필요합니다. 다시 로그인해주세요.");
   }
 
-  if (!data || data.ok !== true) {
-    throw new Error(data?.message || data?.error || "Link24 API 오류: 알 수 없는 응답");
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/link24-shoturl`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "x-user-jwt": `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ org_url: trackingUrl }),
+  });
+
+  let data: Link24FunctionResponse;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`Edge Function 응답 파싱 실패 (status ${res.status})`);
+  }
+
+  if (!res.ok || data.ok !== true) {
+    throw new Error(data?.message || data?.error || `Link24 API 오류 (status ${res.status})`);
   }
 
   const short_url = data.short_url ?? data.url ?? data.shortUrl ?? "";
