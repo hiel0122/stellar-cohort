@@ -77,6 +77,54 @@ export type Database = {
         }
         Relationships: []
       }
+      survey_reports: {
+        Row: {
+          created_at: string
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          meta: Json | null
+          owner_id: string
+          questions: Json | null
+          row_count: number | null
+          source_type: string
+          summary: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          meta?: Json | null
+          owner_id: string
+          questions?: Json | null
+          row_count?: number | null
+          source_type?: string
+          summary?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          meta?: Json | null
+          owner_id?: string
+          questions?: Json | null
+          row_count?: number | null
+          source_type?: string
+          summary?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
