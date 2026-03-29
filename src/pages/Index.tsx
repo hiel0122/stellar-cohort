@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSWRDashboard } from "@/hooks/useSWRDashboard";
 import { DataUpdateBanner, type KpiDiff } from "@/components/DataUpdateBanner";
-import { formatWonFull, formatInt } from "@/lib/format";
 import { useTargets, calcProgress } from "@/hooks/useTargets";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
 import { getCohortCostSummary, getCostsForCohort, type CohortCostSummary } from "@/lib/platformCostStore";
