@@ -22,6 +22,7 @@ export default function MarketingDashboard() {
   const [selectedLink, setSelectedLink] = useState<MarketingLink | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = usePageState<string | null>("marketing", "selectedCampaign", null);
+  const [activeLinkId, setActiveLinkId] = usePageState<string | null>("marketing", "activeLinkId", null);
   const [activeTab, setActiveTab] = usePageState("marketing", "activeTab", "overview");
 
   const reload = useCallback(() => setRefreshKey((k) => k + 1), []);
