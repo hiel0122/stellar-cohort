@@ -5,7 +5,7 @@ const TARGET_API_URL = "https://link24.kr/api/shoturl.apsl";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-user-jwt, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -59,16 +59,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    /* ── 1. Auth check ── */
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return jsonResponse({ ok: false, message: "Unauthorized" }, 401);
+    /* ── 1. Auth check via x-user-jwt header ── */
+    const userJwt = req.headers.get("x-user-jwt");
+    if (!userJwt?.startsWith("Bearer ")) {
+      return jsonResponse({ ok: false, message: "Unauthorized (missing x-user-jwt)" }, 401);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: userJwt } },
     });
 
     const { data: { user }, error: userErr } = await supabase.auth.getUser();
