@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RawDataInputDrawer } from "@/components/RawDataInputDrawer";
 import { useAuth } from "@/components/AuthProvider";
+import { SessionSoftBanner } from "@/components/SessionSoftBanner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +44,7 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
   const [rawDataTab, setRawDataTab] = useState<RawDataTabType>("cohorts");
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, softError, retrySessionSync, dismissSoftError, resetSession, loading, profileLoading } = useAuth();
 
   const pageTitle = TITLE_MAP[pathname] ?? "운영 Studio";
   const showRawData = RAW_DATA_ROUTES.has(pathname);
@@ -104,6 +105,19 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
                 </DropdownMenu>
               </div>
             </header>
+            {softError && (
+              <div className="sticky top-14 z-20 border-b border-border/50 bg-background/70 px-4 py-3 backdrop-blur md:px-8">
+                <div className="mx-auto max-w-6xl">
+                  <SessionSoftBanner
+                    message={softError}
+                    busy={loading || profileLoading}
+                    onRetry={retrySessionSync}
+                    onReset={resetSession}
+                    onDismiss={dismissSoftError}
+                  />
+                </div>
+              </div>
+            )}
             <main className="flex-1 overflow-auto">
               <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">{children}</div>
             </main>

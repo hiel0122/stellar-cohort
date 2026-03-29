@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { getDefaultRoute } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { SignupModal } from "@/components/SignupModal";
 import { toast } from "sonner";
 import authBg from "@/assets/auth-bg.jpg";
 import { BrandWordmark } from "@/components/brand/BrandWordmark";
+import { SessionSoftBanner } from "@/components/SessionSoftBanner";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -38,15 +39,14 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function Auth() {
-  const { isAuthenticated, loading, profileLoading, role, profile } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated, loading, profileLoading, role, profile, softError, retrySessionSync, dismissSoftError, resetSession } = useAuth();
   const [btnLoading, setBtnLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
 
-  if (loading || profileLoading) {
+  if (loading || (isAuthenticated && !profile)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -95,6 +95,20 @@ export default function Auth() {
       <img src={authBg} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-white/25 dark:bg-black/45" />
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 dark:from-black/20 dark:to-black/30" />
+
+      {softError && (
+        <div className="absolute left-0 right-0 top-0 z-20 px-4 pt-4">
+          <div className="mx-auto max-w-3xl">
+            <SessionSoftBanner
+              message={softError}
+              busy={loading || profileLoading}
+              onRetry={retrySessionSync}
+              onReset={resetSession}
+              onDismiss={dismissSoftError}
+            />
+          </div>
+        </div>
+      )}
 
       <main className="relative z-10 flex min-h-screen items-center justify-center px-6 lg:px-16">
         <div className="flex w-full max-w-5xl flex-col-reverse items-center gap-10 lg:flex-row lg:items-center lg:gap-16">

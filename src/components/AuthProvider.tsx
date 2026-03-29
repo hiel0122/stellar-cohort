@@ -3,9 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { isAllowedDomain, type UserRole } from "@/lib/auth";
 import type { User, Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, RefreshCw, LogOut, Trash2 } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -25,10 +22,15 @@ interface AuthContextType {
   role: UserRole;
   session: Session | null;
   isAuthenticated: boolean;
+  authReady: boolean;
   loading: boolean;
   profileLoading: boolean;
+  softError: string | null;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<Profile | null>;
+  retrySessionSync: () => Promise<void>;
+  dismissSoftError: () => void;
+  resetSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -37,10 +39,15 @@ const AuthContext = createContext<AuthContextType>({
   role: "pending",
   session: null,
   isAuthenticated: false,
+  authReady: false,
   loading: true,
   profileLoading: false,
+  softError: null,
   signOut: async () => {},
   refreshProfile: async () => null,
+  retrySessionSync: async () => {},
+  dismissSoftError: () => {},
+  resetSession: () => {},
 });
 
 export function useAuth() {
@@ -101,20 +108,29 @@ function clearSupabaseAuthTokens() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [loading, setLoading] = useState(true); // initial session bootstrap
   const [profileLoading, setProfileLoading] = useState(false); // profile fetch after session
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [softError, setSoftError] = useState<string | null>(null);
   const initDone = useRef(false);
   const profileLoadRef = useRef<string | null>(null);
   const profileRequestRef = useRef(0);
   const visibilityTimeoutRef = useRef<number | null>(null);
   const visibilityRefreshInFlightRef = useRef(false);
   const safetyTimerRef = useRef<number | null>(null);
+  const profileSafetyTimerRef = useRef<number | null>(null);
 
   const clearSafetyTimer = useCallback(() => {
     if (safetyTimerRef.current !== null) {
       window.clearTimeout(safetyTimerRef.current);
       safetyTimerRef.current = null;
+    }
+  }, []);
+
+  const clearProfileSafetyTimer = useCallback(() => {
+    if (profileSafetyTimerRef.current !== null) {
+      window.clearTimeout(profileSafetyTimerRef.current);
+      profileSafetyTimerRef.current = null;
     }
   }, []);
 
@@ -129,7 +145,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleSignOut = useCallback(async () => {
     try { await supabase.auth.signOut(); } catch {}
     resetAuthState();
-    setAuthError(null);
+    setSoftError(null);
+    setAuthReady(true);
     setLoading(false);
   }, [resetAuthState]);
 
@@ -141,7 +158,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
     } catch {}
     resetAuthState();
-    setAuthError(null);
+    setSoftError(null);
+    setAuthReady(true);
     setLoading(false);
   }, [resetAuthState]);
 
@@ -153,19 +171,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const p = await fetchProfile(user.id);
       if (profileRequestRef.current !== requestId) return null;
-      setProfile(p);
       if (!p) {
-        setAuthError("세션 로딩 실패(일시적). 프로필을 다시 불러와주세요.");
+        setSoftError("세션 동기화에 실패했습니다. 다시 시도하거나, 문제가 지속되면 세션 초기화를 진행하세요.");
         if (import.meta.env.DEV) console.warn("Profile not found after retries for", user.id);
         return null;
       }
-      setAuthError(null);
+      setProfile(p);
+      setSoftError(null);
       return p;
     } catch (e) {
       if (import.meta.env.DEV) console.warn("loadProfile error", e);
       if (profileRequestRef.current === requestId) {
-        setProfile(null);
-        setAuthError("세션 로딩 실패(일시적). 프로필을 다시 불러와주세요.");
+        setSoftError("세션 동기화에 실패했습니다. 다시 시도하거나, 문제가 지속되면 세션 초기화를 진행하세요.");
       }
       return null;
     } finally {
@@ -182,69 +199,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return loadProfile(currentUser, { force: true });
   }, [loadProfile, session]);
 
-  const refreshSession = useCallback(async () => {
-    const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
-    if (error) throw error;
-    setSession(refreshedSession);
-    if (!refreshedSession) setProfile(null);
-    return refreshedSession;
-  }, [session]);
-
-  const handleRetry = useCallback(async () => {
-    setAuthError(null);
-    setLoading(true);
+  const retrySessionSync = useCallback(async () => {
+    if (visibilityRefreshInFlightRef.current) return;
+    visibilityRefreshInFlightRef.current = true;
+    setSoftError(null);
     try {
-      let nextSession: Session | null = null;
+      const { data: { session: nextSession }, error } = await supabase.auth.getSession();
+      if (error) throw error;
 
-      try {
-        nextSession = await refreshSession();
-      } catch (refreshError) {
-        if (import.meta.env.DEV) console.warn("refreshSession retry failed", refreshError);
-        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        nextSession = existingSession;
-        setSession(existingSession);
+      setSession(nextSession);
+
+      if (!nextSession?.user) {
+        setProfile(null);
+        setSoftError(null);
+        return;
       }
 
-      if (nextSession?.user) {
-        if (!isAllowedDomain(nextSession.user.email)) {
-          await handleInvalidDomain(nextSession.user.email);
-          return;
-        }
-        await loadProfile(nextSession.user, { force: true });
+      if (!isAllowedDomain(nextSession.user.email)) {
+        await handleInvalidDomain(nextSession.user.email);
+        return;
       }
+
+      await loadProfile(nextSession.user, { force: true });
     } catch (e: any) {
-      setAuthError(e?.message || "세션 로딩 실패(일시적). 다시 시도해주세요.");
+      if (import.meta.env.DEV) console.warn("session sync failed", e);
+      setSoftError("세션 동기화에 실패했습니다. 다시 시도하거나, 문제가 지속되면 세션 초기화를 진행하세요.");
     } finally {
+      visibilityRefreshInFlightRef.current = false;
       setLoading(false);
+      setAuthReady(true);
     }
-  }, [handleInvalidDomain, loadProfile, refreshSession]);
+  }, [handleInvalidDomain, loadProfile]);
 
-  const handleSessionReset = useCallback(() => {
+  const dismissSoftError = useCallback(() => {
+    setSoftError(null);
+  }, []);
+
+  const resetSession = useCallback(() => {
     clearSupabaseAuthTokens();
     window.location.reload();
   }, []);
 
   const handleVisibilityRefresh = useCallback(async () => {
-    if (visibilityRefreshInFlightRef.current || loading || profileLoading || !session?.user) return;
-
-    visibilityRefreshInFlightRef.current = true;
-    try {
-      const refreshedSession = await refreshSession();
-      if (refreshedSession?.user) {
-        if (!isAllowedDomain(refreshedSession.user.email)) {
-          await handleInvalidDomain(refreshedSession.user.email);
-          return;
-        }
-        await loadProfile(refreshedSession.user, { force: true });
-      }
-    } catch (e: any) {
-      if (import.meta.env.DEV) console.warn("visibility refresh failed", e);
-      setAuthError(e?.message || "세션 로딩 실패(일시적). 다시 시도해주세요.");
-    } finally {
-      visibilityRefreshInFlightRef.current = false;
-    }
-  }, [handleInvalidDomain, loadProfile, loading, profileLoading, refreshSession, session]);
+    if (loading || profileLoading || !session?.user) return;
+    await retrySessionSync();
+  }, [loading, profileLoading, retrySessionSync, session]);
 
   useEffect(() => {
     if (initDone.current) return;
@@ -254,8 +253,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading((prev) => {
         if (prev) {
           if (import.meta.env.DEV) console.warn("Auth safety timeout — forcing loading=false");
-          setAuthError("세션 로딩 실패(일시적). 다시 시도해주세요.");
+          setSoftError("세션 동기화에 실패했습니다. 다시 시도하거나, 문제가 지속되면 세션 초기화를 진행하세요.");
           setProfileLoading(false);
+          setAuthReady(true);
           return false;
         }
         return prev;
@@ -268,7 +268,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (event === "SIGNED_OUT") {
           resetAuthState();
-          setAuthError(null);
+          setSoftError(null);
+          setAuthReady(true);
           setLoading(false);
           return;
         }
@@ -278,9 +279,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
         }
         if (newSession) {
-          setAuthError(null);
+          setSoftError(null);
         }
-        setLoading(false);
       }
     );
 
@@ -289,26 +289,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
         setSession(s);
         if (!s) setProfile(null);
+        setSoftError(null);
       })
       .catch((e: any) => {
         if (import.meta.env.DEV) console.warn("getSession promise rejection", e);
-        setAuthError(e?.message || "세션 로딩 실패(일시적). 다시 시도해주세요.");
+        setSoftError("세션 동기화에 실패했습니다. 다시 시도하거나, 문제가 지속되면 세션 초기화를 진행하세요.");
       })
       .finally(() => {
+        setAuthReady(true);
         setLoading(false);
       });
 
     return () => {
       clearSafetyTimer();
+      clearProfileSafetyTimer();
       subscription.unsubscribe();
     };
-  }, [clearSafetyTimer, resetAuthState]);
+  }, [clearProfileSafetyTimer, clearSafetyTimer, resetAuthState]);
 
   useEffect(() => {
     if (!loading) {
       clearSafetyTimer();
     }
   }, [clearSafetyTimer, loading]);
+
+  useEffect(() => {
+    clearProfileSafetyTimer();
+
+    if (!profileLoading) return;
+
+    profileSafetyTimerRef.current = window.setTimeout(() => {
+      if (import.meta.env.DEV) console.warn("Profile safety timeout — forcing profileLoading=false");
+      setProfileLoading(false);
+      setSoftError("세션 동기화에 실패했습니다. 다시 시도하거나, 문제가 지속되면 세션 초기화를 진행하세요.");
+    }, AUTH_TIMEOUT_MS);
+
+    return clearProfileSafetyTimer;
+  }, [clearProfileSafetyTimer, profileLoading]);
 
   useEffect(() => {
     const currentUser = session?.user;
@@ -321,13 +338,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (!authReady) return;
+
+    if (profile?.id && profile.id !== currentUser.id) {
+      setProfile(null);
+    }
+
     if (!isAllowedDomain(currentUser.email)) {
       void handleInvalidDomain(currentUser.email);
       return;
     }
 
     void loadProfile(currentUser);
-  }, [handleInvalidDomain, loadProfile, session]);
+  }, [authReady, handleInvalidDomain, loadProfile, profile?.id, session]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -354,39 +377,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // CRITICAL: only derive role when profile is actually loaded
   const role: UserRole = profile ? toUserRole(profile.role) : "pending";
 
-  // Error fallback UI
-  if (!loading && authError) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-6">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center space-y-2">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-              <AlertTriangle className="h-6 w-6 text-destructive" />
-            </div>
-            <CardTitle className="text-lg">세션 로딩 실패(일시적)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">{authError}</p>
-            <div className="flex flex-col gap-2">
-              <Button onClick={handleRetry} className="w-full gap-2" variant="default">
-                <RefreshCw className="h-4 w-4" />
-                다시 시도
-              </Button>
-              <Button onClick={handleSessionReset} className="w-full gap-2" variant="outline">
-                <Trash2 className="h-4 w-4" />
-                세션 초기화 (권장)
-              </Button>
-              <Button onClick={handleSignOut} className="w-full gap-2" variant="ghost">
-                <LogOut className="h-4 w-4" />
-                로그아웃
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <AuthContext.Provider
       value={{
@@ -395,10 +385,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role,
         session,
         isAuthenticated: !!user,
+        authReady,
         loading,
         profileLoading,
+        softError,
         signOut: handleSignOut,
         refreshProfile,
+        retrySessionSync,
+        dismissSoftError,
+        resetSession,
       }}
     >
       {children}

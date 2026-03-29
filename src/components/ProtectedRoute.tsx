@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { canAccess, getDefaultRoute } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ interface Props {
 
 export function ProtectedRoute({ children, requiredPath }: Props) {
   const { user, profile, role, isAuthenticated, loading, profileLoading } = useAuth();
+  const location = useLocation();
 
   // Still bootstrapping session
   if (loading) {
@@ -22,11 +23,11 @@ export function ProtectedRoute({ children, requiredPath }: Props) {
   }
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
   }
 
-  // Profile is still loading — show spinner, do NOT route to /pending
-  if (profileLoading || !profile) {
+  // Profile is still loading — do NOT route to /pending before role is resolved
+  if (!profile) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -35,7 +36,7 @@ export function ProtectedRoute({ children, requiredPath }: Props) {
   }
 
   if (role === "pending") {
-    return <Navigate to="/pending" replace />;
+    return <Navigate to="/pending" replace state={{ from: location.pathname }} />;
   }
 
   if (requiredPath && !canAccess(role, requiredPath, profile)) {
@@ -54,5 +55,15 @@ export function ProtectedRoute({ children, requiredPath }: Props) {
     );
   }
 
-  return <>{children}</>;
+  return profileLoading ? (
+    <div className="relative min-h-screen">
+      {children}
+      <div className="pointer-events-none absolute inset-0 z-40 flex items-start justify-center bg-background/10 pt-6 backdrop-blur-[1px]">
+        <div className="flex items-center gap-2 rounded-full border border-border/70 bg-background/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur">
+          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          세션 동기화 중…
+        </div>
+      </div>
+    </div>
+  ) : <>{children}</>;
 }

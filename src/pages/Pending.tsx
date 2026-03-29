@@ -1,28 +1,42 @@
 import { useEffect, useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
-import { getDefaultRoute } from "@/lib/auth";
+import { canAccess, getDefaultRoute } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { BrandWordmark } from "@/components/brand/BrandWordmark";
 import { ProfileEditModal } from "@/components/ProfileEditModal";
 import { ShieldAlert, Copy, LogOut, RefreshCw, UserPen } from "lucide-react";
 import { toast } from "sonner";
 import type { UserRole } from "@/lib/auth";
+import { SessionSoftBanner } from "@/components/SessionSoftBanner";
 
 export default function Pending() {
-  const { user, profile, role, signOut, loading, profileLoading, refreshProfile } = useAuth();
+  const { user, profile, role, signOut, loading, profileLoading, refreshProfile, softError, retrySessionSync, dismissSoftError, resetSession } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const [checking, setChecking] = useState(false);
+  const requestedPath = typeof location.state?.from === "string" ? location.state.from : null;
+
+  const resolveApprovedRoute = useCallback((nextRole: UserRole, nextProfile: NonNullable<typeof profile>) => {
+    if (requestedPath && canAccess(nextRole, requestedPath, nextProfile)) {
+      return requestedPath;
+    }
+    return getDefaultRoute(nextRole, nextProfile);
+  }, [requestedPath]);
+
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   // Immediately redirect if role is not pending (prevents flicker)
   useEffect(() => {
-    if (loading || profileLoading) return;
+    if (loading) return;
     if (!profile) return; // still no profile, stay put
     if (role !== "pending") {
-      navigate(getDefaultRoute(role, profile), { replace: true });
+      navigate(resolveApprovedRoute(role, profile), { replace: true });
     }
-  }, [role, loading, profileLoading, profile, navigate]);
+  }, [role, loading, profile, navigate, resolveApprovedRoute]);
 
   // Auto-poll every 8 seconds — only when session is ready and role is pending
   useEffect(() => {
@@ -40,16 +54,20 @@ export default function Pending() {
     setChecking(true);
     try {
       const nextProfile = await refreshProfile();
-      if (nextProfile && nextProfile.role !== "pending") {
+      if (!nextProfile) {
+        toast.error("승인 상태를 다시 확인하지 못했습니다.");
+        return;
+      }
+      if (nextProfile.role !== "pending") {
         toast.success("권한이 승인되었습니다!");
-        navigate(getDefaultRoute(nextProfile.role as UserRole, nextProfile as any), { replace: true });
+        navigate(resolveApprovedRoute(nextProfile.role as UserRole, nextProfile), { replace: true });
       } else {
         toast.info("아직 승인 대기 중입니다.");
       }
     } finally {
       setChecking(false);
     }
-  }, [navigate, refreshProfile, user]);
+  }, [navigate, refreshProfile, resolveApprovedRoute, user]);
 
   const handleCopyRequest = useCallback(() => {
     const text = `[Con-tudio 권한 요청]\n이름: ${profile?.full_name ?? "미입력"}\n이메일: ${user?.email ?? ""}\n부서: ${profile?.department ?? "미입력"}\n직급: ${profile?.title ?? "미입력"}\n\n위 계정에 대한 접근 권한 승인을 요청드립니다.`;
@@ -62,7 +80,7 @@ export default function Pending() {
     navigate("/auth");
   };
 
-  if (loading || profileLoading) {
+  if (loading || (!profile && profileLoading)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -72,6 +90,20 @@ export default function Pending() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
+      {softError && (
+        <div className="fixed left-0 right-0 top-0 z-20 px-4 pt-4">
+          <div className="mx-auto max-w-3xl">
+            <SessionSoftBanner
+              message={softError}
+              busy={loading || profileLoading}
+              onRetry={retrySessionSync}
+              onReset={resetSession}
+              onDismiss={dismissSoftError}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md space-y-6">
         <div className="flex justify-center">
           <BrandWordmark className="text-3xl" />
