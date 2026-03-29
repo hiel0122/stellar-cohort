@@ -140,6 +140,9 @@ export function useSWRDashboard() {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [dashboard.triggerRefresh]);
 
+  // ── Dismissed hash (sessionStorage) ──
+  const DISMISSED_KEY = "swr_dismissed_hash";
+
   // ── Apply / Dismiss ──
   const applyPending = useCallback(() => {
     if (pendingSnapshot) {
@@ -150,9 +153,14 @@ export function useSWRDashboard() {
   }, [pendingSnapshot]);
 
   const dismissPending = useCallback(() => {
+    if (pendingSnapshot) {
+      try {
+        sessionStorage.setItem(DISMISSED_KEY, pendingSnapshot.hash);
+      } catch {}
+    }
     setPendingSnapshot(null);
     setUpdateAvailable(false);
-  }, []);
+  }, [pendingSnapshot]);
 
   // Manual refresh button
   const manualRefresh = useCallback(() => {
