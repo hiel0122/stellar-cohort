@@ -82,7 +82,8 @@ const Index = () => {
     crossCohortId, handleCrossCohortChange, crossCohorts,
     crossBaselineLabel, isSameCohort,
     loadState, detailLoadState, error,
-  } = useDashboardData();
+    updateAvailable, applyPending, dismissPending,
+  } = useSWRDashboard();
 
   // Resolve instructor/course names from raw cohorts for target key
   const rawStoreSnapshot = useRawCohortStore();
