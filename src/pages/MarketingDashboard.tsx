@@ -59,7 +59,7 @@ export default function MarketingDashboard() {
         <MarketingKPICards links={links} events={events} />
 
         {/* Tabs */}
-        <Tabs defaultValue="overview" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
