@@ -10,7 +10,8 @@ import { TargetProgressSection } from "@/components/TargetProgressSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDashboardData } from "@/hooks/useDashboardData";
+import { useSWRDashboard } from "@/hooks/useSWRDashboard";
+import { DataUpdateBanner } from "@/components/DataUpdateBanner";
 import { useTargets, calcProgress } from "@/hooks/useTargets";
 import { usePlatformCosts } from "@/hooks/usePlatformCosts";
 import { getCohortCostSummary, getCostsForCohort, type CohortCostSummary } from "@/lib/platformCostStore";
@@ -81,7 +82,8 @@ const Index = () => {
     crossCohortId, handleCrossCohortChange, crossCohorts,
     crossBaselineLabel, isSameCohort,
     loadState, detailLoadState, error,
-  } = useDashboardData();
+    updateAvailable, applyPending, dismissPending,
+  } = useSWRDashboard();
 
   // Resolve instructor/course names from raw cohorts for target key
   const rawStoreSnapshot = useRawCohortStore();
@@ -164,6 +166,10 @@ const Index = () => {
         />
 
         <div className="space-y-7 pt-8">
+
+          {updateAvailable && (
+            <DataUpdateBanner onApply={applyPending} onDismiss={dismissPending} />
+          )}
 
           {error && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>
