@@ -15,16 +15,17 @@ import { SatisfactionScoreChart } from "@/components/satisfaction/ScoreChart";
 import { SatisfactionChoiceChart } from "@/components/satisfaction/ChoiceChart";
 import { SatisfactionKeywords } from "@/components/satisfaction/Keywords";
 import { SatisfactionFreetextList } from "@/components/satisfaction/FreetextList";
+import { usePageState } from "@/hooks/usePageState";
 
 export default function SatisfactionPage() {
   const [parsed, setParsed] = useState<ParsedCsv | null>(null);
   const [satReport, setSatReport] = useState<SatisfactionReport | null>(null);
   const [ftReport, setFtReport] = useState<SatisfactionReport | null>(null);
-  const [maskPii, setMaskPii] = useState(true);
-  const [showRawText, setShowRawText] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<Record<number, string[]>>({});
+  const [maskPii, setMaskPii] = usePageState("survey", "maskPii", true);
+  const [showRawText, setShowRawText] = usePageState("survey", "showRawText", false);
+  const [activeFilters, setActiveFilters] = usePageState<Record<number, string[]>>("survey", "activeFilters", {});
   const [isDragOver, setIsDragOver] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("satisfaction");
+  const [activeTab, setActiveTab] = usePageState("survey", "activeTab", "satisfaction");
 
   useEffect(() => {
     const last = satisfactionService.loadLastSnapshot();

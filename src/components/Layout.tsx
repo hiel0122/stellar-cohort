@@ -8,6 +8,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { RawDataInputDrawer } from "@/components/RawDataInputDrawer";
 import { useAuth } from "@/components/AuthProvider";
 import { SessionSoftBanner } from "@/components/SessionSoftBanner";
+import { useScrollPersistence } from "@/hooks/useScrollPersistence";
+import { PersistDebug } from "@/components/PersistDebug";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +50,9 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
 
   const pageTitle = TITLE_MAP[pathname] ?? "운영 Studio";
   const showRawData = RAW_DATA_ROUTES.has(pathname);
+
+  // Global scroll persistence
+  useScrollPersistence();
 
   const openRawData = useCallback((tab: RawDataTabType = "cohorts") => {
     setRawDataTab(tab);
@@ -132,6 +137,7 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
           defaultCohortNo={defaultCohortNo ?? undefined}
           defaultTab={rawDataTab}
         />
+        <PersistDebug />
       </SidebarProvider>
     </LayoutContext.Provider>
   );
