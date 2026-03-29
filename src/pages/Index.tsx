@@ -198,7 +198,7 @@ const Index = () => {
         <div className="space-y-7 pt-8">
 
           {updateAvailable && (
-            <DataUpdateBanner onApply={applyPending} onDismiss={dismissPending} />
+            <DataUpdateBanner onApply={applyPending} onDismiss={dismissPending} diffs={bannerDiffs} />
           )}
 
           {error && (
