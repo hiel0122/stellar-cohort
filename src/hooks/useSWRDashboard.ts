@@ -107,6 +107,11 @@ export function useSWRDashboard() {
     backgroundRefreshRef.current = false;
 
     if (activeSnapshot && liveHash !== activeSnapshot.hash) {
+      // Check dismissed hash
+      let dismissed: string | null = null;
+      try { dismissed = sessionStorage.getItem("swr_dismissed_hash"); } catch {}
+      if (dismissed === liveHash) return;
+
       setPendingSnapshot({
         kpis: dashboard.kpis,
         funnel: dashboard.funnel,
