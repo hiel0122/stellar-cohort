@@ -195,5 +195,8 @@ export function useSWRDashboard() {
     applyPending,
     dismissPending,
     manualRefresh,
+    // For diff display
+    activeSnapshot,
+    pendingSnapshot,
   };
 }
