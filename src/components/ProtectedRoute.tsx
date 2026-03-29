@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function ProtectedRoute({ children, requiredPath }: Props) {
-  const { user, profile, role, isAuthenticated, loading, profileLoading } = useAuth();
+  const { user, profile, role, isAuthenticated, loading, profileLoading, softError } = useAuth();
   const location = useLocation();
 
   // Still bootstrapping session
@@ -27,7 +27,7 @@ export function ProtectedRoute({ children, requiredPath }: Props) {
   }
 
   // Profile is still loading — do NOT route to /pending before role is resolved
-  if (!profile) {
+  if (!profile && !softError) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />

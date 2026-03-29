@@ -25,10 +25,6 @@ export default function Pending() {
     return getDefaultRoute(nextRole, nextProfile);
   }, [requestedPath]);
 
-  if (!loading && !user) {
-    return <Navigate to="/auth" replace />;
-  }
-
   // Immediately redirect if role is not pending (prevents flicker)
   useEffect(() => {
     if (loading) return;
@@ -79,6 +75,10 @@ export default function Pending() {
     await signOut();
     navigate("/auth");
   };
+
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   if (loading || (!profile && profileLoading)) {
     return (

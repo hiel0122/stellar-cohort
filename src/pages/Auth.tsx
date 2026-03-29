@@ -46,7 +46,7 @@ export default function Auth() {
   const [showPw, setShowPw] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
 
-  if (loading || (isAuthenticated && !profile)) {
+  if (loading || (isAuthenticated && !profile && !softError)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -54,7 +54,7 @@ export default function Auth() {
     );
   }
 
-  if (isAuthenticated) {
+  if (isAuthenticated && profile) {
     return <Navigate to={getDefaultRoute(role, profile)} replace />;
   }
 
