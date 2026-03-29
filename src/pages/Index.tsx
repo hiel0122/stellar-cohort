@@ -83,7 +83,37 @@ const Index = () => {
     crossBaselineLabel, isSameCohort,
     loadState, detailLoadState, error,
     updateAvailable, applyPending, dismissPending,
+    activeSnapshot, pendingSnapshot,
   } = useSWRDashboard();
+
+  // Compute KPI diffs for banner
+  const bannerDiffs = useMemo<KpiDiff[]>(() => {
+    if (!activeSnapshot || !pendingSnapshot) return [];
+    const aKpi = activeSnapshot.kpis.find((k) => k.cohort_id === cohortId);
+    const pKpi = pendingSnapshot.kpis.find((k) => k.cohort_id === cohortId);
+    if (!aKpi || !pKpi) return [];
+    const diffs: KpiDiff[] = [];
+    const fields: { key: keyof typeof aKpi; label: string; fmt: (v: number) => string }[] = [
+      { key: "revenue", label: "총매출", fmt: formatWonFull },
+      { key: "leads", label: "리드", fmt: (v) => `${formatInt(v)}명` },
+      { key: "applied", label: "라이브", fmt: (v) => `${formatInt(v)}명` },
+      { key: "students", label: "결제", fmt: (v) => `${formatInt(v)}명` },
+    ];
+    for (const f of fields) {
+      const a = aKpi[f.key] as number;
+      const p = pKpi[f.key] as number;
+      if (a !== p) {
+        const diff = p - a;
+        diffs.push({
+          label: f.label,
+          from: f.fmt(a),
+          to: f.fmt(p),
+          change: `${diff >= 0 ? "+" : ""}${f.key === "revenue" ? formatWonFull(diff) : formatInt(diff)}`,
+        });
+      }
+    }
+    return diffs;
+  }, [activeSnapshot, pendingSnapshot, cohortId]);
 
   // Resolve instructor/course names from raw cohorts for target key
   const rawStoreSnapshot = useRawCohortStore();
