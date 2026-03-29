@@ -15,13 +15,14 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { marketingProvider } from "@/lib/marketing";
 import type { MarketingLink } from "@/lib/marketing/types";
+import { usePageState } from "@/hooks/usePageState";
 
 export default function MarketingDashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedLink, setSelectedLink] = useState<MarketingLink | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
-  const [activeLinkId, setActiveLinkId] = useState<string | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = usePageState<string | null>("marketing", "selectedCampaign", null);
+  const [activeLinkId, setActiveLinkId] = usePageState<string | null>("marketing", "activeLinkId", null);
 
   const reload = useCallback(() => setRefreshKey((k) => k + 1), []);
 

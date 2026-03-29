@@ -10,6 +10,7 @@ import { Search, Loader2, Users, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { CLEARANCE_LABELS } from "@/lib/auth";
 import { UserDetailDrawer } from "@/components/UserDetailDrawer";
+import { usePageState } from "@/hooks/usePageState";
 
 interface ProfileRow {
   id: string;
@@ -37,8 +38,8 @@ export default function UserAdmin() {
   const { role: myRole } = useAuth();
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [search, setSearch] = usePageState("admin", "search", "");
+  const [roleFilter, setRoleFilter] = usePageState("admin", "roleFilter", "all");
   const [selectedProfile, setSelectedProfile] = useState<ProfileRow | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
