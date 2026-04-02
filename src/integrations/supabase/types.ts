@@ -125,12 +125,32 @@ export type Database = {
         }
         Relationships: []
       }
+      survey_ui_state: {
+        Row: {
+          owner_id: string
+          state: Json
+          updated_at: string
+        }
+        Insert: {
+          owner_id: string
+          state?: Json
+          updated_at?: string
+        }
+        Update: {
+          owner_id?: string
+          state?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      is_admin: { Args: never; Returns: boolean }
+      is_admin:
+        | { Args: never; Returns: boolean }
+        | { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
