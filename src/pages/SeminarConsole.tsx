@@ -235,56 +235,129 @@ export default function SeminarConsolePage() {
               </div>
             </SectionCard>
 
-            <SectionCard title={`지원자 목록 (${active?.applicants.length ?? 0})`} bodyClassName="p-0">
-              <div className="overflow-x-auto max-h-[calc(100vh-340px)]">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-card z-10">
-                    <TableRow>
-                      <TableHead className="w-10"><Checkbox /></TableHead>
-                      <TableHead>응답ID</TableHead>
-                      <TableHead>이름</TableHead>
-                      <TableHead>연락처</TableHead>
-                      <TableHead>이메일</TableHead>
-                      <TableHead>회사</TableHead>
-                      <TableHead>연령대</TableHead>
-                      <TableHead>매출</TableHead>
-                      <TableHead>예산</TableHead>
-                      <TableHead className="text-right">참석</TableHead>
-                      <TableHead className="text-right">자동</TableHead>
-                      <TableHead className="text-right">수동</TableHead>
-                      <TableHead className="text-right">총점</TableHead>
-                      <TableHead>분류</TableHead>
-                      <TableHead>상태</TableHead>
-                      <TableHead className="w-8"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {active?.applicants.map((a) => (
-                      <TableRow key={a.id} className="cursor-pointer" onClick={() => setSelectedAppId(a.id)}>
-                        <TableCell onClick={(e) => e.stopPropagation()}><Checkbox /></TableCell>
-                        <TableCell className="font-mono text-[11px]">{a.id}</TableCell>
-                        <TableCell>{a.name}</TableCell>
-                        <TableCell className="text-xs">{a.phone}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{a.email}</TableCell>
-                        <TableCell>{a.brand}</TableCell>
-                        <TableCell>{a.ageGroup}</TableCell>
-                        <TableCell>{a.revenueBand}</TableCell>
-                        <TableCell>{a.budgetBand}</TableCell>
-                        <TableCell className="text-right tabular-nums">{a.attendCount}</TableCell>
-                        <TableCell className="text-right tabular-nums">{a.autoScore}</TableCell>
-                        <TableCell className="text-right tabular-nums">{a.manualScore}</TableCell>
-                        <TableCell className="text-right tabular-nums font-semibold">{a.totalScore}</TableCell>
-                        <TableCell><Badge variant="outline" className={`${CATEGORY_VARIANT[a.category]} text-[10px]`}>{CATEGORY_LABEL[a.category]}</Badge></TableCell>
-                        <TableCell><Badge variant="outline" className="text-[10px]">{APPLICANT_STATUS_LABEL[a.status]}</Badge></TableCell>
-                        <TableCell>{a.memo && <StickyNote className="h-3 w-3 text-amber-500" />}</TableCell>
-                      </TableRow>
-                    ))}
-                    {(active?.applicants.length ?? 0) === 0 && (
-                      <TableRow><TableCell colSpan={16} className="text-center text-muted-foreground text-sm py-12">지원자 데이터가 없습니다. DB 관리에서 업로드하세요.</TableCell></TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+            <SectionCard bodyClassName="p-0">
+              <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b">
+                <h3 className="text-sm font-semibold">
+                  지원자 목록 <span className="text-muted-foreground font-normal">({filteredApplicants.length}/{active?.applicants.length ?? 0})</span>
+                </h3>
+                {dirty && <span className="text-[11px] text-amber-600 dark:text-amber-400">· 변경됨</span>}
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      value={appSearchInput}
+                      onChange={(e) => setAppSearchInput(e.target.value)}
+                      placeholder="이름/이메일/연락처/회사 검색"
+                      className="h-9 pl-8 w-64"
+                    />
+                  </div>
+                  <Select value={catFilter} onValueChange={(v) => setCatFilter(v as any)}>
+                    <SelectTrigger className="h-9 w-32"><SelectValue placeholder="분류" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">전체 분류</SelectItem>
+                      {(Object.keys(CATEGORY_LABEL) as ApplicantCategory[]).map((c) => (
+                        <SelectItem key={c} value={c}>{CATEGORY_LABEL[c]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={appStatusFilter} onValueChange={(v) => setAppStatusFilter(v as any)}>
+                    <SelectTrigger className="h-9 w-32"><SelectValue placeholder="상태" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">전체 상태</SelectItem>
+                      {Object.entries(APPLICANT_STATUS_LABEL).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+                    <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="category">분류 우선순위</SelectItem>
+                      <SelectItem value="score_desc">총점 높은순</SelectItem>
+                      <SelectItem value="score_asc">총점 낮은순</SelectItem>
+                      <SelectItem value="id">응답ID순</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              <TooltipProvider delayDuration={300}>
+                <div className="overflow-auto max-h-[calc(100vh-380px)]">
+                  <table className="w-full text-sm caption-bottom" style={{ tableLayout: "fixed" }}>
+                    <colgroup>
+                      <col style={{ width: COL_WIDTHS.check }} />
+                      <col style={{ width: COL_WIDTHS.id }} />
+                      <col style={{ width: COL_WIDTHS.name }} />
+                      <col style={{ width: COL_WIDTHS.phone }} />
+                      <col style={{ width: COL_WIDTHS.email }} />
+                      <col style={{ width: COL_WIDTHS.brand }} />
+                      <col style={{ width: COL_WIDTHS.age }} />
+                      <col style={{ width: COL_WIDTHS.rev }} />
+                      <col style={{ width: COL_WIDTHS.bud }} />
+                      <col style={{ width: COL_WIDTHS.attend }} />
+                      <col style={{ width: COL_WIDTHS.auto }} />
+                      <col style={{ width: COL_WIDTHS.manual }} />
+                      <col style={{ width: COL_WIDTHS.total }} />
+                      <col style={{ width: COL_WIDTHS.category }} />
+                      <col style={{ width: COL_WIDTHS.status }} />
+                      <col style={{ width: COL_WIDTHS.memo }} />
+                    </colgroup>
+                    <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
+                      <tr className="text-muted-foreground">
+                        {["", "응답ID", "이름", "연락처", "이메일", "회사", "연령대", "매출", "예산"].map((h, i) => (
+                          <th key={i} className="h-10 px-3 text-left font-medium text-xs whitespace-nowrap">{h || <Checkbox />}</th>
+                        ))}
+                        <th className="h-10 px-3 text-right font-medium text-xs">참석</th>
+                        <th className="h-10 px-3 text-right font-medium text-xs">자동</th>
+                        <th className="h-10 px-3 text-right font-medium text-xs">수동</th>
+                        <th className="h-10 px-3 text-right font-medium text-xs">총점</th>
+                        <th className="h-10 px-3 text-left font-medium text-xs">분류</th>
+                        <th className="h-10 px-3 text-left font-medium text-xs">상태</th>
+                        <th className="h-10 px-1 font-medium text-xs"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredApplicants.map((a) => (
+                        <tr
+                          key={a.id}
+                          className="border-b cursor-pointer transition-colors hover:bg-accent/50"
+                          onClick={() => setSelectedAppId(a.id)}
+                        >
+                          <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}><Checkbox /></td>
+                          <td className="px-3 py-2 font-mono text-[11px] truncate" title={a.id}>{a.id}</td>
+                          <td className="px-3 py-2 truncate" title={a.name}>{a.name}</td>
+                          <EllipsisCell value={a.phone} className="text-xs" />
+                          <EllipsisCell value={a.email} className="text-xs text-muted-foreground" />
+                          <EllipsisCell value={a.brand} />
+                          <td className="px-3 py-2 truncate" title={a.ageGroup}>{a.ageGroup}</td>
+                          <td className="px-3 py-2 truncate" title={a.revenueBand}>{a.revenueBand}</td>
+                          <td className="px-3 py-2 truncate" title={a.budgetBand}>{a.budgetBand}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{a.attendCount}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{a.autoScore}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{a.manualScore}</td>
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold">{a.totalScore}</td>
+                          <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
+                            <Select value={a.category} onValueChange={(v) => handleCategoryChange(a.id, v as ApplicantCategory)}>
+                              <SelectTrigger className={`h-7 px-2 text-[11px] border ${CATEGORY_VARIANT[a.category]}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(Object.keys(CATEGORY_LABEL) as ApplicantCategory[]).map((c) => (
+                                  <SelectItem key={c} value={c}>{CATEGORY_LABEL[c]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-3 py-2"><Badge variant="outline" className="text-[10px] whitespace-nowrap">{APPLICANT_STATUS_LABEL[a.status]}</Badge></td>
+                          <td className="px-1 py-2 text-center">{a.memo && <StickyNote className="h-3 w-3 text-amber-500 inline" />}</td>
+                        </tr>
+                      ))}
+                      {filteredApplicants.length === 0 && (
+                        <tr><td colSpan={16} className="text-center text-muted-foreground text-sm py-12">조건에 맞는 지원자가 없습니다.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </TooltipProvider>
             </SectionCard>
           </div>
         </div>
