@@ -1,4 +1,4 @@
-import { LayoutDashboard, PanelLeftClose, PanelLeft, SmilePlus, Megaphone, ShieldCheck, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, PanelLeftClose, PanelLeft, SmilePlus, Megaphone, ShieldCheck, ClipboardCheck, Database, ListChecks, Wrench, Archive } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -28,7 +28,11 @@ const mediaCommerceNav: typeof mainNav = [
 ];
 
 const seminarNav: typeof mainNav = [
-  { title: "Screening", pageKey: "screening", url: "/seminar/screening", icon: ClipboardCheck },
+  { title: "Dashboard", pageKey: "seminar_dashboard", url: "/seminar/dashboard", icon: LayoutDashboard },
+  { title: "DB 관리", pageKey: "seminar_db", url: "/seminar/db", icon: Database },
+  { title: "심사요건 관리", pageKey: "seminar_criteria", url: "/seminar/criteria", icon: Wrench },
+  { title: "프로젝트 콘솔", pageKey: "seminar_console", url: "/seminar/console", icon: ListChecks },
+  { title: "Screening (Legacy)", pageKey: "screening", url: "/seminar/screening", icon: Archive },
 ];
 
 const adminNav: typeof mainNav = [

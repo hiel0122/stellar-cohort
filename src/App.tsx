@@ -12,6 +12,10 @@ import Index from "./pages/Index";
 import Satisfaction from "./pages/Satisfaction";
 import MarketingDashboard from "./pages/MarketingDashboard";
 import Screening from "./pages/Screening";
+import SeminarDashboard from "./pages/SeminarDashboard";
+import SeminarDb from "./pages/SeminarDb";
+import SeminarCriteria from "./pages/SeminarCriteria";
+import SeminarConsole from "./pages/SeminarConsole";
 import UserAdmin from "./pages/UserAdmin";
 import TrackingRedirect from "./pages/TrackingRedirect";
 import Pending from "./pages/Pending";
@@ -51,6 +55,38 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredPath="/media-commerce/marketing">
                     <MarketingDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/seminar/dashboard"
+                element={
+                  <ProtectedRoute requiredPath="/seminar/dashboard">
+                    <SeminarDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/seminar/db"
+                element={
+                  <ProtectedRoute requiredPath="/seminar/db">
+                    <SeminarDb />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/seminar/criteria"
+                element={
+                  <ProtectedRoute requiredPath="/seminar/criteria">
+                    <SeminarCriteria />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/seminar/console"
+                element={
+                  <ProtectedRoute requiredPath="/seminar/console">
+                    <SeminarConsole />
                   </ProtectedRoute>
                 }
               />
