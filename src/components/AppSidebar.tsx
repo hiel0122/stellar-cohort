@@ -1,4 +1,4 @@
-import { LayoutDashboard, PanelLeftClose, PanelLeft, SmilePlus, Megaphone, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, PanelLeftClose, PanelLeft, SmilePlus, Megaphone, ShieldCheck, ClipboardCheck } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -27,6 +27,10 @@ const mediaCommerceNav: typeof mainNav = [
   { title: "Link Tracking", pageKey: "link_tracking", url: "/media-commerce/marketing", icon: Megaphone },
 ];
 
+const seminarNav: typeof mainNav = [
+  { title: "Screening", pageKey: "screening", url: "/seminar/screening", icon: ClipboardCheck },
+];
+
 const adminNav: typeof mainNav = [
   { title: "사용자 관리", pageKey: "admin_users", url: "/admin/users", icon: ShieldCheck },
 ];
@@ -40,6 +44,7 @@ export function AppSidebar() {
 
   const filteredMain = mainNav.filter((item) => effectivePages.has(item.pageKey));
   const filteredMedia = mediaCommerceNav.filter((item) => effectivePages.has(item.pageKey));
+  const filteredSeminar = seminarNav.filter((item) => effectivePages.has(item.pageKey));
   const filteredAdmin = adminNav.filter((item) => effectivePages.has(item.pageKey));
 
   return (
@@ -93,6 +98,30 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {filteredMedia.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <NavLink
+                        to={item.url}
+                        className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        activeClassName="bg-accent text-foreground font-medium"
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {filteredSeminar.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70">Seminar</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredSeminar.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild tooltip={item.title}>
                       <NavLink

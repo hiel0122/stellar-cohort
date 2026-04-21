@@ -22,6 +22,7 @@ const TITLE_MAP: Record<string, string> = {
   "/dashboard": "매출 대시보드",
   "/media-commerce/marketing": "마케팅 대시보드",
   "/satisfaction": "만족도 분석",
+  "/seminar/screening": "심사 운영 콘솔",
   "/admin/users": "사용자 권한 관리",
 };
 
