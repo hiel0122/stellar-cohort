@@ -86,6 +86,47 @@ export default function SeminarConsolePage() {
 
   const selectedApp = active?.applicants.find((a) => a.id === selectedAppId) ?? null;
 
+  const filteredApplicants = useMemo(() => {
+    if (!active) return [];
+    const list = active.applicants.filter((a) => {
+      if (catFilter !== "all" && a.category !== catFilter) return false;
+      if (appStatusFilter !== "all" && a.status !== appStatusFilter) return false;
+      if (appSearch) {
+        const phoneNorm = a.phone.replace(/[^0-9]/g, "");
+        const hay = [a.name, a.email, a.phone, phoneNorm, a.brand, a.id].join(" ").toLowerCase();
+        if (!hay.includes(appSearch)) return false;
+      }
+      return true;
+    });
+    const sorted = [...list];
+    if (sortKey === "category") {
+      sorted.sort((a, b) => CATEGORY_PRIORITY[a.category] - CATEGORY_PRIORITY[b.category] || b.totalScore - a.totalScore);
+    } else if (sortKey === "score_desc") {
+      sorted.sort((a, b) => b.totalScore - a.totalScore);
+    } else if (sortKey === "score_asc") {
+      sorted.sort((a, b) => a.totalScore - b.totalScore);
+    } else {
+      sorted.sort((a, b) => a.id.localeCompare(b.id));
+    }
+    return sorted;
+  }, [active, catFilter, appStatusFilter, appSearch, sortKey]);
+
+  function handleCategoryChange(applicantId: string, next: ApplicantCategory) {
+    if (!active) return;
+    if (next === "priority") {
+      setConfirmPriority({ id: applicantId });
+      return;
+    }
+    updateApplicant(active.id, applicantId, { category: next });
+    setDirty(true);
+  }
+  function confirmPriorityChange() {
+    if (!active || !confirmPriority) return;
+    updateApplicant(active.id, confirmPriority.id, { category: "priority" });
+    setDirty(true);
+    setConfirmPriority(null);
+  }
+
   function handleRun() {
     if (!active) return;
     runScreening(active.id);
