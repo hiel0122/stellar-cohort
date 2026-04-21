@@ -113,7 +113,7 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
             </header>
             {softError && (
               <div className="sticky top-14 z-20 border-b border-border/50 bg-background/70 px-4 py-3 backdrop-blur md:px-8">
-                <div className="mx-auto max-w-6xl">
+              <div className="w-full">
                   <SessionSoftBanner
                     message={softError}
                     busy={loading || profileLoading}
@@ -125,7 +125,7 @@ export function Layout({ children, defaultInstructor, defaultCourse, defaultCoho
               </div>
             )}
             <main className="flex-1 overflow-auto">
-              <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">{children}</div>
+              <div className="w-full px-4 py-6 md:px-8 md:py-8">{children}</div>
             </main>
           </div>
         </div>
