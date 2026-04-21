@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Satisfaction from "./pages/Satisfaction";
 import MarketingDashboard from "./pages/MarketingDashboard";
+import Screening from "./pages/Screening";
 import UserAdmin from "./pages/UserAdmin";
 import TrackingRedirect from "./pages/TrackingRedirect";
 import Pending from "./pages/Pending";
@@ -50,6 +51,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredPath="/media-commerce/marketing">
                     <MarketingDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/seminar/screening"
+                element={
+                  <ProtectedRoute requiredPath="/seminar/screening">
+                    <Screening />
                   </ProtectedRoute>
                 }
               />
