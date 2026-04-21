@@ -15,8 +15,8 @@ import { CLEARANCE_LABELS, type PageKey } from "@/lib/auth";
 const ROLES = ["admin", "education", "marketing", "pending"] as const;
 
 const ROLE_BASELINE: Record<string, PageKey[]> = {
-  admin: ["dashboard", "survey", "link_tracking", "screening", "admin_users"],
-  education: ["dashboard", "survey", "screening"],
+  admin: ["dashboard", "survey", "link_tracking", "screening", "seminar_dashboard", "seminar_db", "seminar_criteria", "seminar_console", "admin_users"],
+  education: ["dashboard", "survey", "screening", "seminar_dashboard", "seminar_db", "seminar_criteria", "seminar_console"],
   marketing: ["link_tracking"],
   pending: [],
 };
@@ -25,11 +25,15 @@ const PAGE_LABELS: Record<PageKey, string> = {
   dashboard: "Dashboard (매출 대시보드)",
   survey: "Survey (만족도 분석)",
   link_tracking: "Link Tracking (마케팅)",
-  screening: "Screening (심사 운영)",
+  screening: "Screening (Legacy)",
+  seminar_dashboard: "Seminar · Dashboard",
+  seminar_db: "Seminar · DB 관리",
+  seminar_criteria: "Seminar · 심사요건 관리",
+  seminar_console: "Seminar · 프로젝트 콘솔",
   admin_users: "사용자 관리 (Admin)",
 };
 
-const ALL_PAGES: PageKey[] = ["dashboard", "survey", "link_tracking", "screening"];
+const ALL_PAGES: PageKey[] = ["dashboard", "survey", "link_tracking", "screening", "seminar_dashboard", "seminar_db", "seminar_criteria", "seminar_console"];
 
 interface ProfileRow {
   id: string;
@@ -60,6 +64,10 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
     survey: false,
     link_tracking: false,
     screening: false,
+    seminar_dashboard: false,
+    seminar_db: false,
+    seminar_criteria: false,
+    seminar_console: false,
     admin_users: false,
   });
   const [saving, setSaving] = useState(false);
@@ -81,6 +89,10 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
       survey: baseline.has("survey"),
       link_tracking: baseline.has("link_tracking"),
       screening: baseline.has("screening"),
+      seminar_dashboard: baseline.has("seminar_dashboard"),
+      seminar_db: baseline.has("seminar_db"),
+      seminar_criteria: baseline.has("seminar_criteria"),
+      seminar_console: baseline.has("seminar_console"),
       admin_users: baseline.has("admin_users"),
     };
     setPageToggles(toggles);
@@ -95,6 +107,10 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
       survey: baseline.has("survey"),
       link_tracking: baseline.has("link_tracking"),
       screening: baseline.has("screening"),
+      seminar_dashboard: baseline.has("seminar_dashboard"),
+      seminar_db: baseline.has("seminar_db"),
+      seminar_criteria: baseline.has("seminar_criteria"),
+      seminar_console: baseline.has("seminar_console"),
       admin_users: baseline.has("admin_users"),
     });
   }
