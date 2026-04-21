@@ -15,8 +15,8 @@ import { CLEARANCE_LABELS, type PageKey } from "@/lib/auth";
 const ROLES = ["admin", "education", "marketing", "pending"] as const;
 
 const ROLE_BASELINE: Record<string, PageKey[]> = {
-  admin: ["dashboard", "survey", "link_tracking", "admin_users"],
-  education: ["dashboard", "survey"],
+  admin: ["dashboard", "survey", "link_tracking", "screening", "admin_users"],
+  education: ["dashboard", "survey", "screening"],
   marketing: ["link_tracking"],
   pending: [],
 };
@@ -25,10 +25,11 @@ const PAGE_LABELS: Record<PageKey, string> = {
   dashboard: "Dashboard (매출 대시보드)",
   survey: "Survey (만족도 분석)",
   link_tracking: "Link Tracking (마케팅)",
+  screening: "Screening (심사 운영)",
   admin_users: "사용자 관리 (Admin)",
 };
 
-const ALL_PAGES: PageKey[] = ["dashboard", "survey", "link_tracking"];
+const ALL_PAGES: PageKey[] = ["dashboard", "survey", "link_tracking", "screening"];
 
 interface ProfileRow {
   id: string;
@@ -58,6 +59,7 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
     dashboard: false,
     survey: false,
     link_tracking: false,
+    screening: false,
     admin_users: false,
   });
   const [saving, setSaving] = useState(false);
@@ -78,6 +80,7 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
       dashboard: baseline.has("dashboard"),
       survey: baseline.has("survey"),
       link_tracking: baseline.has("link_tracking"),
+      screening: baseline.has("screening"),
       admin_users: baseline.has("admin_users"),
     };
     setPageToggles(toggles);
@@ -91,6 +94,7 @@ export function UserDetailDrawer({ profile: p, open, onOpenChange, onSaved }: Pr
       dashboard: baseline.has("dashboard"),
       survey: baseline.has("survey"),
       link_tracking: baseline.has("link_tracking"),
+      screening: baseline.has("screening"),
       admin_users: baseline.has("admin_users"),
     });
   }
