@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { SectionCard } from "@/components/seminar/SectionCard";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,28 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useScreeningStore } from "@/lib/screening/store";
-import { CATEGORY_LABEL, APPLICANT_STATUS_LABEL, STATUS_LABEL, type ApplicantCategory, type ProjectStatus, type Applicant } from "@/lib/screening/types";
+import { CATEGORY_LABEL, APPLICANT_STATUS_LABEL, STATUS_LABEL, type ApplicantCategory, type ApplicantStatus, type ProjectStatus, type Applicant } from "@/lib/screening/types";
 import { Search, Play, RotateCcw, Plus, StickyNote } from "lucide-react";
 import { toast } from "sonner";
+
+const CATEGORY_PRIORITY: Record<ApplicantCategory, number> = {
+  priority: 0,
+  selected: 1,
+  reserve: 2,
+  excluded: 3,
+  unclassified: 4,
+};
+
+type SortKey = "category" | "score_desc" | "score_asc" | "id";
+
+const COL_WIDTHS = {
+  check: 44, id: 90, name: 90, phone: 140, email: 220, brand: 160,
+  age: 80, rev: 110, bud: 110, attend: 70, auto: 70, manual: 70,
+  total: 70, category: 130, status: 110, memo: 36,
+} as const;
 
 const STATUS_VARIANT: Record<ProjectStatus, string> = {
   preparing: "bg-muted text-muted-foreground",
