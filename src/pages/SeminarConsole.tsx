@@ -63,6 +63,21 @@ export default function SeminarConsolePage() {
   const [newName, setNewName] = useState("");
   const [lastRunAt, setLastRunAt] = useState<string | null>(null);
 
+  // Applicant table filters
+  const [appSearchInput, setAppSearchInput] = useState("");
+  const [appSearch, setAppSearch] = useState("");
+  const [catFilter, setCatFilter] = useState<ApplicantCategory | "all">("all");
+  const [appStatusFilter, setAppStatusFilter] = useState<ApplicantStatus | "all">("all");
+  const [sortKey, setSortKey] = useState<SortKey>("category");
+  const [dirty, setDirty] = useState(false);
+  const [confirmPriority, setConfirmPriority] = useState<{ id: string } | null>(null);
+
+  // Debounce search 300ms
+  useEffect(() => {
+    const t = setTimeout(() => setAppSearch(appSearchInput.trim().toLowerCase()), 300);
+    return () => clearTimeout(t);
+  }, [appSearchInput]);
+
   const filteredProjects = projects.filter((p) => {
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
