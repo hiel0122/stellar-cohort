@@ -390,7 +390,34 @@ export default function SeminarConsolePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Priority change confirm */}
+      <Dialog open={!!confirmPriority} onOpenChange={(o) => !o && setConfirmPriority(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>우선선발로 지정할까요?</DialogTitle>
+            <DialogDescription>해당 지원자의 분류를 "우선선발"로 변경합니다.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmPriority(null)}>취소</Button>
+            <Button onClick={confirmPriorityChange}>지정</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
+  );
+}
+
+function EllipsisCell({ value, className = "" }: { value: string; className?: string }) {
+  return (
+    <td className={`px-3 py-2 truncate ${className}`} title={value}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="block truncate">{value}</span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-md break-all">{value}</TooltipContent>
+      </Tooltip>
+    </td>
   );
 }
 
