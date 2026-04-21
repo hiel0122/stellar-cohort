@@ -1,7 +1,7 @@
 export type UserRole = "admin" | "education" | "marketing" | "pending";
 
 /** Page keys used for permission control */
-export type PageKey = "dashboard" | "survey" | "link_tracking" | "screening" | "admin_users";
+export type PageKey = "dashboard" | "survey" | "link_tracking" | "screening" | "seminar_dashboard" | "seminar_db" | "seminar_criteria" | "seminar_console" | "admin_users";
 
 /** Route ↔ PageKey mapping */
 export const PAGE_ROUTE_MAP: Record<PageKey, string> = {
@@ -9,13 +9,17 @@ export const PAGE_ROUTE_MAP: Record<PageKey, string> = {
   survey: "/satisfaction",
   link_tracking: "/media-commerce/marketing",
   screening: "/seminar/screening",
+  seminar_dashboard: "/seminar/dashboard",
+  seminar_db: "/seminar/db",
+  seminar_criteria: "/seminar/criteria",
+  seminar_console: "/seminar/console",
   admin_users: "/admin/users",
 };
 
 /** Role baseline page access */
 const ROLE_PAGES: Record<UserRole, PageKey[]> = {
-  admin: ["dashboard", "survey", "link_tracking", "screening", "admin_users"],
-  education: ["dashboard", "survey", "screening"],
+  admin: ["dashboard", "survey", "link_tracking", "screening", "seminar_dashboard", "seminar_db", "seminar_criteria", "seminar_console", "admin_users"],
+  education: ["dashboard", "survey", "screening", "seminar_dashboard", "seminar_db", "seminar_criteria", "seminar_console"],
   marketing: ["link_tracking"],
   pending: [],
 };
