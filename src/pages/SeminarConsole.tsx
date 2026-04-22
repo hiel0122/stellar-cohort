@@ -238,7 +238,8 @@ export default function SeminarConsolePage() {
                     <span className="font-mono text-foreground">{p.criteriaVersion || "—"}</span> · 지원 <span className="text-foreground tabular-nums">{p.applicants.length}</span> · 우선 <span className="text-primary tabular-nums">{p.totals.priority}</span>
                   </div>
                 </button>
-              ))}
+                );
+              })}
               {filteredProjects.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">조건에 맞는 프로젝트가 없습니다.</p>}
             </div>
           </div>
@@ -247,9 +248,14 @@ export default function SeminarConsolePage() {
           <div className="flex flex-col gap-4 min-w-0">
             <SectionCard>
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold">{active?.name}</h2>
-                  {active && <Badge className={STATUS_VARIANT[active.status]}>{STATUS_LABEL[active.status]}</Badge>}
+                <div className="flex items-center gap-2 min-w-0">
+                  <h2 className="text-base font-semibold truncate">{active?.name}</h2>
+                  {active && (() => { const b = getDisplayBadge(active); return <Badge className={`${b.cls} shrink-0`}>{b.label}</Badge>; })()}
+                  {isCompleted && (
+                    <Button size="sm" variant={snapshotView ? "default" : "outline"} className="h-7 px-2 text-xs ml-1" onClick={() => setSnapshotView((v) => !v)}>
+                      <Eye className="h-3 w-3 mr-1" /> {snapshotView ? "확정본 보기 종료" : "확정본 보기"}
+                    </Button>
+                  )}
                 </div>
                 <div className="ml-auto flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">심사요건</span>
@@ -261,14 +267,19 @@ export default function SeminarConsolePage() {
                         criteriaVersions: active.criteriaVersions.map((v) => ({ ...v, active: v.id === id })),
                       });
                     }}
+                    disabled={readOnly}
                   >
                     <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {active?.criteriaVersions.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Button size="sm" onClick={handleRun}><Play className="h-3.5 w-3.5 mr-1" /> 심사 실행</Button>
-                  <Button size="sm" variant="outline" onClick={handleRun}><RotateCcw className="h-3.5 w-3.5 mr-1" /> 재실행</Button>
+                  <Button size="sm" onClick={handleRun} disabled={readOnly}><Play className="h-3.5 w-3.5 mr-1" /> 심사 실행</Button>
+                  <Button size="sm" variant="outline" onClick={handleRun} disabled={readOnly}><RotateCcw className="h-3.5 w-3.5 mr-1" /> 재실행</Button>
+                  <Button size="sm" variant="outline" onClick={() => setResetOpen(true)} disabled={readOnly}>초기화</Button>
+                  <Button size="sm" variant="default" onClick={() => setConfirmSelectOpen(true)} disabled={readOnly || !active || active.applicants.length === 0}>
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> 선발 확정
+                  </Button>
                   {lastRunAt && <span className="text-[11px] text-muted-foreground">마지막 실행 {lastRunAt}</span>}
                 </div>
               </div>
