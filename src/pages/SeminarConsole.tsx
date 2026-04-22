@@ -14,10 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useScreeningStore } from "@/lib/screening/store";
-import { CATEGORY_LABEL, APPLICANT_STATUS_LABEL, STATUS_LABEL, type ApplicantCategory, type ApplicantStatus, type ProjectStatus, type Applicant } from "@/lib/screening/types";
-import { Search, Play, RotateCcw, Plus, StickyNote } from "lucide-react";
+import { CATEGORY_LABEL, APPLICANT_STATUS_LABEL, STATUS_LABEL, AUDIT_STATUS_LABEL, type ApplicantCategory, type ApplicantStatus, type ProjectStatus, type AuditStatus, type Applicant, type ScreeningProject } from "@/lib/screening/types";
+import { Search, Play, RotateCcw, Plus, StickyNote, CheckCircle2, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORY_PRIORITY: Record<ApplicantCategory, number> = {
@@ -44,6 +45,22 @@ const STATUS_VARIANT: Record<ProjectStatus, string> = {
   closed: "bg-muted text-muted-foreground",
 };
 
+const AUDIT_VARIANT: Record<AuditStatus, string> = {
+  ready: "bg-muted text-muted-foreground",
+  in_progress: "bg-primary/10 text-primary border-primary/20",
+  completed: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+  revoked: "bg-muted text-muted-foreground",
+};
+
+/** Returns the badge label/className that should appear in cards & headers.
+ *  auditStatus takes precedence (심사 완료 표시 우선) over the operational status. */
+function getDisplayBadge(p: ScreeningProject): { label: string; cls: string } {
+  if (p.auditStatus === "completed") {
+    return { label: AUDIT_STATUS_LABEL.completed, cls: AUDIT_VARIANT.completed };
+  }
+  return { label: STATUS_LABEL[p.status], cls: STATUS_VARIANT[p.status] };
+}
+
 const CATEGORY_VARIANT: Record<ApplicantCategory, string> = {
   priority: "bg-primary/10 text-primary border-primary/20",
   selected: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
@@ -53,7 +70,7 @@ const CATEGORY_VARIANT: Record<ApplicantCategory, string> = {
 };
 
 export default function SeminarConsolePage() {
-  const { projects, activeProjectId, setActiveProjectId, runScreening, updateApplicant, addProject, updateProject } = useScreeningStore();
+  const { projects, activeProjectId, setActiveProjectId, runScreening, updateApplicant, addProject, updateProject, resetScreening, confirmSelection } = useScreeningStore();
   const active = projects.find((p) => p.id === activeProjectId) ?? projects[0];
 
   const [search, setSearch] = useState("");
@@ -71,6 +88,15 @@ export default function SeminarConsolePage() {
   const [sortKey, setSortKey] = useState<SortKey>("category");
   const [dirty, setDirty] = useState(false);
   const [confirmPriority, setConfirmPriority] = useState<{ id: string } | null>(null);
+
+  // Reset / confirm-selection modals
+  const [resetOpen, setResetOpen] = useState(false);
+  const [confirmSelectOpen, setConfirmSelectOpen] = useState(false);
+  // Read-only "확정본 보기" mode
+  const [snapshotView, setSnapshotView] = useState(false);
+
+  const isCompleted = active?.auditStatus === "completed";
+  const readOnly = snapshotView && isCompleted;
 
   // Debounce search 300ms
   useEffect(() => {
@@ -145,6 +171,21 @@ export default function SeminarConsolePage() {
     toast.success("프로젝트 생성 완료");
   }
 
+  function handleResetConfirm() {
+    if (!active) return;
+    const wasCompleted = active.auditStatus === "completed";
+    resetScreening(active.id, { includeSnapshot: wasCompleted });
+    setSnapshotView(false);
+    setResetOpen(false);
+    toast.success(wasCompleted ? "초기화 완료: 확정 포함 심사 내역을 초기화했습니다." : "초기화 완료: 심사 전 상태로 되돌렸습니다.");
+  }
+  function handleConfirmSelection() {
+    if (!active) return;
+    confirmSelection(active.id);
+    setConfirmSelectOpen(false);
+    toast.success("선발이 확정되었습니다.");
+  }
+
   return (
     <Layout>
       <div className="flex flex-col gap-4">
@@ -178,14 +219,16 @@ export default function SeminarConsolePage() {
             </SectionCard>
 
             <div className="space-y-1.5">
-              {filteredProjects.map((p) => (
+              {filteredProjects.map((p) => {
+                const badge = getDisplayBadge(p);
+                return (
                 <button
                   key={p.id}
                   onClick={() => setActiveProjectId(p.id)}
                   className={`w-full text-left rounded-lg border bg-card px-3 py-2.5 transition ${activeProjectId === p.id ? "border-primary/40 ring-1 ring-primary/20" : "hover:bg-accent/50"}`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <Badge className={`${STATUS_VARIANT[p.status]} text-[10px] shrink-0 px-1.5 py-0`}>{STATUS_LABEL[p.status]}</Badge>
+                    <Badge className={`${badge.cls} text-[10px] shrink-0 px-1.5 py-0`}>{badge.label}</Badge>
                     <span className="text-sm font-medium truncate min-w-0 flex-1">{p.name}</span>
                   </div>
                   <div className="mt-1 text-[11px] text-muted-foreground truncate leading-tight">
@@ -195,7 +238,8 @@ export default function SeminarConsolePage() {
                     <span className="font-mono text-foreground">{p.criteriaVersion || "—"}</span> · 지원 <span className="text-foreground tabular-nums">{p.applicants.length}</span> · 우선 <span className="text-primary tabular-nums">{p.totals.priority}</span>
                   </div>
                 </button>
-              ))}
+                );
+              })}
               {filteredProjects.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">조건에 맞는 프로젝트가 없습니다.</p>}
             </div>
           </div>
@@ -204,9 +248,14 @@ export default function SeminarConsolePage() {
           <div className="flex flex-col gap-4 min-w-0">
             <SectionCard>
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold">{active?.name}</h2>
-                  {active && <Badge className={STATUS_VARIANT[active.status]}>{STATUS_LABEL[active.status]}</Badge>}
+                <div className="flex items-center gap-2 min-w-0">
+                  <h2 className="text-base font-semibold truncate">{active?.name}</h2>
+                  {active && (() => { const b = getDisplayBadge(active); return <Badge className={`${b.cls} shrink-0`}>{b.label}</Badge>; })()}
+                  {isCompleted && (
+                    <Button size="sm" variant={snapshotView ? "default" : "outline"} className="h-7 px-2 text-xs ml-1" onClick={() => setSnapshotView((v) => !v)}>
+                      <Eye className="h-3 w-3 mr-1" /> {snapshotView ? "확정본 보기 종료" : "확정본 보기"}
+                    </Button>
+                  )}
                 </div>
                 <div className="ml-auto flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">심사요건</span>
@@ -218,14 +267,19 @@ export default function SeminarConsolePage() {
                         criteriaVersions: active.criteriaVersions.map((v) => ({ ...v, active: v.id === id })),
                       });
                     }}
+                    disabled={readOnly}
                   >
                     <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {active?.criteriaVersions.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Button size="sm" onClick={handleRun}><Play className="h-3.5 w-3.5 mr-1" /> 심사 실행</Button>
-                  <Button size="sm" variant="outline" onClick={handleRun}><RotateCcw className="h-3.5 w-3.5 mr-1" /> 재실행</Button>
+                  <Button size="sm" onClick={handleRun} disabled={readOnly}><Play className="h-3.5 w-3.5 mr-1" /> 심사 실행</Button>
+                  <Button size="sm" variant="outline" onClick={handleRun} disabled={readOnly}><RotateCcw className="h-3.5 w-3.5 mr-1" /> 재실행</Button>
+                  <Button size="sm" variant="outline" onClick={() => setResetOpen(true)} disabled={readOnly}>초기화</Button>
+                  <Button size="sm" variant="default" onClick={() => setConfirmSelectOpen(true)} disabled={readOnly || !active || active.applicants.length === 0}>
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> 선발 확정
+                  </Button>
                   {lastRunAt && <span className="text-[11px] text-muted-foreground">마지막 실행 {lastRunAt}</span>}
                 </div>
               </div>
@@ -332,7 +386,7 @@ export default function SeminarConsolePage() {
                           <td className="px-3 py-2 text-right tabular-nums">{a.manualScore}</td>
                           <td className="px-3 py-2 text-right tabular-nums font-semibold">{a.totalScore}</td>
                           <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
-                            <Select value={a.category} onValueChange={(v) => handleCategoryChange(a.id, v as ApplicantCategory)}>
+                            <Select value={a.category} onValueChange={(v) => handleCategoryChange(a.id, v as ApplicantCategory)} disabled={readOnly}>
                               <SelectTrigger className={`h-7 px-2 text-[11px] border ${CATEGORY_VARIANT[a.category]}`}>
                                 <SelectValue />
                               </SelectTrigger>
@@ -400,6 +454,63 @@ export default function SeminarConsolePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reset confirm — different copy & button styling depending on completion */}
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent>
+          {isCompleted ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>확정된 내용이 초기화 됩니다. 그래도 진행하시겠습니까?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  이 작업은 확정 스냅샷을 포함한 현재 결과를 초기화할 수 있습니다.
+                  <br />실수 방지를 위해 다시 확인해주세요.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="sm:justify-end">
+                <Button variant="outline" className="text-destructive hover:text-destructive sm:order-1" onClick={handleResetConfirm}>
+                  예, 초기화
+                </Button>
+                <Button variant="default" className="sm:order-2" onClick={() => setResetOpen(false)} autoFocus>
+                  아니오
+                </Button>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>심사 내역이 초기화 됩니다.</AlertDialogTitle>
+                <AlertDialogDescription>
+                  자동/수동 점수, 분류, 상태가 '미심사'로 되돌아갑니다. 진행할까요?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <Button variant="outline" onClick={() => setResetOpen(false)}>아니오</Button>
+                <Button variant="default" onClick={handleResetConfirm}>예</Button>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm selection (snapshot) */}
+      <AlertDialog open={confirmSelectOpen} onOpenChange={setConfirmSelectOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>현재 분류를 선발 확정으로 저장합니다.</AlertDialogTitle>
+            <AlertDialogDescription>
+              확정 후 프로젝트 상태는 '심사 완료'로 표시되며, 확정 스냅샷이 생성됩니다.
+              <br />초기화 전까지 분류 수정과 재실행이 비활성화됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setConfirmSelectOpen(false)}>취소</Button>
+            <Button variant="default" onClick={handleConfirmSelection}>
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> 선발 확정
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

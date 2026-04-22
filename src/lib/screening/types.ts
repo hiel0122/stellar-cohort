@@ -48,11 +48,15 @@ export interface CriteriaVersion {
   locked: boolean;
 }
 
+export type AuditStatus = "ready" | "in_progress" | "completed" | "revoked";
+
 export interface ConfirmSnapshot {
   id: string;
   label: string;
   createdAt: string;
   count: number;
+  status?: "active" | "revoked";
+  rows?: { applicantId: string; category: ApplicantCategory; totalScore: number }[];
 }
 
 export interface SendLog {
@@ -67,6 +71,7 @@ export interface ScreeningProject {
   id: string;
   name: string;
   status: ProjectStatus;
+  auditStatus?: AuditStatus;
   lastUploadAt: string;
   criteriaVersion: string;
   totals: { applicants: number; priority: number; selected: number; reserve: number };
@@ -77,6 +82,13 @@ export interface ScreeningProject {
   snapshots: ConfirmSnapshot[];
   sendLogs: SendLog[];
 }
+
+export const AUDIT_STATUS_LABEL: Record<AuditStatus, string> = {
+  ready: "준비",
+  in_progress: "심사중",
+  completed: "심사 완료",
+  revoked: "확정 취소",
+};
 
 export const STATUS_LABEL: Record<ProjectStatus, string> = {
   preparing: "준비중",
