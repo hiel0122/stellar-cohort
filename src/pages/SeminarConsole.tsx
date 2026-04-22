@@ -156,7 +156,7 @@ export default function SeminarConsolePage() {
           <Button onClick={() => setNewOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" /> 새 프로젝트</Button>
         </header>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,340px)_1fr] gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,300px)_1fr] gap-2">
           {/* Left: project list */}
           <div className="flex flex-col gap-3">
             <SectionCard bodyClassName="space-y-3 p-4">
