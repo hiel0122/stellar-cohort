@@ -156,7 +156,7 @@ export default function SeminarConsolePage() {
           <Button onClick={() => setNewOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" /> 새 프로젝트</Button>
         </header>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,300px)_1fr] gap-2">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,250px)_1fr] gap-2">
           {/* Left: project list */}
           <div className="flex flex-col gap-3">
             <SectionCard bodyClassName="space-y-3 p-4">
@@ -177,26 +177,19 @@ export default function SeminarConsolePage() {
               </Select>
             </SectionCard>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {filteredProjects.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setActiveProjectId(p.id)}
-                  className={`w-full text-left rounded-lg border bg-card p-4 transition ${activeProjectId === p.id ? "border-primary/40 ring-1 ring-primary/20" : "hover:bg-accent/50"}`}
+                  className={`w-full text-left rounded-lg border bg-card px-3 py-2.5 transition ${activeProjectId === p.id ? "border-primary/40 ring-1 ring-primary/20" : "hover:bg-accent/50"}`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold truncate">{p.name}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">최근 업로드 {p.lastUploadAt}</div>
-                    </div>
-                    <Badge className={`${STATUS_VARIANT[p.status]} text-[10px] shrink-0`}>{STATUS_LABEL[p.status]}</Badge>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Badge className={`${STATUS_VARIANT[p.status]} text-[10px] shrink-0 px-1.5 py-0`}>{STATUS_LABEL[p.status]}</Badge>
+                    <span className="text-sm font-medium truncate min-w-0 flex-1">{p.name}</span>
                   </div>
-                  <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                    <span>버전 <span className="font-mono text-foreground">{p.criteriaVersion}</span></span>
-                    <span>·</span>
-                    <span>지원 <span className="text-foreground tabular-nums">{p.applicants.length}</span></span>
-                    <span>·</span>
-                    <span>우선 <span className="text-primary tabular-nums">{p.totals.priority}</span></span>
+                  <div className="mt-1 text-[11px] text-muted-foreground truncate">
+                    업로드 {p.lastUploadAt} · <span className="font-mono text-foreground">{p.criteriaVersion}</span> · 지원 <span className="text-foreground tabular-nums">{p.applicants.length}</span> · 우선 <span className="text-primary tabular-nums">{p.totals.priority}</span>
                   </div>
                 </button>
               ))}
