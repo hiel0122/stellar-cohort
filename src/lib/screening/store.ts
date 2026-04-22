@@ -93,7 +93,7 @@ export const useScreeningStore = create<ScreeningState>()(
         };
         set((s) => ({
           projects: s.projects.map((p) =>
-            p.id === projectId ? { ...p, applicants: classified, totals, status: "screening" as ProjectStatus } : p
+            p.id === projectId ? { ...p, applicants: classified, totals, status: "screening" as ProjectStatus, auditStatus: "in_progress" } : p
           ),
         }));
       },
@@ -104,12 +104,64 @@ export const useScreeningStore = create<ScreeningState>()(
         const next: ApplicantStatus = ap.status === "confirmed" ? "screened" : "confirmed";
         get().updateApplicant(projectId, applicantId, { status: next });
       },
+      resetScreening: (projectId, opts) => {
+        set((s) => ({
+          projects: s.projects.map((p) => {
+            if (p.id !== projectId) return p;
+            const reset = p.applicants.map((a) => ({
+              ...a,
+              autoScore: 0,
+              manualScore: 0,
+              totalScore: 0,
+              category: "unclassified" as ApplicantCategory,
+              status: "unscreened" as ApplicantStatus,
+              scoreBreakdown: [],
+            }));
+            const snapshots = opts?.includeSnapshot
+              ? p.snapshots.map((sn) => ({ ...sn, status: "revoked" as const }))
+              : p.snapshots;
+            return {
+              ...p,
+              applicants: reset,
+              totals: { applicants: reset.length, priority: 0, selected: 0, reserve: 0 },
+              status: "preparing" as ProjectStatus,
+              auditStatus: opts?.includeSnapshot ? "ready" : "ready",
+              snapshots,
+            };
+          }),
+        }));
+      },
+      confirmSelection: (projectId) => {
+        set((s) => ({
+          projects: s.projects.map((p) => {
+            if (p.id !== projectId) return p;
+            const selectedRows = p.applicants
+              .filter((a) => a.category === "priority" || a.category === "selected")
+              .map((a) => ({ applicantId: a.id, category: a.category, totalScore: a.totalScore }));
+            const snapshot = {
+              id: `snap-${Date.now()}`,
+              label: `확정본 ${new Date().toLocaleString("ko-KR")}`,
+              createdAt: new Date().toISOString(),
+              count: selectedRows.length,
+              status: "active" as const,
+              rows: selectedRows,
+            };
+            return {
+              ...p,
+              snapshots: [snapshot, ...p.snapshots],
+              status: "confirmed" as ProjectStatus,
+              auditStatus: "completed",
+            };
+          }),
+        }));
+      },
       addProject: (name) => {
         const id = `p-${Date.now()}`;
         const proj: ScreeningProject = {
           id,
           name: name.trim(),
           status: "preparing",
+          auditStatus: "ready",
           lastUploadAt: new Date().toISOString().slice(0, 16).replace("T", " "),
           criteriaVersion: "v1",
           totals: { applicants: 0, priority: 0, selected: 0, reserve: 0 },
