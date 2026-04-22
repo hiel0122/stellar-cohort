@@ -12,6 +12,8 @@ interface ScreeningState {
   runScreening: (projectId: string) => void;
   toggleApplicantComplete: (projectId: string, applicantId: string) => void;
   addProject: (name: string) => string;
+  resetScreening: (projectId: string, opts?: { includeSnapshot?: boolean }) => void;
+  confirmSelection: (projectId: string) => void;
 }
 
 function scoreApplicant(a: Applicant): { auto: number; breakdown: { label: string; score: number; detail: string }[] } {
