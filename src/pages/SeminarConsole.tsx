@@ -171,6 +171,21 @@ export default function SeminarConsolePage() {
     toast.success("프로젝트 생성 완료");
   }
 
+  function handleResetConfirm() {
+    if (!active) return;
+    const wasCompleted = active.auditStatus === "completed";
+    resetScreening(active.id, { includeSnapshot: wasCompleted });
+    setSnapshotView(false);
+    setResetOpen(false);
+    toast.success(wasCompleted ? "초기화 완료: 확정 포함 심사 내역을 초기화했습니다." : "초기화 완료: 심사 전 상태로 되돌렸습니다.");
+  }
+  function handleConfirmSelection() {
+    if (!active) return;
+    confirmSelection(active.id);
+    setConfirmSelectOpen(false);
+    toast.success("선발이 확정되었습니다.");
+  }
+
   return (
     <Layout>
       <div className="flex flex-col gap-4">
@@ -204,14 +219,16 @@ export default function SeminarConsolePage() {
             </SectionCard>
 
             <div className="space-y-1.5">
-              {filteredProjects.map((p) => (
+              {filteredProjects.map((p) => {
+                const badge = getDisplayBadge(p);
+                return (
                 <button
                   key={p.id}
                   onClick={() => setActiveProjectId(p.id)}
                   className={`w-full text-left rounded-lg border bg-card px-3 py-2.5 transition ${activeProjectId === p.id ? "border-primary/40 ring-1 ring-primary/20" : "hover:bg-accent/50"}`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <Badge className={`${STATUS_VARIANT[p.status]} text-[10px] shrink-0 px-1.5 py-0`}>{STATUS_LABEL[p.status]}</Badge>
+                    <Badge className={`${badge.cls} text-[10px] shrink-0 px-1.5 py-0`}>{badge.label}</Badge>
                     <span className="text-sm font-medium truncate min-w-0 flex-1">{p.name}</span>
                   </div>
                   <div className="mt-1 text-[11px] text-muted-foreground truncate leading-tight">
