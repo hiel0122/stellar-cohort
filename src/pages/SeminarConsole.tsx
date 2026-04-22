@@ -45,6 +45,22 @@ const STATUS_VARIANT: Record<ProjectStatus, string> = {
   closed: "bg-muted text-muted-foreground",
 };
 
+const AUDIT_VARIANT: Record<AuditStatus, string> = {
+  ready: "bg-muted text-muted-foreground",
+  in_progress: "bg-primary/10 text-primary border-primary/20",
+  completed: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+  revoked: "bg-muted text-muted-foreground",
+};
+
+/** Returns the badge label/className that should appear in cards & headers.
+ *  auditStatus takes precedence (심사 완료 표시 우선) over the operational status. */
+function getDisplayBadge(p: ScreeningProject): { label: string; cls: string } {
+  if (p.auditStatus === "completed") {
+    return { label: AUDIT_STATUS_LABEL.completed, cls: AUDIT_VARIANT.completed };
+  }
+  return { label: STATUS_LABEL[p.status], cls: STATUS_VARIANT[p.status] };
+}
+
 const CATEGORY_VARIANT: Record<ApplicantCategory, string> = {
   priority: "bg-primary/10 text-primary border-primary/20",
   selected: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
