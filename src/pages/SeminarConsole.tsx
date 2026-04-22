@@ -457,7 +457,7 @@ export default function SeminarConsolePage() {
 
       {/* Reset confirm — different copy & button styling depending on completion */}
       <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
-        <AlertDialogContent onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
+        <AlertDialogContent>
           {isCompleted ? (
             <>
               <AlertDialogHeader>
@@ -495,7 +495,7 @@ export default function SeminarConsolePage() {
 
       {/* Confirm selection (snapshot) */}
       <AlertDialog open={confirmSelectOpen} onOpenChange={setConfirmSelectOpen}>
-        <AlertDialogContent onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>현재 분류를 선발 확정으로 저장합니다.</AlertDialogTitle>
             <AlertDialogDescription>
