@@ -386,7 +386,7 @@ export default function SeminarConsolePage() {
                           <td className="px-3 py-2 text-right tabular-nums">{a.manualScore}</td>
                           <td className="px-3 py-2 text-right tabular-nums font-semibold">{a.totalScore}</td>
                           <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
-                            <Select value={a.category} onValueChange={(v) => handleCategoryChange(a.id, v as ApplicantCategory)}>
+                            <Select value={a.category} onValueChange={(v) => handleCategoryChange(a.id, v as ApplicantCategory)} disabled={readOnly}>
                               <SelectTrigger className={`h-7 px-2 text-[11px] border ${CATEGORY_VARIANT[a.category]}`}>
                                 <SelectValue />
                               </SelectTrigger>
