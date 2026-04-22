@@ -70,7 +70,7 @@ const CATEGORY_VARIANT: Record<ApplicantCategory, string> = {
 };
 
 export default function SeminarConsolePage() {
-  const { projects, activeProjectId, setActiveProjectId, runScreening, updateApplicant, addProject, updateProject } = useScreeningStore();
+  const { projects, activeProjectId, setActiveProjectId, runScreening, updateApplicant, addProject, updateProject, resetScreening, confirmSelection } = useScreeningStore();
   const active = projects.find((p) => p.id === activeProjectId) ?? projects[0];
 
   const [search, setSearch] = useState("");
@@ -88,6 +88,15 @@ export default function SeminarConsolePage() {
   const [sortKey, setSortKey] = useState<SortKey>("category");
   const [dirty, setDirty] = useState(false);
   const [confirmPriority, setConfirmPriority] = useState<{ id: string } | null>(null);
+
+  // Reset / confirm-selection modals
+  const [resetOpen, setResetOpen] = useState(false);
+  const [confirmSelectOpen, setConfirmSelectOpen] = useState(false);
+  // Read-only "확정본 보기" mode
+  const [snapshotView, setSnapshotView] = useState(false);
+
+  const isCompleted = active?.auditStatus === "completed";
+  const readOnly = snapshotView && isCompleted;
 
   // Debounce search 300ms
   useEffect(() => {
