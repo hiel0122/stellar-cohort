@@ -454,6 +454,63 @@ export default function SeminarConsolePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reset confirm — different copy & button styling depending on completion */}
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
+          {isCompleted ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>확정된 내용이 초기화 됩니다. 그래도 진행하시겠습니까?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  이 작업은 확정 스냅샷을 포함한 현재 결과를 초기화할 수 있습니다.
+                  <br />실수 방지를 위해 다시 확인해주세요.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="sm:justify-end">
+                <Button variant="outline" className="text-destructive hover:text-destructive sm:order-1" onClick={handleResetConfirm}>
+                  예, 초기화
+                </Button>
+                <Button variant="default" className="sm:order-2" onClick={() => setResetOpen(false)} autoFocus>
+                  아니오
+                </Button>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>심사 내역이 초기화 됩니다.</AlertDialogTitle>
+                <AlertDialogDescription>
+                  자동/수동 점수, 분류, 상태가 '미심사'로 되돌아갑니다. 진행할까요?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <Button variant="outline" onClick={() => setResetOpen(false)}>아니오</Button>
+                <Button variant="default" onClick={handleResetConfirm}>예</Button>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm selection (snapshot) */}
+      <AlertDialog open={confirmSelectOpen} onOpenChange={setConfirmSelectOpen}>
+        <AlertDialogContent onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>현재 분류를 선발 확정으로 저장합니다.</AlertDialogTitle>
+            <AlertDialogDescription>
+              확정 후 프로젝트 상태는 '심사 완료'로 표시되며, 확정 스냅샷이 생성됩니다.
+              <br />초기화 전까지 분류 수정과 재실행이 비활성화됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setConfirmSelectOpen(false)}>취소</Button>
+            <Button variant="default" onClick={handleConfirmSelection}>
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> 선발 확정
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
