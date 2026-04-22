@@ -188,8 +188,11 @@ export default function SeminarConsolePage() {
                     <Badge className={`${STATUS_VARIANT[p.status]} text-[10px] shrink-0 px-1.5 py-0`}>{STATUS_LABEL[p.status]}</Badge>
                     <span className="text-sm font-medium truncate min-w-0 flex-1">{p.name}</span>
                   </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground truncate">
-                    업로드 {p.lastUploadAt} · <span className="font-mono text-foreground">{p.criteriaVersion}</span> · 지원 <span className="text-foreground tabular-nums">{p.applicants.length}</span> · 우선 <span className="text-primary tabular-nums">{p.totals.priority}</span>
+                  <div className="mt-1 text-[11px] text-muted-foreground truncate leading-tight">
+                    업로드 {p.lastUploadAt || "—"}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground truncate leading-tight">
+                    <span className="font-mono text-foreground">{p.criteriaVersion || "—"}</span> · 지원 <span className="text-foreground tabular-nums">{p.applicants.length}</span> · 우선 <span className="text-primary tabular-nums">{p.totals.priority}</span>
                   </div>
                 </button>
               ))}
