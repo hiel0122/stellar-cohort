@@ -14,10 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useScreeningStore } from "@/lib/screening/store";
-import { CATEGORY_LABEL, APPLICANT_STATUS_LABEL, STATUS_LABEL, type ApplicantCategory, type ApplicantStatus, type ProjectStatus, type Applicant } from "@/lib/screening/types";
-import { Search, Play, RotateCcw, Plus, StickyNote } from "lucide-react";
+import { CATEGORY_LABEL, APPLICANT_STATUS_LABEL, STATUS_LABEL, AUDIT_STATUS_LABEL, type ApplicantCategory, type ApplicantStatus, type ProjectStatus, type AuditStatus, type Applicant, type ScreeningProject } from "@/lib/screening/types";
+import { Search, Play, RotateCcw, Plus, StickyNote, CheckCircle2, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORY_PRIORITY: Record<ApplicantCategory, number> = {
