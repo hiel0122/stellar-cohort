@@ -165,11 +165,20 @@ class LocalMarketingProvider implements MarketingDataProvider {
 
   /* ── Settings ── */
   getSettings(): MarketingSettings | null {
-    return readJSON<MarketingSettings | null>(SETTINGS_KEY, null);
+    const raw = readJSON<(MarketingSettings & { link24_api_key?: string }) | null>(SETTINGS_KEY, null);
+    if (!raw) return null;
+    // Legacy cleanup: API keys must never live in localStorage (server Secrets only)
+    if ("link24_api_key" in raw) {
+      delete raw.link24_api_key;
+      writeJSON(SETTINGS_KEY, raw);
+    }
+    return raw;
   }
 
   saveSettings(s: MarketingSettings): void {
-    writeJSON(SETTINGS_KEY, s);
+    const { ...rest } = s as MarketingSettings & { link24_api_key?: string };
+    delete rest.link24_api_key;
+    writeJSON(SETTINGS_KEY, rest);
   }
 }
 
