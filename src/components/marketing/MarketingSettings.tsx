@@ -104,7 +104,7 @@ export function MarketingSettingsDialog({ onSaved }: Props) {
       // Also save to local provider for dedup/bot runtime use
       const localSettings: SettingsType = {
         link24_customer_id: customerId.trim(),
-        link24_api_key: "", // no longer used
+        
         tracking_base_url: trackingDomain,
         dedup_enabled: dedupEnabled,
         dedup_window_sec: clampedWindow,
