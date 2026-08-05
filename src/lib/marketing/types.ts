@@ -50,7 +50,7 @@ export interface ClickEvent {
 
 export interface MarketingSettings {
   link24_customer_id: string;
-  link24_api_key: string;
+  
   tracking_base_url: string;
   /** Dedup settings */
   dedup_enabled?: boolean;
