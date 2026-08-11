@@ -99,8 +99,12 @@ export function hasClearance(profile: PermissionProfile | null, minLevel: number
 }
 
 const ALLOWED_DOMAIN = "bobusanggroup.com";
+/** 운영 관리자 예외 계정 */
+const ALLOWED_EMAILS = ["admin@admin.com"];
 
 export function isAllowedDomain(email: string | undefined | null): boolean {
   if (!email) return false;
-  return email.endsWith(`@${ALLOWED_DOMAIN}`);
+  const normalized = email.trim().toLowerCase();
+  if (ALLOWED_EMAILS.includes(normalized)) return true;
+  return normalized.endsWith(`@${ALLOWED_DOMAIN}`);
 }
