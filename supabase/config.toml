@@ -3,6 +3,3 @@ project_id = "fwgnljlzzpneinawyeqq"
 [functions.link24-shoturl]
 verify_jwt = false
 
-[functions.bootstrap-admin]
-verify_jwt = false
-
